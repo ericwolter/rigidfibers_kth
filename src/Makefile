@@ -1,21 +1,21 @@
 TARGET = ADVECT_FIBERS
-HOME =/afs/nada.kth.se/home/c2m2/katarina/Desktop
+HOME =/Users/eric/Developer/fortran/rigidfibers/src
 
 #  -------------- PUT IN DIRECTORIES HERE THAT YOU WANT ------
-BINDIR = $(HOME)/RIGIDFIBERS_NON_PERIODIC_CODE
+BINDIR = $(HOME)
 
 # Location of source files (could be your working directory)
 
-FORLIBS.f = $(HOME)/RIGIDFIBERS_NON_PERIODIC_CODE
-FORLIBS.f90 = $(HOME)/RIGIDFIBERS_NON_PERIODIC_CODE
-LIBDIR = $(HOME)/RIGIDFIBERS_NON_PERIODIC_CODE
+FORLIBS.f = $(HOME)
+FORLIBS.f90 = $(HOME)
+LIBDIR = $(HOME)
 LIBDIR2=/opt/NAG/fnsol03d9
 INCLS=/opt/NAG/fnsol03d9/nag_mod_dir
-MOD_DIR = $(HOME)/RIGIDFIBERS_NON_PERIODIC_CODE
+MOD_DIR = $(HOME)
 RM       = rm -f
 MV       = mv -f
 
-F90FLAGS += -O3 -fns\
+F90FLAGS += -O3
 #	    -C\
            # -xtarget=ultra2i -xcache=16/32/1:2048/64/1 \
 	   # -xlibmopt \
@@ -27,10 +27,10 @@ F77FLAGS += -O3
 LAPACKDIR = /usr/lib
 LOADLIBES = -L$(LAPACKDIR) -llapack -lblas
 
-COMPILE.f90= f90 $(F90FLAGS) -I. -I$(BINDIR) 
-LINK.f90   = f90 $(F90FLAGS)
-COMPILE.f  = f90 $(F77FLAGS)
-LINK       = f90 $(F90FLAGS)
+COMPILE.f90= gfortran $(F90FLAGS) -I. -I$(BINDIR) 
+LINK.f90   = gfortran $(F90FLAGS)
+COMPILE.f  = gfortran $(F77FLAGS)
+LINK       = gfortran $(F90FLAGS)
 
 #  Files we don't have to build:
 .PHONY:  makefile depends.mak  $(TARGET).objs
