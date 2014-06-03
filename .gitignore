@@ -16,6 +16,9 @@ XcTData*
 VelRotData*
 Coeffvec*
 
+# binary output
+ADVECT_FIBERS
+
 ##################################################
 #
 # OSX.gitignore
