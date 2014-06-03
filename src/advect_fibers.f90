@@ -7,26 +7,177 @@ PROGRAM ADVECT_FIBERS
   USE coeffs_and_vels
   USE Int_analytical
   IMPLICIT NONE
-  
-  
-  INTEGER M,N,LQ,NoQI,nocc
-  REAL *8 eeps,t,dt,tvecMod,tol
-  REAL*8,ALLOCATABLE,DIMENSION(:,:)::XcVecs,tVecs,VelVecs,RotVecs
-  REAL*8,ALLOCATABLE,DIMENSION(:)::pv,wv
+
+  !****************************************************************************!
+  !                                                                            !
+  ! Variable Declarations                                                      !
+  !                                                                            !
+  !****************************************************************************!
+
+  !me:  The number of individual fibers
+  INTEGER M
+  !me:  @todo The number of terms sued in the force expansion? Not absolutely
+  !     sure what the really means yet
+  INTEGER N
+  !me:  The total number of quadrature points, and thus also the number of
+  !     legrende polynominals.
+  INTEGER LQ
+  !me:  Number of intervals used in combination with the gaussian quadrature
+  !     The integral to be estimated is split into this many subintervals and
+  !     the gaussian quadrature is used for each interval INDEPENDENTLY.
+  !     @todo Is there a name for this quadrature scheme?
+  INTEGER NoQI
+  !me:  @todo ???  
+  INTEGER nocc
+
+  !me:  REAL*8 is a double precision floating point type i.e. double in other 
+  !     languages the *8 comes from the number of bytes (here 8) that are used 
+  !     to store the number
+
+  !me:  @todo Probably some kind of threshold/engineering constant to avoid 
+  !     dividing by zero or stop iterating
+  REAL*8 eeps
+  !me:  @todo Probably either the elapsed time
+  REAL*8 t
+  !me:  The timestep
+  REAL*8 dt
+  !me:  @todo ???
+  REAL*8 tvecMod
+  !me:  The tolerance parameter used for GMRES
+  REAL*8 tol
+
+  !me:  REAL*8,ALLOCATABLE,DIMENSION(:,:):: defines a 2-dimensional array of
+  !     type REAL*8 (i.e. double). ALLOCATABLE allows the size of the array
+  !     to be set (aka allocate) later dynamically
+
+  !me:  The position vectors of the fiber centers
+  REAL*8,ALLOCATABLE,DIMENSION(:,:)::XcVecs
+  !me:  @todo ???  
+  REAL*8,ALLOCATABLE,DIMENSION(:,:)::tVecs
+  !me:  The linear velocity vectors of the fibers
+  REAL*8,ALLOCATABLE,DIMENSION(:,:)::VelVecs
+  !me:  The rotational velocity vectors of the fibers
+  REAL*8,ALLOCATABLE,DIMENSION(:,:)::RotVecs
+
+  !me:  The points used for integral estimation using gaussian quadrature along
+  !     subintervals
+  REAL*8,ALLOCATABLE,DIMENSION(:)::pv
+  !me:  The weights used for integral estimation using gaussian quadrature along
+  !     subintervals
+  REAL*8,ALLOCATABLE,DIMENSION(:)::wv
+
+  !me:  The legendre polynomials evaluated at the the quadrature points
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::LvecMat
-  REAL*8,ALLOCATABLE,DIMENSION(:)::ExtForce,coeffvec,init_guess
-  REAL*8,ALLOCATABLE,DIMENSION(:)::tmod0,tmod
-  INTEGER one,two,three,old,new,max_iters,restart
-  INTEGER label,save_ival,no_ts,no_saves_in_file,nos,label2
-  INTEGER int_an, dir_solve
-  INTEGER i,j,ind,tt,pp
-  INTEGER count_rate,count_max,count1,count2
-  CHARACTER (LEN=10):: labstr,filenostr,labstr2
-  CHARACTER (LEN=25):: abbr,abbr2,repfile,filename, filename2,filename3,abbr3
-  CHARACTER (LEN=25):: filein,parfname  
+
+  !me:  @todo The external forces acting on all fibers, e.g. gravity? 
+  REAL*8,ALLOCATABLE,DIMENSION(:)::ExtForce
+  !me:  @todo ???
+  REAL*8,ALLOCATABLE,DIMENSION(:)::coeffvec
+  !me:  @todo Probably used as an initial guess for some kind of integration 
+  !     scheme
+  REAL*8,ALLOCATABLE,DIMENSION(:)::init_guess
+
+  !me:  A temporary variable holding the length of @todo tVecs
+  !     @todo Why does this need to be a vector? A simple REAL*8 should be
+  !     enough.
+  REAL*8,ALLOCATABLE,DIMENSION(:)::tmod0
+  !me:  The normalized vectors of @todo tVecs
+  REAL*8,ALLOCATABLE,DIMENSION(:)::tmod
+
+  !me:  @todo ???
+  INTEGER one
+  !me:  @todo ???
+  INTEGER two
+  !me:  @todo ???
+  INTEGER three
+  !me:  @todo ???
+  INTEGER old
+  !me:  @todo ???
+  INTEGER new
+  !me:  The maximum number of iterations used for GMRES
+  INTEGER max_iters
+  !me:  The restart parameter used for GMRES
+  INTEGER restart
+  !me:  @todo ???
+  INTEGER label
+  !me:  The interval after which the current state is saved to the output file
+  INTEGER save_ival
+  !me:  The number of timesteps to simulate
+  INTEGER no_ts
+  !me:  @todo The number of saves in each file? Maybe this outputs to multiple
+  !     files in case one file gets to large?
+  INTEGER no_saves_in_file
+  !me:  @todo ???
+  INTEGER nos
+  !me:  @todo ???
+  INTEGER label2
+  !me:  Flag indicating whether to solve the integral (@todo refeq)
+  !     analytically (=1) or numerically (=0)
+  INTEGER int_an
+  !me:  Flag indicating whether to use a direct solver (@todo what does direct
+  !     mean?) (=1) or to use GMRES (=0)
+  INTEGER dir_solve
+  !me:  @todo ???
+  INTEGER i
+  !me:  @todo ???
+  INTEGER j
+  !me:  @todo ???
+  INTEGER ind
+  !me:  @todo ???
+  INTEGER tt
+  !me:  @todo ???
+  INTEGER pp
+  !me:  @todo ???
+  INTEGER count_rate
+  !me:  @todo ???
+  INTEGER count_max
+  !me:  @todo ???
+  INTEGER count1
+  !me:  @todo ???
+  INTEGER count2
+
+  !me:  @todo ???
+  CHARACTER (LEN=10)::labstr
+  !me:  @todo ???
+  CHARACTER (LEN=10)::filenostr
+  !me:  @todo ???
+  CHARACTER (LEN=10)::labstr2
+
+  !me:  @todo ???
+  CHARACTER (LEN=25)::abbr
+  !me:  @todo ???
+  CHARACTER (LEN=25)::abbr2
+  !me:  @todo ???
+  CHARACTER (LEN=25)::repfile
+  !me:  @todo ???
+  CHARACTER (LEN=25)::filename
+  !me:  @todo ???
+  CHARACTER (LEN=25)::filename2
+  !me:  @todo ???
+  CHARACTER (LEN=25)::filename3
+  !me:  @todo ???
+  CHARACTER (LEN=25)::abbr3
+  !me:  @todo ???
+  CHARACTER (LEN=25)::filein
+  !me:  @todo ???
+  CHARACTER (LEN=25)::parfname  
+
+  !me:  @todo ???
   REAL*8 lim
+  !me:  @todo ???
   REAL*8,ALLOCATABLE,DIMENSION(:)::distVec
+  !me:  @todo ???
   REAL*8 CPU_p
+
+
+  !****************************************************************************!
+  !                                                                            !
+  ! Read Parameters from Standard In                                           !
+  !                                                                            !
+  ! This also allows to simply pipe in a configuration file                    !
+  !                                                                            !
+  !****************************************************************************!
+
   PRINT *,"Give label for run: "
   READ *,label
   PRINT *,"Give label for indatafile: "
@@ -69,28 +220,93 @@ PROGRAM ADVECT_FIBERS
      READ*,tol
   END IF
   !!NoQI=8
+
+  !me:  Initalize number of quadrature points. For a 3rd order gaussian
+  !     quadrature this is 3 times the number of subintervals.
   LQ=3*NoQI
   nocc=3*N*M
-  ALLOCATE(XcVecs(3*M,3),tVecs(3*M,3),VelVecs(3*M,3),RotVecs(3*M,3))
-  ALLOCATE(ExtForce(3*M),coeffvec(3*N*M),init_guess(3*N*M))
-  ALLOCATE(tmod0(M),tmod(3*M))
+
+  !****************************************************************************!
+  !                                                                            !
+  ! Allocate matrices and vectors                                              !
+  !                                                                            !
+  !****************************************************************************!
+
+  !me   @todo Why are these 3*Mx3 not simply Mx3
+  !me:  Allocate the positions matrix.
+  ALLOCATE(XcVecs(3*M,3))
+  !me:  ???
+  ALLOCATE(tVecs(3*M,3))
+  !me:  Allocate the linear velocity matrix.
+  ALLOCATE(VelVecs(3*M,3))
+  !me:  Allocate the rotational velocity matrix.
+  ALLOCATE(RotVecs(3*M,3))
+
+  !me:  Allocate external force vector with 3 components per fiber.
+  !     So probably the first 1-3 components are the external force vector
+  !     acting on fiber 0 and components 4-6 act on fiber 1 at so on...
+  !
+  !     Why is the external force not the same for all particles? Is this maybe
+  !     NOT a uniform external force but instead the 'external' force acting on
+  !     the fiber as a result of all the other fibers?
+  !     Answer it really appears to be simply gravity and for now at least IS
+  !     the same for all fibers, as it is initalized only once and the same for
+  !     each fiber. However that might be subject to change in the future. For
+  !     this is an easy way to save some memory.   
+  ALLOCATE(ExtForce(3*M))
+  !me:  Allocate the coefficient vector with 3*N components per fiber.
+  !     N here is the configurated number of terms used in the force expansion.
+  !     @todo Still have to understand what exactly that means.
+  ALLOCATE(coeffvec(3*N*M))
+  !me:  Allocate the initial guess for the coefficients used for solver.
+  ALLOCATE(init_guess(3*N*M))
+
+  !me:  Allocate the temporary vector holding the length of the @todo tVecs
+  ALLOCATE(tmod0(M))
+  !me:  Allocate the vector holding the normalized @todo tVecs
+  ALLOCATE(tmod(3*M))
+
+  !me:  Allocate the points and weights for the gaussian quadrature for all
+  !     subintervals 
   ALLOCATE(pv(LQ),wv(LQ))
+  !me:  Allocate legendre polynomial matrix where each row represents a
+  !     quadrature point and each column entry the corresponding legendre
+  !     polynominal evaluated at that point.
   ALLOCATE(LvecMat(LQ,N))
+  !me:  @todo ???
   ALLOCATE(distVec(M*(M-1)))
 
+  !****************************************************************************!
+  !                                                                            !
+  ! Initializing data matrix and vectors                                       !
+  !                                                                            !
+  !****************************************************************************!
+
+  !me:  @todo these all appear to be some variables used for indexing however
+  !     how exaclty that's used later is not yet clear
   one=1;
   two=2;
   three=3;
   old=1; 
   new=2;
 
+  !me:  Fortran by default uses 1-based indexing.
+  !me:  Initalizes the external force for all fibers. This sets the third
+  !     component (i.e. z) to -1 with probably models gravity. Be aware of the
+  !     index calculation 0-based vs 1-based!
+  !     Result: (0,0,-1),(0,0,-1),...
+  !me:  Fortran allows arrays (even multidimensional arrays) to be initalized
+  !     with a single assignment
   ExtForce=0.0d0;
   !ExtForce(3:3:3*M)=-1.0d0
   DO j=1,M
      ind=(j-1)*3
      ExtForce(ind+3)=-1.0d0
   END DO
-  
+
+  !me:  Intializes the positons and @todo tVecs with data from the specified
+  !     input file. Curiously only column 3(=three) is filled with data.
+  !     @todo What are the other two columns used for?
   XcVecs=0.0d0
   tVecs=0.0d0
   DO j=1,M
@@ -124,7 +340,7 @@ PROGRAM ADVECT_FIBERS
   !! point to be used for numerical integration
   !! based on a three point Gauss quadrature. Section 4.2 in
   !! AKT-KG 2006
-  CALL quad_pts_and_wts(NoQI,pv,wv)
+  CALL quad_pts_and_wts(NoQI,pv,wv) 
   LvecMat=compute_LVecs(N,LQ,pv);
   
   !=================================================================

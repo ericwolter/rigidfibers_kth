@@ -8,11 +8,29 @@ CONTAINS
 FUNCTION compute_LVecs(N,LQ,pv);
   !! Computes and store the Legendre polynomials.
   !! Evaluated in the quadrature points. 
- 
-  INTEGER, INTENT(IN):: N,LQ
+
+  !me:  see: http://en.wikipedia.org/wiki/Legendre_polynomials
+  !     This also contains a listing of the formulas up to n = 10
+  !     However we currently only allow up to n = 8 subintervals
+
+  !me:  The number of subintervals
+  INTEGER, INTENT(IN)::N
+  !me:  The total number of quadrature points. For 3rd order gaussian quadrature
+  !     this should always be 3 * N
+  INTEGER, INTENT(IN)::LQ
+
+  !me:  The points previously obtained by applying 3rd order gaussian quadrature
+  !     to each interval
   REAL*8,DIMENSION(LQ),INTENT(IN)::pv
+
+  !me:  The output matrix containing the legendre polynomials evaluated at each
+  !     quadrature point. So for each quadrature point we calculate each
+  !     legendre polynomial up to the number of subintervals. The results is a
+  !     matrix where each row represents a points and each column entry
+  !     represents a legendre polynomial evaluated at that point.
   REAL*8,DIMENSION(LQ,N)::compute_LVecs
 
+  !me: Temporary variable for iteration
   INTEGER kk
 
   DO kk=1,N
@@ -38,6 +56,7 @@ FUNCTION compute_LVecs(N,LQ,pv);
   END DO
 END FUNCTION compute_LVecs
 
+!me:  UNUSED
 SUBROUTINE compute_LvecMat(N,LQ,pv,LvecMat);
   !! Computes and store the Legendre polynomials.
   !! Evaluated in the quadrature points. 

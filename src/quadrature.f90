@@ -7,32 +7,81 @@ SUBROUTINE quad_pts_and_wts(NoQI,pv,wv)
 !!points and weights for 3rd order Gauss Quad with NoQI ivals 
 !!on -1 to 1. 
 
-  INTEGER, INTENT(IN):: NoQI
-  REAL*8,DIMENSION(3*NoQI),INTENT(OUT)::pv,wv
+  !me:  see: http://en.wikipedia.org/wiki/Gaussian_quadrature
+  !me:  This quadrature scheme is calculating the points and weights using
+  !     a 3rd order gaussian quadrature for each subinterval INDIVIDUALLY.
 
+  !me:  The number of subintervals as an input
+  INTEGER, INTENT(IN):: NoQI
+  !me:  The points used for integral estimation. As this is always a 3rd order
+  !     gaussian quadrature there will be 3 points per interval (=3*NoQI).
+  !     This will be returned to the caller as part of the result
+  REAL*8,DIMENSION(3*NoQI),INTENT(OUT)::pv
+  !me:  The weights used for integral estimation. As this is always a 3rd order
+  !     gaussian quadrature there will be 3 weights per interval (=3*NoQI)
+  !     This will be returned to the caller as part of the result
+  REAL*8,DIMENSION(3*NoQI),INTENT(OUT)::wv
+
+  !me:  Temporary variables/constants to hold the given 3rd order gaussian 
+  !     quadrature points and weights
   REAL*8,DIMENSION(3):: pv0,wv0
-  REAL*8 a,iv
-  INTEGER i,l0
+
+  !me:  Standard gaussian quadrature requires the interval of the integral to be
+  !     [-1, 1]. However because this interval is divided into subintervals the 
+  !     individual integral bounds for each subinterval have to be smaller and 
+  !     then be mapped back to [-1, 1] to the precalculated points and weights
+  !me:  The lowest bound of the integral
+  REAL*8 a
+  !me:  The size of the subintervals
+  REAL*8 iv
+
+  !me:  Temporary variable used for iteration
+  INTEGER i
+  !me:  The constant number of points/weights. For 3rd order gaussian quadrature
+  !     this is obviously 3.
+  INTEGER l0
 
   l0=3
+
+  !me:  These are the precalculated points for 3rd order gaussian quadrature.
+  !     These can be looked up in the literature
   !pv0=[ 0.0 sqrt(15.0)/5.0]';
   pv0(1)=-sqrt(15.0d0)/5.0d0
   pv0(2)=0.0d0
   pv0(3)=sqrt(15.0d0)/5.0d0
 
+  !me:  These are the precalculated weights for 3rd order gaussian quadrature.
+  !     These can be looked up in the literature
   !!wv0=1.0/9.0*[5.0 8.0 5.0]';
   wv0(1)=5.0d0/9.0d0
   wv0(2)=8.0d0/9.0d0
   wv0(3)=5.0d0/9.0d0
 
+  !me:  Intialize lower bound of the current integral to -1. At the start of the
+  !     subinterval iteration this is the lowest bound of the overall integral
   a=-1.0d0;
+  !me:  Calculate the size of a single subinterval. The overall integral bounds
+  !     are [-1, 1] so the range is 2, which can simply be divided by the number
+  !     of subintervals.
   iv=2.0d0/NoQI;
-  
+
+  !me:  On wikipedia the mapping from [a, b] to [-1, 1] is done with a factor of
+  !     (b - a) / 2. However in our case b = a + iv, so the factor would simply
+  !     be iv / 2. 
+  !     Additionally the point as to be shifted by (a + b) / 2, which for us is
+  !     (a + a + iv) / 2 = (2 * a * iv) / 2.
+  !     So if we pull out dividing by 2 we arrive at formula below for the point
+  !     The weight on wikipedia is also scaled by (b - a) / 2, this being iv / 2
+  !     for us. If we now plug in iv = 2 / NoQI the factor simply becomes
+  !     1 / NoQI. So the weights can simply be divided by the number of
+  !     subintervals as in the formula below
   DO i=1,NoQI
     pv((i-1)*l0+1:i*l0)=(2.0d0*a+iv+pv0*iv)/2.0d0;
     wv((i-1)*l0+1:i*l0)=wv0/NoQI;
+
+    !me:  Advance to next interval by incrementing the lower bound
     a=a+iv;
- END DO
+  END DO
 !!$ DO i=1,(3*NoQI-1)/2
 !!$    pv(i+(3*NoQI-1)/2+1)=-pv((3*NoQI-1)/2-i+1);
 !!$ END DO
