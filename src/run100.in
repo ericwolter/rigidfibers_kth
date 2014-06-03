@@ -1,0 +1,12 @@
+1     !Label of run
+100   !Label of indata file XcT_init##
+5     !Number of terms in the force expansion
+0.01  !Size of epsilon
+0.1   !Timestep
+10    !No. of timesteps
+1     !Save interval (=1 save every time step)
+10    !Number of timesteps saved in one file
+8     !Number of quad.intervals
+1     !Using analytical integration 1 (0 numerical)
+1     !Using direct solver (0 iterative then give restart=10, maxiter=100, tol=xx)
+
