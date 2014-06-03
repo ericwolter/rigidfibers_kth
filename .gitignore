@@ -7,7 +7,6 @@
 # compiler output
 *.o
 *.mod
-*.objs
 
 # simulation output
 rep*.txt
