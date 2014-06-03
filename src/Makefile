@@ -74,4 +74,4 @@ TAGS: $(wildcard *.f90) $(wildcard *.fi) $(wildcard *.objs)
 	etags *.f90 *.fi *.objs
 
 # Dependencies files
-include depends.mak
+#include depends.mak
