@@ -14,6 +14,7 @@ pars*.m
 XcTData*
 VelRotData*
 Coeffvec*
+fort.20
 
 # binary output
 ADVECT_FIBERS

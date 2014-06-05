@@ -427,25 +427,63 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
   REAL*8,DIMENSION(N):: lambdavec,Ekvec,gammak_vec
   REAL*8,DIMENSION(LQ,6):: Gmat
   REAL*8,DIMENSION(6):: thvec
-  INTEGER:: i,j,ii,ind,filno,fno,kk,l,nocc
-  INTEGER:: rowno,p
+  INTEGER:: i,j,ii,ind
+  !me:  The index of the current fiber for which is rows of A are currently
+  !     being build.
+  INTEGER::filno
+  !me:  The index of the other fibers that interact with the current fiber.
+  INTEGER::fno
+  INTEGER::kk,l,nocc
+
+  !me:  The current row number used during the iterations building the matrix A
+  INTEGER::rowno
+  !me:  The current column index used during building each row of matrix A
+  INTEGER::p
   REAL*8 Q1,Q2,Q3
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
+
+  !me:  A constant defined between eq.2 and eq.3 which models the slenderness
+  !     of the fiber.
   c=log(eeps**2*exp(1.0d0));
+  !me:  @todo is c used again by itself? Why not directly calculate d?
   d=-c;
+  !me:  constant used in various formulas (E_n in eq.22,...)
+  !     @todo Why is this its own constant and not simply a simple number in the
+  !     formulas?
   e=2.0d0;
+  !me:  @todo Seems to be some kind of optional scaling factor. Currently set to
+  !     1 so it effectivly is not used. Why would you want to include this?
   cc=1.0d0;
+  !me:  The formula in eq.22 for D1 is (3/4)*(1/d-lambda_1)
+  !     @todo Why is cc here? Why would you want to scale lambda?
   D1=0.75d0/(d-2.0d0*cc);
 
   !Coeffs 0 to M, but computing for 1 to M.
+  !me:  Between eq.18 and eq.19
+  !     lambda_0 = 0
+  !     lambda_n = 2 * sum_i=1^n(1/i)
+  !     lambda_1 = 2 * 1/1 = 2
+  !     lambda_2 = 2 * (1/1 + 1/2) = 3
+  !     This can be reformulated into a recursive formulation
+  !     lambda_i = lambda_(i-1) + 2 * i
+  !     @todo This is the same for all fibers and should also be able to be a 
+  !     constant as lambda doesn't depend on anything and stays the same for a 
+  !     constant M.
   lambdavec(1)=2;
   DO i=2,N
     lambdavec(i)=lambdavec(i-1)+2.0d0/i;
   END DO
+
+  !me:  E_n from eq.22.
+  !     @todo Does this have a conceptual meaning or is it substitution variable
+  !     used to simply the equation
+  !     @todo Why is this a vector? It appears to be constant for each fiber?
   Ekvec=(d-e-cc*lambdavec)/2.0d0/(d-cc*lambdavec);
 
   nocc=3*M*N;
+
+  !me:  Initalizes matrix as an identity matrix
   AMat=0.0d0;
   DO i=1,nocc
     AMat(i,i)=1.0d0
@@ -457,20 +495,35 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
   !! Loop over all fibers 
   !! For fiber filno compute the interaction with all other fibers fno=1..M
   DO filno=1,M
+
+    !me:  Get the start index for the data belonging to the current fiber
     ind=(filno-1)*3;
-    xc=XcVecs(ind+1:ind+3);
+    !me:  Extract position vector for current fiber
+    xc=XcVecs(ind+1:ind+3);!
+    !me:  Extract orientation vector for current fiber
     ta=tVecs(ind+1:ind+3);
     
+    !me:  Loop over all other fibers
     DO fno=1,M
+      !me:  Ignore the particle itself
+      !     @todo Does /= mean not equal in fortran?
       IF (fno /= filno) THEN
         
+        !me:  Get the start index for the data belonging to the other fiber
         ind=(fno-1)*3;
+        !me:  Extract position vector for other fiber
         xcb=XcVecs(ind+1:ind+3);
+        !me:  Extract orientation vector for other fiber
         tb=tVecs(ind+1:ind+3);
+
+        !me:  Loop overall the terms in the force expansion (e.g. N=5)
         DO l=1,N
           
           !!k=1, different formula. For higer k's: loop. 
           kk=1; 
+
+          !me:  The current row number with 3*N entries per fiber because of
+          !     the 3 dimensions and the number of force terms
           rowno=(filno-1)*3*N+1;
           !!From fno to filno. 
           !Gmat=zeros(6,LQ);  

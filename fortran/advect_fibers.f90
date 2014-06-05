@@ -34,10 +34,12 @@ PROGRAM ADVECT_FIBERS
   !     languages the *8 comes from the number of bytes (here 8) that are used 
   !     to store the number
 
-  !me:  @todo Probably some kind of threshold/engineering constant to avoid 
-  !     dividing by zero or stop iterating
+  !me:  The slenderness parameter modelling how "thin"/slender the fiber is
+  !     epsilon = a / 2*L, where L is the half length of the fiber, i.e. 2*L is
+  !     the total fiber length
+  !     @todo what is a?
   REAL*8 eeps
-  !me:  @todo Probably either the elapsed time
+  !me:  @todo Probably the total elapsed time
   REAL*8 t
   !me:  The timestep
   REAL*8 dt
@@ -52,7 +54,7 @@ PROGRAM ADVECT_FIBERS
 
   !me:  The position vectors of the fiber centers
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::XcVecs
-  !me:  @todo ???  
+  !me:  The orientation of the fiber, i.e. the unit tangent vector  
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::tVecs
   !me:  The linear velocity vectors of the fibers
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::VelVecs
@@ -77,11 +79,11 @@ PROGRAM ADVECT_FIBERS
   !     scheme
   REAL*8,ALLOCATABLE,DIMENSION(:)::init_guess
 
-  !me:  A temporary variable holding the length of @todo tVecs
+  !me:  A temporary variable holding the length of a single orientation vector.
   !     @todo Why does this need to be a vector? A simple REAL*8 should be
   !     enough.
   REAL*8,ALLOCATABLE,DIMENSION(:)::tmod0
-  !me:  The normalized vectors of @todo tVecs
+  !me:  A temporary variable holding the length of the orientation vectors.
   REAL*8,ALLOCATABLE,DIMENSION(:)::tmod
 
   !me:  @todo ???
@@ -111,7 +113,7 @@ PROGRAM ADVECT_FIBERS
   INTEGER nos
   !me:  @todo ???
   INTEGER label2
-  !me:  Flag indicating whether to solve the integral (@todo refeq)
+  !me:  Flag indicating whether to solve the integral (@todo ref eq)
   !     analytically (=1) or numerically (=0)
   INTEGER int_an
   !me:  Flag indicating whether to use a direct solver (@todo what does direct
@@ -232,10 +234,11 @@ PROGRAM ADVECT_FIBERS
   !                                                                            !
   !****************************************************************************!
 
-  !me   @todo Why are these 3*Mx3 not simply Mx3
+  !me:  The fiber matrices are all 3*Mx3. The 2-dimension is simply used as a
+  !     kind of triple buffer for the timestepping
   !me:  Allocate the positions matrix.
   ALLOCATE(XcVecs(3*M,3))
-  !me:  ???
+  !me:  Allocate the orientation matrix.
   ALLOCATE(tVecs(3*M,3))
   !me:  Allocate the linear velocity matrix.
   ALLOCATE(VelVecs(3*M,3))
@@ -261,9 +264,14 @@ PROGRAM ADVECT_FIBERS
   !me:  Allocate the initial guess for the coefficients used for solver.
   ALLOCATE(init_guess(3*N*M))
 
-  !me:  Allocate the temporary vector holding the length of the @todo tVecs
+  !me:  Allocate a temporary vector holding the length of each orientation
+  !     vectors as a scalar
   ALLOCATE(tmod0(M))
-  !me:  Allocate the vector holding the normalized @todo tVecs
+  !me:  Allocate a temporary vector holding the length of each orientation
+  !     vectors as in vector form, i.e. 3-components for each vector.
+  !     @todo Why do we need a 3-component vector here per orientation vector?
+  !     Does that make normalization easier/faster? One length per orientation
+  !     vector should be enough? Potential memory saving opportunity
   ALLOCATE(tmod(3*M))
 
   !me:  Allocate the points and weights for the gaussian quadrature for all
@@ -451,6 +459,18 @@ PROGRAM ADVECT_FIBERS
       one=two;
       two=three;
       three=6-(one+two);
+
+      !me:  The triple buffer ordering for the first 4 iterations.
+      !     During initialization only column 3 is filled.
+      !     For the first loop a simple euler step is taken.
+      !     @todo What is the reasoning behind choosing this particular
+      !     integration scheme?
+      !     
+      !     original_index -> new_index => used_columns -> target_column
+      !     1,2,3 -> 2,3,1 => 3     -> 1
+      !     2,3,1 -> 3,1,2 => 1,3   -> 2
+      !     3,1,2 -> 1,2,3 => 2,1   -> 3
+      !     1,2,3 -> 2,3,1 => 3,2   -> 1
       
       !! Update postition and orientation by solving (24) and (25) in time
       IF (tt==1) THEN

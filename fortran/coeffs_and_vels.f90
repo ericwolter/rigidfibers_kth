@@ -52,24 +52,51 @@ FUNCTION solve_coeffs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   !! Basically setting up and solving Eq. (20). This function uses 
   !! analytical and numerical integration and solve the system by a direct solver. 
 
+  !me:  Unused
   INTEGER count_rate,count_max,count1,count2
+  !me:  Unused
   REAL*8 CPU_p
+
+  !me:  The slenderness parameter
   REAL*8,INTENT(IN)::eeps
-  INTEGER, INTENT(IN):: M,N,LQ
-  REAL*8,DIMENSION(3*M),INTENT(IN)::XcVecs,tVecs,ExtForce
+  !me:  The number of fibers to be simulated
+  INTEGER, INTENT(IN)::M
+  !me:  @todo The number of terms (e.g. 5) sued in the force expansion? Not absolutely
+  !     sure what the really means yet
+  INTEGER, INTENT(IN)::N
+  !me:  The total number of quadrature points
+  INTEGER, INTENT(IN)::LQ
+  !me:  The position vectors of the fiber centers
+  REAL*8,DIMENSION(3*M),INTENT(IN)::XcVecs
+  !me:  The orientation of the fiber, i.e. the unit tangent vector  
+  REAL*8,DIMENSION(3*M),INTENT(IN)::tVecs
+  !me:  The external forces acting on each fiber
+  REAL*8,DIMENSION(3*M),INTENT(IN)::ExtForce
 
   !pv,wv,and Lvec_m should be of length LQ. 
+  !me:  The legendre polynominals evaluated at each point
   REAL*8,DIMENSION(LQ,N),INTENT(IN)::LvecMat
+  !me:  The points and weights of the piecewise gaussian quadrature
   REAL*8,DIMENSION(LQ),INTENT(IN)::pv,wv
 
+  !me:  The final solutions for the coefficients
   REAL*8,DIMENSION(3*M*N)::solve_coeffs_an
 
+  !me:  The final matrix A of the linear system of equations in Ax=b
   REAL*8,DIMENSION(3*M*N,3*M*N):: AMat
  
+  !me:  The final right hand side b of the linear of equations in Ax=b
   REAL*8,DIMENSION(3*M*N):: Brhs
-  INTEGER info,nocc,j,i
+
+  !me:  Unused
+  INTEGER info,j,i
+  !me:  @todo
+  INTEGER nocc
+
+  !me:  Unused
   REAL*8,DIMENSION(3*M*N)::IPIV
   
+  !me:  @todo
   nocc=3*M*N
   
   CALL assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
