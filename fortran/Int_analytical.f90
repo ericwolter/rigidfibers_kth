@@ -4,29 +4,99 @@ CONTAINS
 
 SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   IMPLICIT NONE
+
+  !me:  @todo What does this function really do?
+  !     To better understand the formulas below lets look at a bit of algebra:
+  !
+  !     Q: What is |R| in terms of the parameters/variables
+  !       From eq.23 we get:
+  !         R = x_m + s*t_m - (x_l + s'*t_l)
+  !       which in terms of parameters is:
+  !         R = xbar - x_b - s'*pb
+  !       which is simplified by substituting R_0:
+  !         R_0 = xbar - x_b
+  !         R = R_0 - s'*pb
+  !       so the computing the length of this vector gives:
+  !         |R|^2 = (R_0 - s'pb)_x^2 + (R_0 - s'pb)_y^2 + (R_0 - s'pb)_z^2
+  !       which can be expanded to:
+  !         |R|^2 = R_0_x^2 + R_0_y^2 + R_0_z^2 + s'^2*(pb_x^2 + pb_y^2 + pb_z^2) - 2*s'*(R_0_x * pb_x + R_0_y * pb_y + R_0_z * pb_z)
+  !       again simplify by substituting and plugging in |pb|^2 = 1
+  !         c = R_0_x^2 + R_0_y^2 + R_0_z^2
+  !         b = -2 * (R_0_x * pb_x + R_0_y * pb_y + R_0_z * pb_z)
+  !         |R|^2 = c + s'^2 + b * s'
+  !       so the length of R is:
+  !         |R| = sqrt(c + s'^2 + b * s')
+
+  !me:  The current quadrature point index
   INTEGER,INTENT(IN)::N
-  REAL*8,DIMENSION(3),INTENT(IN)::xb,pb,xbar
+  !me:  The position of the other fiber which influence we are currently
+  !     calculating
+  REAL*8,DIMENSION(3),INTENT(IN)::xb
+  !me:  The orientation of the other fiber which influence we are currently
+  !     calculating
+  REAL*8,DIMENSION(3),INTENT(IN)::pb
+  !me:  The current point on the fiber for which we are calculating the
+  !     the influence
+  REAL*8,DIMENSION(3),INTENT(IN)::xbar
+
+  !me:  The difference vector between the current point on the fiber and the 
+  !     center of the other fiber
   REAL*8,DIMENSION(3)::R_0
+
+  !me:  The limit for the squared distance between the current current point the
+  !     fiber and the center of the other fiber. This is used to model the close
+  !     approach between two fibers as described in section 3.4
   REAL*8::clim
+
   !REAL*8,DIMENSION(N+3)::Analytical_int,I,J,S
+
+  !me:  @todo Why 30, what does that mean?
   REAL*8,DIMENSION(30)::I,J,S
+
   REAL*8,DIMENSION(N+1),INTENT(OUT)::L11,L12,L13,L14,L22,L23,L24
   !!REAL*8::Analytical_int
-  REAL*8::b,c,se,sb,ue,ub,te,tb,d,nn
+
+  REAL*8::b,c
+  !me:  The upper bound of the integral
+  REAL*8::se
+  !me:  The lower bound of the integral
+  REAL*8::sb
+  !me:  The length of R evaluated at the upper bound of the integral
+  REAL*8::ue
+  !me:  The length of R evaluated at the lower bound of the integral
+  REAL*8::ub
+  REAL*8::te,tb,d,nn
   INTEGER::ii
   I=0.0d0;
   J=0.0d0;
   S=0.0d0;
+
+  !me:  @todo Why 10? Very likely simply an engineering constant
   clim=10;
+
+  !me:  Calculating the difference vector between current point on fiber and the 
+  !     center of the other fiber 
   R_0=(xbar-xb);
+
   b=-2.0d0*SUM(pb*R_0);
+
+  !me:  The squared distance between current point on fiber and the center of
+  !     the other fiber
   c=SUM(R_0**2.0d0);
+
+  !me:  The upper bound of the integral is always 1
   se=1.0d0;
+  !me:  The lower bound of the integral is always -1
   sb=-1.0d0;
+
+  !me:  The length of R evaluated at the intergral bounds
+  !     |R| = sqrt(c + s'^2 + b*s')
   ue=sqrt(1.0d0+b+c);
   ub=sqrt(1.0d0-b+c);
+
   te=1.0d0+0.5d0*b;
   tb=-1.0d0+0.5d0*b;
+  
   d=c-0.25d0*b*b;
   
   
@@ -103,7 +173,8 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
 END IF
  
  
-
+!me:  @todo Why is this a loop? N is constant for each call to this subroutine
+!     and L vector is always completely overwritten in each loop?
 DO ii=1,N+1
   IF (ii==1 .OR. ii==2) THEN
      L11(ii) = I(ii);
@@ -184,7 +255,7 @@ END DO
 
 END SUBROUTINE Analytical_int
 
-
+!me:  UNUSED
 SUBROUTINE Analytical_intII(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   IMPLICIT NONE
   INTEGER,INTENT(IN)::N
@@ -356,7 +427,7 @@ END DO
 
 END SUBROUTINE Analytical_intII
 
-
+!me:  UNUSED
 SUBROUTINE Analytical_intIII(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   IMPLICIT NONE
   INTEGER,INTENT(IN)::N
@@ -557,17 +628,52 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
   !!multiplied by L_m(s).
   !!Result are 6 values stored in Gvec:
   !!G11,G22,G33,G12,G13,G23.
-  REAL*8,DIMENSION(3),INTENT(IN)::xb,pb,xbar
+
+  !me:  The positon of the other fiber which influence we want to calculate
+  REAL*8,DIMENSION(3),INTENT(IN)::xb
+  !me:  The orientation of the other fiber which influence we want to calculate
+  REAL*8,DIMENSION(3),INTENT(IN)::pb
+  !me:  Equals the first half of the parameter of G in eq.23. This is a point
+  !     along the the fiber orientation normalized to [-1, 1]. Usually this
+  !     will be all the gaussian quadrature points along each fiber
+  REAL*8,DIMENSION(3),INTENT(IN)::xbar
+
+  !me:  The slenderness parameter, currently the same for all fibers
   REAL*8,INTENT(IN)::eeps
+
   REAL*8,DIMENSION(3)::R_0
 
+  !me:  The current quadrature point index
   INTEGER, INTENT(IN):: N
   REAL*8,DIMENSION(N+1)::L11,L12,L13,L14,L22,L23,L24
   !!REAL*8,DIMENSION(N+1)::L11n,L12n,L13n,L14n,L22n,L23n,L24n
   REAL*8,DIMENSION(6):: G_compute_GQ_kg
-  REAL*8,DIMENSION(3,3):: R_00,Identity,R_0_pb, pb_R_0,Gvec_tmp,pb_pb
+
+  !me:  The outer product of the difference vector between the current point
+  !     on the fiber and the center of the other fiber with itself.
+  !     @todo Why/how is that used?
+  REAL*8,DIMENSION(3,3)::R_00
+  !me:  Simple constant for the identity matrix
+  REAL*8,DIMENSION(3,3)::Identity
+
+  !me:  The outer product of the other fibers orientation vector and the
+  !     difference vector between the current point on the fiber and the center 
+  !     of the other fiber.
+  !     @todo Why/how is that used?
+  REAL*8,DIMENSION(3,3)::R_0_pb
+  !me:  Inverse of R_0_pb
+  REAL*8,DIMENSION(3,3)::pb_R_0
+
+  REAL*8,DIMENSION(3,3)::Gvec_tmp
+
+  !me:  The outer product of the orientation of the other fiber with itself.
+  !     @todo Why/how is that used?
+  REAL*8,DIMENSION(3,3)::pb_pb
   INTEGER i,j
   !Gvec=zeros(6,1);
+
+  !me:  The difference vector between the current point on the fiber and the
+  !     center of the other fiber
   R_0=xbar-xb;
   DO i=1,3
      DO j=1,3
@@ -577,6 +683,9 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
         pb_pb(i,j)=pb(i)*pb(j);
      END DO
   END DO
+
+  !me:  Builds a 3x3 Identity matrix
+  !     @todo Can be a global constant
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
 
   

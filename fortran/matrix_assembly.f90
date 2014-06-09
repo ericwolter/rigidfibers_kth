@@ -26,7 +26,7 @@ FUNCTION compute_LVecs(N,LQ,pv);
   !me:  The output matrix containing the legendre polynomials evaluated at each
   !     quadrature point. So for each quadrature point we calculate each
   !     legendre polynomial up to the number of subintervals. The results is a
-  !     matrix where each row represents a points and each column entry
+  !     matrix where each row represents a point and each column entry
   !     represents a legendre polynomial evaluated at that point.
   REAL*8,DIMENSION(LQ,N)::compute_LVecs
 
@@ -550,6 +550,7 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
           p=(fno-1)*N*3+3*(l-1)+1;
           
           !!First row for a_x^1.
+          !me:  This is eq.20 for each dimension x,y,z
           AMat(rowno,p)=D1*ta(1)*Q1;
           AMat(rowno,p+1)=D1*ta(1)*Q2;
           AMat(rowno,p+2)=D1*ta(1)*Q3;
