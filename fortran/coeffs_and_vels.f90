@@ -31,13 +31,26 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
   nocc=3*M*N
- 
+
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !! Assembly of the coefficient matrix for solving Aa=f Eq. (20)
   CALL assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the matrix took ",CPU_p," seconds."
+
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !! Assembly of the right hand side for solving Aa=f Eq. (20)
   CALL assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
   
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL dgesv(nocc,1,AMat,nocc,IPIV,Brhs,nocc,info)
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
  
   solve_coeffs=Brhs
   !DO j=1,M
@@ -99,14 +112,23 @@ FUNCTION solve_coeffs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   !me:  @todo
   nocc=3*M*N
   
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the matrix took ",CPU_p," seconds."
 
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_rhs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
- 
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
   
-
-  
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL dgesv(nocc,1,AMat,nocc,IPIV,Brhs,nocc,info)
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
   
   solve_coeffs_an=Brhs
   
@@ -165,6 +187,8 @@ FUNCTION solve_coeffs_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   REAL*8 CPU_p
 
   nocc=3*M*N
+
+
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   
   CALL assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
@@ -328,10 +352,19 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
 
   nocc=3*M*N
  
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
- 
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the matrix took ",CPU_p," seconds."
+
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_rhs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
  
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !PRINT *,"restart= ",restart
   lwork=restart**2+restart*(3*M*N+5)+5*(3*M*N)+2
   work=0.0d0
@@ -415,6 +448,9 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
      solve_coeffs_an_iter=ccvec
   END IF
 
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Solving system using GMRES took ",CPU_p," seconds."
 
 END FUNCTION solve_coeffs_an_iter
 
@@ -451,7 +487,6 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
   
-  CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   !PRINT *,"IN compute_velocities"
   c=log(eeps**2*exp(1.0d0));
   d=-c;
@@ -459,10 +494,15 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   mubar=d;
   sh=0.0d0;
   LvecZero=1.0d0
-  
+
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_forces(M,N,LQ,LvecMat,ExtForce,coeffvec,&
              Fmatx,Fmaty,Fmatz);
-
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling forces took ",CPU_p," seconds."
+  
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !PRINT *,"Assembled forces"
   !!From fil b to fil a. 
   DO filno=1,M
@@ -508,6 +548,11 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   VelVecs=VelVecs/mubar;
   RotVecs=RotVecs/mubar;
 
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Updating velocities took ",CPU_p," seconds."
+
+
   
 END SUBROUTINE compute_velocities
 
@@ -538,7 +583,6 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
 
 
   
-  CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   !PRINT *,"IN compute_velocities"
   c=log(eeps**2*exp(1.0d0));
   d=-c;
@@ -548,9 +592,14 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
   LvecZero=1.0d0
   
   !! Do not need to do this when using analytical integration
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_forces(M,N,LQ,LvecMat,ExtForce,coeffvec,&
              Fmatx,Fmaty,Fmatz);
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Assembling forces took ",CPU_p," seconds."
 
+  CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !!From fil b to fil a. 
   DO filno=1,M
     
@@ -591,6 +640,9 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
 
   VelVecs=VelVecs/mubar;
   RotVecs=RotVecs/mubar;
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Updating velocities took ",CPU_p," seconds."
 
 
 END SUBROUTINE compute_velocities_an
