@@ -19,6 +19,9 @@ fort.20
 # binary output
 ADVECT_FIBERS
 
+# build output
+build/
+
 ##################################################
 #
 # OSX.gitignore
