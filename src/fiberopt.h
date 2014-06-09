@@ -21,6 +21,11 @@
 #include <cstdlib>
 #include <cstring>
 
+
+// this struct potentially changes often so accept the potentially memory
+// overhead for convenience
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
 typedef struct {
     /* special */
     const char *usage_pattern;
@@ -34,10 +39,8 @@ typedef struct {
     int help;
     int version;
     /* options with arguments */
-
-    char pad[4];            // nothing we can do about this padding so at least
-                            // make it explicit
 } FiberArgs;
+#pragma GCC diagnostic pop
 
 const char help_message[] =
 "Rigid Fibers.\n"
@@ -248,7 +251,7 @@ int elems_to_args(Elements *elements, FiberArgs *args, bool help,
 
 FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version) {
     FiberArgs args = {
-        usage_pattern, help_message, NULL, 0, 0, 0, {0}
+        usage_pattern, help_message, NULL, 0, 0, 0
     };
     Command *commands = NULL;
     Argument arguments[] = {
