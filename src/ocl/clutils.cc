@@ -78,3 +78,17 @@ const CLDevice* CLUtils::selectDevice(const CLPlatform *platform) {
 
     return devices.at(selectedDeviceIndex);
 }
+
+cl_context CLUtils::createContext(const CLPlatform *platform, const CLDevice *device) {
+    cl_context_properties properties[] =
+    {
+        CL_CONTEXT_PLATFORM, (cl_context_properties)platform->id(),
+        0
+    };
+
+    cl_int err;
+    cl_device_id device_id = device->id();
+    cl_context context = clCreateContext(properties, 1, &device_id, NULL, NULL, &err);
+    clCheckError(err, "Could not create context");
+    return context;
+}

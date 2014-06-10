@@ -1,7 +1,7 @@
-#ifndef FIBERS_OCL_CLDEVICE_H_
-#define FIBERS_OCL_CLDEVICE_H_
+#ifndef FIBERS_RESOURCES_H_
+#define FIBERS_RESOURCES_H_
 /*
- *  cldevice.h - header for cldevice.cc
+ *  resources.h - header for resources.cc
  *
  *  Copyright (C) 2014  Eric Wolter <eric.wolter@gmx.de>
  *
@@ -20,22 +20,16 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <vector>
-#include "../common.h"
+#include <string>
+#include "common.h"
 
-class CLDevice
+class Resources
 {
 public:
-    CLDevice(cl_device_id id);
-    ~CLDevice();
-
-    cl_device_id id() const;
-    const char* name() const;
+    static const std::string getKernelSource(const std::string kernel_filename);
 private:
-    DISALLOW_COPY_AND_ASSIGN(CLDevice);
-
-    cl_device_id id_;
-
-    const char* getInfo(cl_device_info param_name) const;
+    static const std::string getExecutablePath();
+    static const std::string getPathForKernel(const std::string kernel_filename);
 };
 
-#endif // FIBERS_OCL_CLDEVICE_H_
+#endif // FIBERS_RESOURCES_H_

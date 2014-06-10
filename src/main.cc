@@ -19,25 +19,45 @@
 
 #include <iostream>
 
-#include "common.h"
 #include "fiberopt.h"
 
+#include "common.h"
+#include "simulation.h"
+
 #include "ocl/clutils.h"
-// #include "ocl/clplatform.h"
-// #include "ocl/cldevice.h"
- 
-int main(int argc, char* argv[])
+
+int main(int argc, char *argv[])
 {
-    FiberArgs args = fiberopt(argc, argv, /* help */ 1, /* version */ "v1.0.0-alpha");
+    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v1.0.0-alpha");
 
-    if(args.gui) {
-        
-    }
+    if(args.gui) {}
+    // std::cout << args.parameters << std::endl;
+    // std::cout << args.layout << std::endl;
 
-    const CLPlatform *selectedPlatform = CLUtils::selectPlatform();
-    const CLDevice *selectedDevice = CLUtils::selectDevice(selectedPlatform);
+    const CLPlatform *selected_platform = CLUtils::selectPlatform();
+    const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
 
-    std::cout << selectedDevice << std::endl;
+    cl_context context = CLUtils::createContext(selected_platform, selected_device);
+
+    Simulation simulation(context, selected_device);
+
+    // cl_command_queue queue = clCreateCommandQueue(context, device_id, 0, &err);
+
+    // cl_program program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
+
+    // std::cout << Resources::getKernelSource("vadd.cl") << std::endl;
+
+    // bool running = true;
+
+    // do
+    // {
+    //     std::cout << context << std::endl;
+    //     std::cout << queue << std::endl;
+    // }
+    // while (running);
+
+    // cleanup
+    clReleaseContext(context);
 
     return 0;
 }

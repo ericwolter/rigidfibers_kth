@@ -25,11 +25,15 @@ CLDevice::CLDevice(cl_device_id id) {
 
 CLDevice::~CLDevice() {}
 
-const char* CLDevice::name() {
+cl_device_id CLDevice::id() const {
+    return id_;
+}
+
+const char* CLDevice::name() const {
     return getInfo(CL_DEVICE_NAME);
 }
 
-const char* CLDevice::getInfo(cl_device_info param_name) {
+const char* CLDevice::getInfo(cl_device_info param_name) const {
     cl_int err;
 
     size_t size;

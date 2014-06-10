@@ -36,7 +36,8 @@ typedef struct
     /* commands */
 
     /* arguments */
-    char *input;
+    char *parameters;
+    char *layout;
     /* options without arguments */
     int gui;
     int help;
@@ -49,7 +50,7 @@ const char help_message[] =
     "Rigid Fibers.\n"
     "\n"
     "Usage:\n"
-    "  fibers <input>\n"
+    "  fibers <parameters> <layout>\n"
     "  fibers --help\n"
     "  fibers --version\n"
     "\n"
@@ -62,7 +63,7 @@ const char help_message[] =
 const char usage_pattern[] =
     "Usage:\n"
     "Usage:\n"
-    "  fibers <input>\n"
+    "  fibers <parameter> <layout>\n"
     "  fibers --help\n"
     "  fibers --version";
 
@@ -129,26 +130,43 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version);
 // Starts the parsing of the input arguments as supplied from the commandline
 Tokens tokens_new(int argc, char **argv)
 {
+    std::cout << "tokens_new" << std::endl;
+    std::cout << "argc: " << argc << std::endl;
+
+    if (argc <= 1)
+    {
+        fprintf(stderr, "too few arguments\n");
+        exit(EXIT_FAILURE);
+    }
+
     // ignore the program name start with argument at index 1
-    Tokens ts = {1, argc, argv[1], argv};
+    Tokens ts = {1, argc - 1, argv[1], argv};
     return ts;
 }
 
 Tokens *tokens_move(Tokens *ts)
 {
+    std::cout << "tokens_move: before: " << ts->argv[ts->i] << std::endl;
+    std::cout << "tokens_move: before: i: " << ts->i << std::endl;
+    std::cout << "tokens_move: before: argc: " << ts->argc << std::endl;
     if (ts->i < ts->argc)
     {
+        std::cout << "continue parsing" << std::endl;
         ts->current = ts->argv[++ts->i];
     }
-    if (ts->i == ts->argc)
+    else
     {
+        std::cout << "stop parsing" << std::endl;
         ts->current = NULL;
     }
+    std::cout << "tokens_move: after: " << ts->argv[ts->i] << std::endl;
     return ts;
 }
 
 int parse_argcmd(Tokens *ts, Elements *elements)
 {
+
+    std::cout << "parse_argcmd: " << "ts->current: " << ts->current << std::endl;
 
     // currently we only need arguments
     //int n_commands = elements->n_commands;
@@ -172,7 +190,7 @@ int parse_argcmd(Tokens *ts, Elements *elements)
 
 int parse_long(Tokens *ts, Elements *elements)
 {
-
+    std::cout << "parse_long" << std::endl;
     int n_options = elements->n_options;
 
     // look for option with argument
@@ -221,6 +239,8 @@ int parse_short(__unused Tokens *ts, __unused Elements *elements)
 int parse_args(Tokens *ts, Elements *elements)
 {
     int ret;
+
+    std::cout << "parse_args: " << "ts->current: " << ts->current << std::endl;
 
     while (ts->current != NULL)
     {
@@ -280,24 +300,45 @@ int elems_to_args(Elements *elements, FiberArgs *args, bool help,
     for (i = 0; i < elements->n_arguments; i++)
     {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<input>"))
+        if (!strcmp(argument->name, "<parameters>"))
         {
-            args->input = argument->value;
+            args->parameters = argument->value;
+        }
+        else if (!strcmp(argument->name, "<layout>"))
+        {
+            args->layout = argument->value;
         }
     }
+
+    // both arguments are required
+    if (!args->parameters)
+    {
+        fprintf(stderr, "argument <parameters> is required\n");
+    }
+    if (!args->layout)
+    {
+        fprintf(stderr, "argument <layout> is required\n");
+    }
+    if (!args->parameters || !args->layout)
+    {
+        exit(EXIT_FAILURE);
+    }
+
     return 0;
 }
 
 FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
 {
+    std::cout << "fiberopt start" << std::endl;
     FiberArgs args =
     {
-        usage_pattern, help_message, NULL, 0, 0, 0
+        usage_pattern, help_message, NULL, NULL, 0, 0, 0
     };
     Command *commands = NULL;
     Argument arguments[] =
     {
-        {"<input>", NULL}
+        {"<parameters>", NULL},
+        {"<layout>", NULL}
     };
     Option options[] =
     {
@@ -305,7 +346,7 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
         {"-h", "--help", NULL, 0, 0, {0}},
         {"-v", "--version", NULL, 0, 0, {0}}
     };
-    Elements elements = {commands, arguments, options, 0, 1, 3, {0}};
+    Elements elements = {commands, arguments, options, 0, 2, 3, {0}};
 
     Tokens ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))

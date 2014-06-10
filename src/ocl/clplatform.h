@@ -31,9 +31,9 @@ public:
 
     const static std::vector<CLPlatform*> list();
 
-    cl_platform_id id();
-    const char* name();
-    const char* vendor();
+    cl_platform_id id() const;
+    const char* name() const;
+    const char* vendor() const;
 
     const std::vector<CLDevice*> devices() const;
 
@@ -42,7 +42,7 @@ private:
 
     cl_platform_id id_;
 
-    const char* getInfo(cl_platform_info param_name);
+    const char* getInfo(cl_platform_info param_name) const;
 };
 
 #endif // FIBERS_OCL_CLPLATFORM_H_

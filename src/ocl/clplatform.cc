@@ -53,19 +53,19 @@ CLPlatform::CLPlatform(cl_platform_id id) {
 
 CLPlatform::~CLPlatform() {}
 
-cl_platform_id CLPlatform::id() {
+cl_platform_id CLPlatform::id() const {
     return id_;
 }
 
-const char* CLPlatform::name() {
+const char* CLPlatform::name() const {
     return getInfo(CL_PLATFORM_NAME);
 }
 
-const char* CLPlatform::vendor() {
+const char* CLPlatform::vendor() const {
     return getInfo(CL_PLATFORM_VENDOR);
 }
 
-const char* CLPlatform::getInfo(cl_platform_info param_name) {
+const char* CLPlatform::getInfo(cl_platform_info param_name) const {
     cl_int err;
 
     size_t size;

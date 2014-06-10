@@ -29,6 +29,7 @@ class CLUtils
 public:
     const static CLPlatform* selectPlatform();
     const static CLDevice* selectDevice(const CLPlatform *platform);
+    static cl_context createContext(const CLPlatform *platform, const CLDevice *device);
 };
 
 #endif // FIBERS_OCL_CLUTILS_H_

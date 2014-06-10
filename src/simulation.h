@@ -1,7 +1,7 @@
-#ifndef FIBERS_OCL_CLDEVICE_H_
-#define FIBERS_OCL_CLDEVICE_H_
+#ifndef FIBERS_SIMULATION_H_
+#define FIBERS_SIMULATION_H_
 /*
- *  cldevice.h - header for cldevice.cc
+ *  simulation.h - header for simulation.cc
  *
  *  Copyright (C) 2014  Eric Wolter <eric.wolter@gmx.de>
  *
@@ -19,23 +19,36 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <vector>
-#include "../common.h"
+#include <string>
+#include <map>
 
-class CLDevice
+#include "common.h"
+#include "ocl/cldevice.h"
+
+class Simulation
 {
 public:
-    CLDevice(cl_device_id id);
-    ~CLDevice();
-
-    cl_device_id id() const;
-    const char* name() const;
+    Simulation(cl_context context, const CLDevice *device);
+    ~Simulation();
 private:
-    DISALLOW_COPY_AND_ASSIGN(CLDevice);
+    DISALLOW_COPY_AND_ASSIGN(Simulation);
 
-    cl_device_id id_;
+    cl_context context_;
+    const CLDevice* device_;
 
-    const char* getInfo(cl_device_info param_name) const;
+    cl_command_queue queue_;
+    cl_program program_;
+
+    cl_mem a_buffer_;
+    cl_mem b_buffer_;
+    cl_mem c_buffer_;
+
+    std::map<std::string,cl_kernel> kernels_;
+
+    void initalizeQueue();
+    void initalizeKernels();
+    void initalizeProgram();
+    void initalizeBuffers();
 };
 
-#endif // FIBERS_OCL_CLDEVICE_H_
+#endif // FIBERS_SIMULATION_H_

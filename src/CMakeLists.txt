@@ -8,6 +8,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wpedantic -Wextra -Weverythin
 # defines all source code files
 set(SOURCE
     main.cc
+    resources.cc
+    simulation.cc
     ocl/cldevice.cc
     ocl/clplatform.cc
     ocl/clutils.cc
@@ -17,6 +19,8 @@ set(SOURCE
 set(HEADER
     common.h
     fiberopt.h
+    resources.h
+    simulation.h
     ocl/cldevice.h
     ocl/clplatform.h
     ocl/clutils.h
@@ -46,3 +50,23 @@ else() # Unix
         ${OPENCL_LIBRARY}
     )
 endif()
+
+set(KERNELS
+    common.h
+    kernels/vadd.cl
+)
+
+foreach(KERNEL ${KERNELS})
+    get_filename_component(FILENAME ${KERNEL} NAME)
+    set(SRC "${CMAKE_SOURCE_DIR}/src/${KERNEL}")
+    set(DST "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernels/${FILENAME}")
+
+    # cmake -E copy_if_different automatically creates the required directories
+    # CAUTION:  copy_if_different does not appear to work reliably sometimes the
+    #           files are not copied even though they changed.
+    #           As a workaround we now ALWAYS copy the files, as long as we
+    #           don't have massive amounts of kernels we should be fine...
+    add_custom_command(TARGET fibers POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    )
+endforeach(KERNEL)
