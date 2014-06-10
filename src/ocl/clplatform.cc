@@ -77,7 +77,7 @@ const char* CLPlatform::getInfo(cl_platform_info param_name) {
     return platformInfo;
 }
 
-std::vector<CLDevice*> CLPlatform::devices() {
+const std::vector<CLDevice*> CLPlatform::devices() const {
     cl_int err;
 
     cl_uint num_devices;

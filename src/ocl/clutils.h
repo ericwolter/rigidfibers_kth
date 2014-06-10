@@ -1,5 +1,8 @@
+#ifndef FIBERS_OCL_CLUTILS_H_
+#define FIBERS_OCL_CLUTILS_H_
 /*
- *  fibers - simulates slender fibers in a fluid.
+ *  clutils.h - header for clutils.cc
+ *
  *  Copyright (C) 2014  Eric Wolter <eric.wolter@gmx.de>
  *
  *  This program is free software; you can redistribute it and/or
@@ -16,28 +19,16 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+#include <vector>
+#include "../common.h"
+#include "clplatform.h"
+#include "cldevice.h"
 
-#include <iostream>
-
-#include "common.h"
-#include "fiberopt.h"
-
-#include "ocl/clutils.h"
-// #include "ocl/clplatform.h"
-// #include "ocl/cldevice.h"
- 
-int main(int argc, char* argv[])
+class CLUtils
 {
-    FiberArgs args = fiberopt(argc, argv, /* help */ 1, /* version */ "v1.0.0-alpha");
+public:
+    const static CLPlatform* selectPlatform();
+    const static CLDevice* selectDevice(const CLPlatform *platform);
+};
 
-    if(args.gui) {
-        
-    }
-
-    const CLPlatform *selectedPlatform = CLUtils::selectPlatform();
-    const CLDevice *selectedDevice = CLUtils::selectDevice(selectedPlatform);
-
-    std::cout << selectedDevice << std::endl;
-
-    return 0;
-}
+#endif // FIBERS_OCL_CLUTILS_H_

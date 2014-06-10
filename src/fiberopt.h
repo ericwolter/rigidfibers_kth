@@ -28,7 +28,8 @@
 // overhead for convenience
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpadded"
-typedef struct {
+typedef struct
+{
     /* special */
     const char *usage_pattern;
     const char *help_message;
@@ -45,50 +46,54 @@ typedef struct {
 #pragma GCC diagnostic pop
 
 const char help_message[] =
-"Rigid Fibers.\n"
-"\n"
-"Usage:\n"
-"  fibers <input>\n"
-"  fibers --help\n"
-"  fibers --version\n"
-"\n"
-"Options:\n"
-"  -h --help     Show this screen.\n"
-"  -v --version  Show version.\n"
-"\n"
-"";
+    "Rigid Fibers.\n"
+    "\n"
+    "Usage:\n"
+    "  fibers <input>\n"
+    "  fibers --help\n"
+    "  fibers --version\n"
+    "\n"
+    "Options:\n"
+    "  -h --help     Show this screen.\n"
+    "  -v --version  Show version.\n"
+    "\n"
+    "";
 
 const char usage_pattern[] =
-"Usage:\n"
-"Usage:\n"
-"  fibers <input>\n"
-"  fibers --help\n"
-"  fibers --version";
+    "Usage:\n"
+    "Usage:\n"
+    "  fibers <input>\n"
+    "  fibers --help\n"
+    "  fibers --version";
 
-typedef struct {
+typedef struct
+{
     const char *name;
     bool value;
     char pad[7];            // nothing we can do about this padding so at least
-                            // make it explicit
+    // make it explicit
 } Command;
 
-typedef struct {
+typedef struct
+{
     const char *name;       // the name of the argument, only used for help
     char *value;            // the value of the argument
 } Argument;
 
-typedef struct {
+typedef struct
+{
     const char *oshort;     // a short name for this option, e.g. -h
     const char *olong;      // a long name for this option, e.g. --help
     char *argument;         // a potential list of arguments for this option
     bool argcount;          // how many arguments does this option have
-    bool value;             // a flag indicating that this option was supplied        
+    bool value;             // a flag indicating that this option was supplied
     char pad[6];            // nothing we can do about this padding so at least
-                            // make it explicit
+    // make it explicit
 } Option;
 
 // Describes the overall structure of the arguments
-typedef struct {
+typedef struct
+{
     Command *commands;      // pointer to all command structs
     Argument *arguments;    // pointer to all arugment structs
     Option *options;        // pointer to all options structs
@@ -96,21 +101,22 @@ typedef struct {
     int n_arguments;        // how many arguments are there in total?
     int n_options;          // how many options are there in total?
     char pad[4];            // nothing we can do about this padding so at least
-                            // make it explicit
+    // make it explicit
 } Elements;
 
 // Input arguments are bissected into tokens to be parse one after the other
-typedef struct {
+typedef struct
+{
     int i;                  // the current argument index
     int argc;               // the total number of arguments
     char *current;          // the current token to be parsed
-    char **argv;            // the input arguments as supplied from the 
-                            // commandline
+    char **argv;            // the input arguments as supplied from the
+    // commandline
 } Tokens;
 
 // The prototypes declaring all the functions needed for command line parsing
 Tokens tokens_new(int argc, char **argv);
-Tokens* tokens_move(Tokens *ts);
+Tokens *tokens_move(Tokens *ts);
 int parse_args(Tokens *ts, Elements *elements);
 int elems_to_args(Elements *elements, FiberArgs *args, bool help,
                   const char *version);
@@ -121,23 +127,28 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version);
 
 
 // Starts the parsing of the input arguments as supplied from the commandline
-Tokens tokens_new(int argc, char **argv) {
+Tokens tokens_new(int argc, char **argv)
+{
     // ignore the program name start with argument at index 1
     Tokens ts = {1, argc, argv[1], argv};
     return ts;
 }
 
-Tokens* tokens_move(Tokens *ts) {
-    if(ts->i < ts->argc) {
+Tokens *tokens_move(Tokens *ts)
+{
+    if (ts->i < ts->argc)
+    {
         ts->current = ts->argv[++ts->i];
     }
-    if(ts->i == ts->argc) {
+    if (ts->i == ts->argc)
+    {
         ts->current = NULL;
     }
     return ts;
 }
 
-int parse_argcmd(Tokens *ts, Elements *elements) {
+int parse_argcmd(Tokens *ts, Elements *elements)
+{
 
     // currently we only need arguments
     //int n_commands = elements->n_commands;
@@ -145,7 +156,8 @@ int parse_argcmd(Tokens *ts, Elements *elements) {
     Argument *argument;
     Argument *arguments = elements->arguments;
 
-    if(ts->i > n_arguments) {
+    if (ts->i > n_arguments)
+    {
         fprintf(stderr, "too many arguments\n");
         return 1;
     }
@@ -158,7 +170,8 @@ int parse_argcmd(Tokens *ts, Elements *elements) {
     return 0;
 }
 
-int parse_long(Tokens *ts, Elements *elements) {
+int parse_long(Tokens *ts, Elements *elements)
+{
 
     int n_options = elements->n_options;
 
@@ -168,23 +181,30 @@ int parse_long(Tokens *ts, Elements *elements) {
     Option *option = NULL;
     Option *options = elements->options;
 
-    size_t len_prefix = (unsigned long)(eq-(ts->current))/sizeof(char);
+    size_t len_prefix = (unsigned long)(eq - (ts->current)) / sizeof(char);
 
     int i;
-    for(i = 0; i < n_options; i++) {
+    for (i = 0; i < n_options; i++)
+    {
         option = &options[i];
-        if(!strncmp(ts->current, option->olong, len_prefix)) {
+        if (!strncmp(ts->current, option->olong, len_prefix))
+        {
             break;
         }
     }
-    if(i == n_options) {
+    if (i == n_options)
+    {
         fprintf(stderr, "%s is not recognized\n", ts->current);
     }
     tokens_move(ts);
-    if(option->argcount) {
+    if (option->argcount)
+    {
 
-    } else {
-        if (eq != NULL) {
+    }
+    else
+    {
+        if (eq != NULL)
+        {
             fprintf(stderr, "%s must not have an argument\n", option->olong);
             return 1;
         }
@@ -193,44 +213,59 @@ int parse_long(Tokens *ts, Elements *elements) {
     return 0;
 }
 
-int parse_short(__unused Tokens *ts, __unused Elements *elements) {
+int parse_short(__unused Tokens *ts, __unused Elements *elements)
+{
     return 1;
 }
 
-int parse_args(Tokens *ts, Elements *elements) {
+int parse_args(Tokens *ts, Elements *elements)
+{
     int ret;
 
-    while (ts->current != NULL) {
-        if (ts->current[0] == '-' && ts->current[1] == '-') {
+    while (ts->current != NULL)
+    {
+        if (ts->current[0] == '-' && ts->current[1] == '-')
+        {
             ret = parse_long(ts, elements);
-        } else if (ts->current[0] == '-' && ts->current[1] != '\0') {
+        }
+        else if (ts->current[0] == '-' && ts->current[1] != '\0')
+        {
             ret = parse_short(ts, elements);
-        } else {
+        }
+        else
+        {
             ret = parse_argcmd(ts, elements);
         }
-        if(ret) return ret;
+        if (ret) return ret;
     }
     return 0;
 }
 
 int elems_to_args(Elements *elements, FiberArgs *args, bool help,
-                  const char *version){
+                  const char *version)
+{
     // Command *command;
     Argument *argument;
     Option *option;
     int i;
 
     /* options */
-    for (i=0; i < elements->n_options; i++) {
+    for (i = 0; i < elements->n_options; i++)
+    {
         option = &elements->options[i];
-        if (help && option->value && !strcmp(option->olong, "--help")) {
+        if (help && option->value && !strcmp(option->olong, "--help"))
+        {
             printf("%s", args->help_message);
             return 1;
-        } else if (version && option->value &&
-                   !strcmp(option->olong, "--version")) {
+        }
+        else if (version && option->value &&
+                 !strcmp(option->olong, "--version"))
+        {
             printf("%s\n", version);
             return 1;
-        } else if (!strcmp(option->olong, "--gui")) {
+        }
+        else if (!strcmp(option->olong, "--gui"))
+        {
             args->gui = option->value;
         }
     }
@@ -242,24 +277,30 @@ int elems_to_args(Elements *elements, FiberArgs *args, bool help,
     //     }
     // }
     /* arguments */
-    for (i=0; i < elements->n_arguments; i++) {
+    for (i = 0; i < elements->n_arguments; i++)
+    {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<input>")) {
+        if (!strcmp(argument->name, "<input>"))
+        {
             args->input = argument->value;
         }
     }
     return 0;
 }
 
-FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version) {
-    FiberArgs args = {
+FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
+{
+    FiberArgs args =
+    {
         usage_pattern, help_message, NULL, 0, 0, 0
     };
     Command *commands = NULL;
-    Argument arguments[] = {
+    Argument arguments[] =
+    {
         {"<input>", NULL}
     };
-    Option options[] = {
+    Option options[] =
+    {
         {NULL, "--gui", NULL, 0, 0, {0}},
         {"-h", "--help", NULL, 0, 0, {0}},
         {"-v", "--version", NULL, 0, 0, {0}}
@@ -267,10 +308,12 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version) {
     Elements elements = {commands, arguments, options, 0, 1, 3, {0}};
 
     Tokens ts = tokens_new(argc, argv);
-    if(parse_args(&ts, &elements)) {
+    if (parse_args(&ts, &elements))
+    {
         exit(EXIT_FAILURE);
     }
-    if (elems_to_args(&elements, &args, help, version)) {
+    if (elems_to_args(&elements, &args, help, version))
+    {
         exit(EXIT_SUCCESS);
     }
     return args;

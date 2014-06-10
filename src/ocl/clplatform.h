@@ -21,7 +21,6 @@
  */
 #include <vector>
 #include "../common.h"
-
 #include "cldevice.h"
 
 class CLPlatform
@@ -36,8 +35,8 @@ public:
     const char* name();
     const char* vendor();
 
-    std::vector<CLDevice*> devices();
-    
+    const std::vector<CLDevice*> devices() const;
+
 private:
     DISALLOW_COPY_AND_ASSIGN(CLPlatform);
 

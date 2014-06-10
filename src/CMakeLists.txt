@@ -8,16 +8,18 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wpedantic -Wextra -Weverythin
 # defines all source code files
 set(SOURCE
     main.cc
-    ocl/clplatform.cc
     ocl/cldevice.cc
+    ocl/clplatform.cc
+    ocl/clutils.cc
 )
 
 # defines all header code files
 set(HEADER
-    fiberopt.h
     common.h
-    ocl/clplatform.h
+    fiberopt.h
     ocl/cldevice.h
+    ocl/clplatform.h
+    ocl/clutils.h
 )
 
 # # ensure that all the required header files of the linked libraries can be found
