@@ -1,3 +1,5 @@
+#ifndef FIBERS_FIBEROPT_H_
+#define FIBERS_FIBEROPT_H_
 /*
  *  fiberopt.h - command line arguments parsing
  *
@@ -273,3 +275,5 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version) {
     }
     return args;
 }
+
+#endif // FIBERS_FIBEROPT_H_

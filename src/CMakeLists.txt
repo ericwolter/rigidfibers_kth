@@ -8,13 +8,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wpedantic -Wextra -Weverythin
 # defines all source code files
 set(SOURCE
     main.cc
+    ocl/clplatform.cc
+    ocl/cldevice.cc
 )
 
 # defines all header code files
 set(HEADER
     fiberopt.h
     common.h
+    ocl/clplatform.h
+    ocl/cldevice.h
 )
+
+# # ensure that all the required header files of the linked libraries can be found
+# include_directories(
+#     ${OPENCL_INCLUDE_DIRS}
+# )
 
 # add an executable/binary to the project
 # it is not necessary to include the headers here for cmake, however this way
