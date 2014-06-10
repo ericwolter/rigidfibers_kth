@@ -22,6 +22,7 @@
 #include "fiberopt.h"
 
 #include "common.h"
+#include "parameters.h"
 #include "simulation.h"
 
 #include "ocl/clutils.h"
@@ -30,7 +31,9 @@ int main(int argc, char *argv[])
 {
     FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v1.0.0-alpha");
 
-    if(args.gui) {}
+    FiberParams params = Parameters::parseParameterFile(args.parameters);
+    Parameters::dump(params);
+
     // std::cout << args.parameters << std::endl;
     // std::cout << args.layout << std::endl;
 

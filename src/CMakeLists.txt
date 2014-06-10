@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wpedantic -Wextra -Weverythin
 set(SOURCE
     main.cc
     resources.cc
+    parameters.cc
     simulation.cc
     ocl/cldevice.cc
     ocl/clplatform.cc
@@ -19,6 +20,7 @@ set(SOURCE
 set(HEADER
     common.h
     fiberopt.h
+    parameters.h
     resources.h
     simulation.h
     ocl/cldevice.h
