@@ -130,14 +130,14 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version);
 // Starts the parsing of the input arguments as supplied from the commandline
 Tokens tokens_new(int argc, char **argv)
 {
-    if (argc <= 1)
+    char* firstArg = NULL;
+    if (argc > 1)
     {
-        fprintf(stderr, "too few arguments\n");
-        exit(EXIT_FAILURE);
+        firstArg = argv[1];
     }
 
     // ignore the program name start with argument at index 1
-    Tokens ts = {1, argc - 1, argv[1], argv};
+    Tokens ts = {1, argc - 1, firstArg, argv};
     return ts;
 }
 
