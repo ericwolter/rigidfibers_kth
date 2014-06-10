@@ -130,9 +130,6 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version);
 // Starts the parsing of the input arguments as supplied from the commandline
 Tokens tokens_new(int argc, char **argv)
 {
-    std::cout << "tokens_new" << std::endl;
-    std::cout << "argc: " << argc << std::endl;
-
     if (argc <= 1)
     {
         fprintf(stderr, "too few arguments\n");
@@ -146,28 +143,19 @@ Tokens tokens_new(int argc, char **argv)
 
 Tokens *tokens_move(Tokens *ts)
 {
-    std::cout << "tokens_move: before: " << ts->argv[ts->i] << std::endl;
-    std::cout << "tokens_move: before: i: " << ts->i << std::endl;
-    std::cout << "tokens_move: before: argc: " << ts->argc << std::endl;
     if (ts->i < ts->argc)
     {
-        std::cout << "continue parsing" << std::endl;
         ts->current = ts->argv[++ts->i];
     }
     else
     {
-        std::cout << "stop parsing" << std::endl;
         ts->current = NULL;
     }
-    std::cout << "tokens_move: after: " << ts->argv[ts->i] << std::endl;
     return ts;
 }
 
 int parse_argcmd(Tokens *ts, Elements *elements)
 {
-
-    std::cout << "parse_argcmd: " << "ts->current: " << ts->current << std::endl;
-
     // currently we only need arguments
     //int n_commands = elements->n_commands;
     int n_arguments = elements->n_arguments;
@@ -190,7 +178,6 @@ int parse_argcmd(Tokens *ts, Elements *elements)
 
 int parse_long(Tokens *ts, Elements *elements)
 {
-    std::cout << "parse_long" << std::endl;
     int n_options = elements->n_options;
 
     // look for option with argument
@@ -239,8 +226,6 @@ int parse_short(__unused Tokens *ts, __unused Elements *elements)
 int parse_args(Tokens *ts, Elements *elements)
 {
     int ret;
-
-    std::cout << "parse_args: " << "ts->current: " << ts->current << std::endl;
 
     while (ts->current != NULL)
     {
@@ -329,7 +314,6 @@ int elems_to_args(Elements *elements, FiberArgs *args, bool help,
 
 FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
 {
-    std::cout << "fiberopt start" << std::endl;
     FiberArgs args =
     {
         usage_pattern, help_message, NULL, NULL, 0, 0, 0

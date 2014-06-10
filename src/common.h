@@ -83,6 +83,7 @@ typedef struct
     fiberfloat slenderness;                 // the slenderness parameter
                                             //   epsilon = a/2L (e.g. 0.01)
     fiberfloat timestep;                    // the timestep size (e.g. 0.1)
+    fiberint num_fibers;                    // the number of fibers
     fiberint num_timesteps;                 // the number of timesteps
     fiberint num_terms_in_force_expansion;  // the number of terms used for the
                                             //   force expansion (e.g. 5)
