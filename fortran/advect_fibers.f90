@@ -348,6 +348,22 @@ PROGRAM ADVECT_FIBERS
   !! based on a three point Gauss quadrature. Section 4.2 in
   !! AKT-KG 2006
   CALL quad_pts_and_wts(NoQI,pv,wv) 
+
+  OPEN(10,file="quadrature_points.out");
+  OPEN(30,file="quadrature_weights.out");
+  DO i=1,N
+     ind=(i-1)*3
+     WRITE(10,'(2F24.16)') pv(ind+1)
+     WRITE(10,'(2F24.16)') pv(ind+2)
+     WRITE(10,'(2F24.16)') pv(ind+3)
+     WRITE(10,*) ' '
+     WRITE(30,'(2F24.16)') wv(ind+1)
+     WRITE(30,'(2F24.16)') wv(ind+2)
+     WRITE(30,'(2F24.16)') wv(ind+3)
+     WRITE(30,*) ' '
+  END DO
+
+
   LvecMat=compute_LVecs(N,LQ,pv);
   
   !=================================================================

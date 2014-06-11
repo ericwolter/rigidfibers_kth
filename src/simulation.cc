@@ -312,6 +312,8 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
         //      calculated outside the loop, however for clarity we leave and
         //      here right now and precomputing polynomials is not performance
         //      critcal anyway
+        // TODO potential memory savings because weights are the same for each
+        //      interval
         fiberuint interval_start_index = interval_index * number_of_points_per_interval;
         quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
         quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
@@ -320,6 +322,14 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
         quadrature_weights[interval_start_index + 0] = w0 / number_of_quadrature_intervals;
         quadrature_weights[interval_start_index + 1] = w1 / number_of_quadrature_intervals;
         quadrature_weights[interval_start_index + 2] = w2 / number_of_quadrature_intervals;
+
+        // std::cout << quadrature_points[interval_start_index + 0] << std::endl;
+        // std::cout << quadrature_points[interval_start_index + 1] << std::endl;
+        // std::cout << quadrature_points[interval_start_index + 2] << std::endl;
+        // std::cout << std::endl;
+        // std::cout << quadrature_weights[interval_start_index + 0] << std::endl;
+        // std::cout << quadrature_weights[interval_start_index + 1] << std::endl;
+        // std::cout << quadrature_weights[interval_start_index + 2] << std::endl;
 
         // Advance to next interval by incrementing the lower bound
         lower_bound += interval_size;
