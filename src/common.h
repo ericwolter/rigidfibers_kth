@@ -26,7 +26,7 @@
 
     // see comment in host section for why this is needed
     typedef int fiberint;
-    typedef unsigned int fiberuint;
+    typedef uint fiberuint;
     
 #else // host
     #include <cstdlib>
