@@ -155,10 +155,10 @@ void Simulation::initalizeProgram()
     // we have a size larger than 1.
     if (size > 1)
     {
-        char *buildLog = (char *)malloc(sizeof(char) * size);
+        char *buildLog = new char[size];
         err = clGetProgramBuildInfo(program_, device_->id(), CL_PROGRAM_BUILD_LOG, size, buildLog, NULL);
         std::cout << buildLog << std::endl;
-        free(buildLog);
+        delete[] buildLog;
     }
 
     clCheckError(buildError, "Could not build program");
@@ -172,7 +172,7 @@ void Simulation::initalizeKernels()
     err = clCreateKernelsInProgram(program_, 0, NULL, &num_kernels);
     clCheckError(err, "Could not get number of kernels in program");
 
-    cl_kernel *kernels = (cl_kernel *)malloc(sizeof(cl_kernel) * num_kernels);
+    cl_kernel *kernels = new cl_kernel[num_kernels];
     err = clCreateKernelsInProgram(program_, num_kernels, kernels, NULL);
     clCheckError(err, "Could not get kernels in program");
 
@@ -184,14 +184,16 @@ void Simulation::initalizeKernels()
 
         err = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &size);
         clCheckError(err, "Could not get length of kernel function name");
-        char *cstr_function_name = (char *)malloc(sizeof(char) * size);
+        char *cstr_function_name = new char[size];
         err = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, size, cstr_function_name, NULL);
         clCheckError(err, "Could not get kernel function name");
 
         std::string function_name = cstr_function_name;
+        delete[] cstr_function_name;
+
         kernel_map[function_name] = kernel;
     }
-    free(kernels);
+    delete[] kernels;
 
     kernels_ = kernel_map;
 }

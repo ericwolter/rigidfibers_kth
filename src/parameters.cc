@@ -197,8 +197,8 @@ void Parameters::parseVersion1LayoutFile(std::ifstream &layout_file_stream, fibe
 
     parse_number_of_fibers >> *number_of_fibers;
 
-    *initialPositions = (fiberfloat4*)malloc(sizeof(fiberfloat4) * (*number_of_fibers));
-    *initialOrientations = (fiberfloat4*)malloc(sizeof(fiberfloat4) * (*number_of_fibers));
+    *initialPositions = new fiberfloat4[*number_of_fibers];
+    *initialOrientations = new fiberfloat4[*number_of_fibers];
 
     for (fiberuint fiber_index = 0; fiber_index < *number_of_fibers; ++fiber_index)
     {

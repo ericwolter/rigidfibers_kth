@@ -32,7 +32,7 @@ const std::vector<CLPlatform*> CLPlatform::list() {
     clCheckError(err, "Could not get number of platforms");
 
     // array to hold all OpenCL platforms available on the system
-    cl_platform_id *platforms = (cl_platform_id *)malloc(sizeof(cl_platform_id) * num_platforms);
+    cl_platform_id *platforms = new cl_platform_id[num_platforms];
 
     err = clGetPlatformIDs(num_platforms, platforms, NULL);
     clCheckError(err, "Could not get platforms");
@@ -43,7 +43,7 @@ const std::vector<CLPlatform*> CLPlatform::list() {
         result.push_back(platform);
     }
 
-    free(platforms);
+    delete[] platforms;
     return result;
 }
 
@@ -71,7 +71,7 @@ const char* CLPlatform::getInfo(cl_platform_info param_name) const {
     size_t size;
     err = clGetPlatformInfo(id_, param_name, 0, NULL, &size);
     clCheckError(err, "Could get size of platform info");
-    char *platformInfo = (char*)malloc(sizeof(char) * size);
+    char *platformInfo = new char[size];
     err = clGetPlatformInfo(id_, param_name, size, platformInfo, NULL);
     clCheckError(err, "Could get platform info");
     return platformInfo;
@@ -84,7 +84,7 @@ const std::vector<CLDevice*> CLPlatform::devices() const {
     err = clGetDeviceIDs(id_, CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
     clCheckError(err, "Could not get number of devices");
 
-    cl_device_id *devices = (cl_device_id*)malloc(sizeof(cl_device_id) * num_devices);
+    cl_device_id *devices = new cl_device_id[num_devices];
 
     err = clGetDeviceIDs(id_, CL_DEVICE_TYPE_ALL, num_devices, devices, NULL); 
     clCheckError(err, "Could not get devices");
@@ -95,7 +95,8 @@ const std::vector<CLDevice*> CLPlatform::devices() const {
         result.push_back(device);
     }
 
-    free(devices);
+    delete[] devices;
+
     return result;    
 }
 

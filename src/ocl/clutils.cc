@@ -39,8 +39,9 @@ const CLPlatform* CLUtils::selectPlatform() {
         std::cout << index << ": " 
                   << platformName << " (" << platformVendor <<")" 
                   << std::endl;
-        free((char*)platformName);
-        free((char*)platformVendor);
+
+        delete[] platformName;
+        delete[] platformVendor;
     }
 
     cl_uint selectedPlatformIndex;
@@ -68,7 +69,7 @@ const CLDevice* CLUtils::selectDevice(const CLPlatform *platform) {
         CLDevice *device = *itDevice;
         const char* deviceName = device->name();
         std::cout << index << ": " << deviceName << std::endl;
-        free((char*)deviceName);
+        delete[] deviceName;
     }
 
     cl_uint selectedDeviceIndex;

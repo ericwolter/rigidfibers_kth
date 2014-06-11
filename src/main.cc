@@ -35,7 +35,6 @@ int main(int argc, char *argv[])
 
     Parameters::dump(configuration.parameters);
 
-
     const CLPlatform *selected_platform = CLUtils::selectPlatform();
     const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
 
@@ -53,8 +52,8 @@ int main(int argc, char *argv[])
     // while (running);
 
     // cleanup
-    free(configuration.initial_positions);
-    free(configuration.initial_orientations);
+    delete[] configuration.initial_positions;
+    delete[] configuration.initial_orientations;
     clReleaseContext(context);
 
     return 0;

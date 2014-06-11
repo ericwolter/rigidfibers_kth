@@ -39,7 +39,7 @@ const char* CLDevice::getInfo(cl_device_info param_name) const {
     size_t size;
     err = clGetDeviceInfo(id_, param_name, 0, NULL, &size);
     clCheckError(err, "Could get size of device info");
-    char *deviceInfo = (char*)malloc(sizeof(char) * size);
+    char *deviceInfo = new char[size];
     err = clGetDeviceInfo(id_, param_name, size, deviceInfo, NULL);
     clCheckError(err, "Could get device info");
     return deviceInfo;
