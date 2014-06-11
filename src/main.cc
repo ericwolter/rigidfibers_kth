@@ -31,24 +31,17 @@ int main(int argc, char *argv[])
 {
     FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v1.0.0-alpha");
 
-    FiberParams params = Parameters::parseParameterFile(args.parameters);
-    Parameters::dump(params);
+    Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
 
-    // std::cout << args.parameters << std::endl;
-    // std::cout << args.layout << std::endl;
+    Parameters::dump(configuration.parameters);
+
 
     const CLPlatform *selected_platform = CLUtils::selectPlatform();
     const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
 
     cl_context context = CLUtils::createContext(selected_platform, selected_device);
 
-    Simulation simulation(context, selected_device);
-
-    // cl_command_queue queue = clCreateCommandQueue(context, device_id, 0, &err);
-
-    // cl_program program = clCreateProgramWithSource(context, 1, (const char **) & KernelSource, NULL, &err);
-
-    // std::cout << Resources::getKernelSource("vadd.cl") << std::endl;
+    Simulation simulation(context, selected_device, configuration);
 
     // bool running = true;
 
@@ -60,6 +53,8 @@ int main(int argc, char *argv[])
     // while (running);
 
     // cleanup
+    free(configuration.initial_positions);
+    free(configuration.initial_orientations);
     clReleaseContext(context);
 
     return 0;

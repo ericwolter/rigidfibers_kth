@@ -23,10 +23,11 @@
 
 #include "resources.h"
 
-Simulation::Simulation(cl_context context, const CLDevice *device)
+Simulation::Simulation(cl_context context, const CLDevice *device, Configuration configuration)
 {
     context_ = context;
     device_ = device;
+    configuration_ = configuration;
 
     initalizeQueue();
     initalizeProgram();
@@ -34,7 +35,7 @@ Simulation::Simulation(cl_context context, const CLDevice *device)
     initalizeBuffers();
 
     cl_int err;
-    size_t count = 100;
+    size_t count = configuration_.parameters.num_fibers * 4;
 
     cl_uint param = 0; cl_kernel kernel = kernels_["vadd"];
     err  = clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_buffer_);
@@ -47,22 +48,31 @@ Simulation::Simulation(cl_context context, const CLDevice *device)
     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
     clCheckError(err, "Could not enqueue kernel");
 
-    fiberfloat *a_data = (fiberfloat *)malloc(sizeof(fiberfloat) * count);
-    fiberfloat *b_data = (fiberfloat *)malloc(sizeof(fiberfloat) * count);
-    fiberfloat *c_data = (fiberfloat *)malloc(sizeof(fiberfloat) * count);
-    err = clEnqueueReadBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * count, a_data, 0, NULL, NULL);
+    fiberfloat4 *a_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
+    fiberfloat4 *b_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
+    fiberfloat4 *c_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
+    err = clEnqueueReadBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, a_data, 0, NULL, NULL);
     clCheckError(err, "Could not read from a buffer");
-    err = clEnqueueReadBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * count, b_data, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, b_data, 0, NULL, NULL);
     clCheckError(err, "Could not read from b buffer");
-    err = clEnqueueReadBuffer(queue_, c_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * count, c_data, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue_, c_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, c_data, 0, NULL, NULL);
     clCheckError(err, "Could not read from c buffer");
 
-    fiberfloat tmp;
-    for (size_t i = 0; i < count; ++i)
+    fiberfloat4 tmp;
+    for (size_t i = 0; i < configuration_.parameters.num_fibers; ++i)
     {
-        tmp = a_data[i] + b_data[i];
-        tmp -= c_data[i];
-        printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp, a_data[i], b_data[i], c_data[i]);
+        tmp.x = a_data[i].x + b_data[i].x;
+        tmp.y = a_data[i].y + b_data[i].y;
+        tmp.z = a_data[i].z + b_data[i].z;
+        tmp.w = a_data[i].w + b_data[i].w;
+        tmp.x -= c_data[i].x;
+        tmp.y -= c_data[i].y;
+        tmp.z -= c_data[i].z;
+        tmp.w -= c_data[i].w;
+        printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.x, a_data[i].x, b_data[i].x, c_data[i].x);
+        printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.y, a_data[i].y, b_data[i].y, c_data[i].y);
+        printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.z, a_data[i].z, b_data[i].z, c_data[i].z);
+        printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.w, a_data[i].w, b_data[i].w, c_data[i].w);
     }
 
     free(a_data);
@@ -185,25 +195,13 @@ void Simulation::initalizeKernels()
 void Simulation::initalizeBuffers()
 {
     cl_int err;
-    size_t count = 100;
-    a_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * count, NULL, NULL);
-    b_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * count, NULL, NULL);
-    c_buffer_ = clCreateBuffer(context_, CL_MEM_WRITE_ONLY, sizeof(fiberfloat) * count, NULL, NULL);
+    a_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    b_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    c_buffer_ = clCreateBuffer(context_, CL_MEM_WRITE_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
 
-    fiberfloat *a_data = (fiberfloat *)malloc(sizeof(fiberfloat) * count);
-    fiberfloat *b_data = (fiberfloat *)malloc(sizeof(fiberfloat) * count);
-    for (size_t i = 0; i < count; ++i)
-    {
-        a_data[i] = i + 1;
-        b_data[i] = count - i;
-    }
-
-    err = clEnqueueWriteBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * count, a_data, 0, NULL, NULL);
-    clCheckError(err, "Could not write data to a buffer");
-    err = clEnqueueWriteBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * count, b_data, 0, NULL, NULL);
-    clCheckError(err, "Could not write data to b buffer");
-
-    free(a_data);
-    free(b_data);
+    err = clEnqueueWriteBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, NULL);
+    clCheckError(err, "Could not write data to positions buffer");
+    err = clEnqueueWriteBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, NULL);
+    clCheckError(err, "Could not write data to orientations buffer");
 }
 

@@ -23,18 +23,21 @@
 #include <map>
 
 #include "common.h"
+#include "parameters.h"
 #include "ocl/cldevice.h"
 
 class Simulation
 {
 public:
-    Simulation(cl_context context, const CLDevice *device);
+    Simulation(cl_context context, const CLDevice *device, Configuration configuration);
     ~Simulation();
 private:
     DISALLOW_COPY_AND_ASSIGN(Simulation);
 
     cl_context context_;
     const CLDevice* device_;
+
+    Configuration configuration_;
 
     cl_command_queue queue_;
     cl_program program_;

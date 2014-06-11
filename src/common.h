@@ -26,6 +26,7 @@
 
     // see comment in host section for why this is needed
     typedef int fiberint;
+    typedef unsigned int fiberuint;
     
 #else // host
     #include <cstdlib>
@@ -55,6 +56,7 @@
     // which are automatically defined to be the correct type when they are used
     // on the host or the device respectively
     typedef cl_int fiberint;
+    typedef cl_uint fiberuint;
 
     // A macro to disallow the copy constructor and operator= functions
     // This should be used in the private: declarations for a class
@@ -83,11 +85,11 @@ typedef struct
     fiberfloat slenderness;                 // the slenderness parameter
                                             //   epsilon = a/2L (e.g. 0.01)
     fiberfloat timestep;                    // the timestep size (e.g. 0.1)
-    fiberint num_fibers;                    // the number of fibers
-    fiberint num_timesteps;                 // the number of timesteps
-    fiberint num_terms_in_force_expansion;  // the number of terms used for the
+    fiberuint num_fibers;                   // the number of fibers
+    fiberuint num_timesteps;                // the number of timesteps
+    fiberuint num_terms_in_force_expansion; // the number of terms used for the
                                             //   force expansion (e.g. 5)
-    fiberint num_quadrature_intervals;      // the number of intervals the
+    fiberuint num_quadrature_intervals;     // the number of intervals the
                                             //   integral is subdivided into
                                             //   on each subinterval 3 gaussian
                                             //   quadrature points are used

@@ -21,6 +21,26 @@
 
 #include <sstream>
 
+const Configuration Parameters::parseConfigurationFiles(const std::string parameters_filename, const std::string layout_filename) {
+    Configuration configuration;
+
+    // we parse the layout file first so that we can insert the number of fibers
+    // later directly into the parameters
+    fiberfloat4 *initial_positions = NULL;
+    fiberfloat4 *initial_orientations = NULL;
+    fiberuint number_of_fibers;
+    Parameters::parseInitialLayoutFile(layout_filename, &initial_positions, &initial_orientations, &number_of_fibers);
+
+    FiberParams params = Parameters::parseParameterFile(parameters_filename);
+    params.num_fibers = number_of_fibers;
+
+    configuration.parameters = params;
+    configuration.initial_positions = initial_positions; 
+    configuration.initial_orientations = initial_orientations;
+
+    return configuration;
+}
+
 const FiberParams Parameters::parseParameterFile(const std::string parameters_filename)
 {
     std::cout << "Parsing parameters file: " << parameters_filename << std::endl;
@@ -38,9 +58,9 @@ const FiberParams Parameters::parseParameterFile(const std::string parameters_fi
 
     // @todo currently only old file format is used
     // // check for version in first line
-    // if (line.find("#!version 1.0"))
+    // if (line.find("#!version 2.0"))
     // {
-    //     // this is a file format version 1.0
+    //     // this is a file format version 2.0
     // }
     // else
     // {
@@ -51,14 +71,43 @@ const FiberParams Parameters::parseParameterFile(const std::string parameters_fi
     // first line we backtrack to the beginning of the stream and let
     // the specialist file format take care of the file as a whole
     parameters_file_stream.seekg(0, parameters_file_stream.beg);
-    return Parameters::parseVersion0ParameterFile(parameters_file_stream);
+    return Parameters::parseVersion1ParameterFile(parameters_file_stream);
     // }
 }
-void Parameters::parseInitialLayoutFile(__unused const std::string layout_filename, __unused fiberfloat4* initialPositions, __unused fiberfloat4* initialOrientation, __unused fiberint *num_of_fibers)
+void Parameters::parseInitialLayoutFile(const std::string layout_filename, fiberfloat4** initialPositions, fiberfloat4** initialOrientations, fiberuint *number_of_fibers)
 {
+    std::cout << "Parsing layout file: " << layout_filename << std::endl;
+
+    std::ifstream layout_file_stream;
+    layout_file_stream.open(layout_filename.c_str());
+    if (!layout_file_stream)
+    {
+        std::cerr << "Could not open layout file: " << layout_filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::string line;
+    std::getline(layout_file_stream, line);
+
+    // @todo currently only old file format is used
+    // // check for version in first line
+    // if (line.find("#!version 2.0"))
+    // {
+    //     // this is a file format version 2.0
+    // }
+    // else
+    // {
+
+    // older file formats didn't specifc a version, so if we don't find it
+    // in the first line we assume an old format
+    // because the old format might already contain valid parameters in its
+    // first line we backtrack to the beginning of the stream and let
+    // the specialist file format take care of the file as a whole
+    layout_file_stream.seekg(0, layout_file_stream.beg);
+    Parameters::parseVersion1LayoutFile(layout_file_stream, initialPositions, initialOrientations, number_of_fibers);
 }
 
-void Parameters::dump(const FiberParams params) 
+void Parameters::dump(const FiberParams params)
 {
     std::cout << "**************************************************" << std::endl;
     std::cout << "Parameters:" << std::endl;
@@ -71,9 +120,9 @@ void Parameters::dump(const FiberParams params)
     std::cout << "**************************************************" << std::endl;
 }
 
-const FiberParams Parameters::parseVersion0ParameterFile(std::ifstream &parameters_file_stream)
+const FiberParams Parameters::parseVersion1ParameterFile(std::ifstream &parameters_file_stream)
 {
-    std::cout << "Using version 0 file format" << std::endl;
+    std::cout << "...detected file format version 1" << std::endl;
     FiberParams params;
 
     // the old file format depends on the ordering of the parameters so have to
@@ -82,9 +131,7 @@ const FiberParams Parameters::parseVersion0ParameterFile(std::ifstream &paramete
     int lineIndex = 0;
     while (std::getline(parameters_file_stream, line))
     {
-        std::cout << line << std::endl;
-
-        std::istringstream value(line);
+            std::istringstream value(line);
         switch (lineIndex)
         {
         case 0: // Label to run
@@ -130,12 +177,52 @@ const FiberParams Parameters::parseVersion0ParameterFile(std::ifstream &paramete
 
     return params;
 }
-const FiberParams Parameters::parseVersion1ParameterFile(__unused std::ifstream &parameters_file_stream) {
+const FiberParams Parameters::parseVersion2ParameterFile(__unused std::ifstream &parameters_file_stream)
+{
     FiberParams params;
     return params;
 }
-void Parameters::parseVersion0LayoutFile(__unused std::ifstream &layout_file_stream, __unused fiberfloat4* initialPositions, __unused fiberfloat4 *initialOrientation, __unused fiberint *num_of_fibers)
+void Parameters::parseVersion1LayoutFile(std::ifstream &layout_file_stream, fiberfloat4 **initialPositions, fiberfloat4 **initialOrientations, fiberuint *number_of_fibers)
 {
+    std::cout << "...detected file format version 1" << std::endl;
+
+    // the first line contains the number of fibers to follow
+    // after that for each fiber there are two lines, the first is the position
+    // and the second the orientation
+
+    std::string line;
+    std::getline(layout_file_stream, line);
+
+    std::istringstream parse_number_of_fibers(line);
+
+    parse_number_of_fibers >> *number_of_fibers;
+
+    *initialPositions = (fiberfloat4*)malloc(sizeof(fiberfloat4) * (*number_of_fibers));
+    *initialOrientations = (fiberfloat4*)malloc(sizeof(fiberfloat4) * (*number_of_fibers));
+
+    for (fiberuint fiber_index = 0; fiber_index < *number_of_fibers; ++fiber_index)
+    {
+        std::getline(layout_file_stream, line);
+        fiberfloat4 position;
+
+        std::istringstream positionValues(line);
+        positionValues >> position.x;
+        positionValues >> position.y;
+        positionValues >> position.z;
+        position.w = 0;
+
+        std::getline(layout_file_stream, line);
+        fiberfloat4 orientation;
+
+        std::istringstream orientationValues(line);
+        orientationValues >> orientation.x;
+        orientationValues >> orientation.y;
+        orientationValues >> orientation.z;
+        orientation.w = 0;
+
+        (*initialPositions)[fiber_index] = position;
+        (*initialOrientations)[fiber_index] = orientation;
+    }
 }
 
 
