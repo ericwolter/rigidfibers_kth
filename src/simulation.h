@@ -42,9 +42,12 @@ private:
     cl_command_queue queue_;
     cl_program program_;
 
-    cl_mem a_buffer_;
-    cl_mem b_buffer_;
-    cl_mem c_buffer_;
+    cl_mem previous_position_buffer_;
+    cl_mem current_position_buffer_;
+    cl_mem next_position_buffer_;
+    cl_mem previous_orientation_buffer_;
+    cl_mem current_orientation_buffer_;
+    cl_mem next_orientation_buffer_;
 
     cl_mem quadrature_points_buffer_;
     cl_mem quadrature_weights_buffer_;
@@ -62,6 +65,8 @@ private:
 
     fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
     void precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals);
+
+    void step(fiberfloat timestep);
 };
 
 #endif // FIBERS_SIMULATION_H_

@@ -88,9 +88,12 @@ Simulation::~Simulation()
 {
     clFinish(queue_);
 
-    clReleaseMemObject(a_buffer_);
-    clReleaseMemObject(b_buffer_);
-    clReleaseMemObject(c_buffer_);
+    clReleaseMemObject(previous_position_buffer_);
+    clReleaseMemObject(current_position_buffer_);
+    clReleaseMemObject(next_position_buffer_);
+    clReleaseMemObject(previous_orientation_buffer_);
+    clReleaseMemObject(current_orientation_buffer_);
+    clReleaseMemObject(next_orientation_buffer_);
 
     clReleaseProgram(program_);
     // @todo release all kernels
@@ -200,19 +203,22 @@ void Simulation::initalizeKernels()
 
 void Simulation::initalizeBuffers()
 {
-    a_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    b_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    c_buffer_ = clCreateBuffer(context_, CL_MEM_WRITE_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    next_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    next_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
 }
 
 void Simulation::writeFiberStateToDevice()
 {
     cl_int err;
     std::cout << "[CPU] --> [GPU] : Writing initial fiber positions..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, NULL);
     clCheckError(err, "Could not write data to positions buffer");
     std::cout << "[CPU] --> [GPU] : Writing initial fiber orientations..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, NULL);
     clCheckError(err, "Could not write data to orientations buffer");
 }
 
@@ -221,7 +227,8 @@ void Simulation::readFiberStateFromDevice()
 
 }
 
-fiberfloat Simulation::calculateLegendrePolynomial(fiberfloat x, fiberuint n) {
+fiberfloat Simulation::calculateLegendrePolynomial(fiberfloat x, fiberuint n)
+{
 
     // Silence compiler warning here because if fiberfloat is actually a 32bit
     // floating point number this causes an implicit conversion to 32bit because
@@ -349,7 +356,7 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
 
     // The output matrix contains the legendre polynomials evaluated at each
     // quadrature point. So for each quadrature point we calculate each
-    // legendre polynomial up to the number of terms for the force expansion. 
+    // legendre polynomial up to the number of terms for the force expansion.
     // The results is a matrix where each row represents a point and each column
     // entry represents a legendre polynomial evaluated at that point.
     // The matrix is in column major order as is the default for GLM and GLSL.
@@ -377,6 +384,11 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
     delete[] legendre_polynomials;
 
 #pragma GCC diagnostic pop
+}
+
+void Simulation::step(__unused fiberfloat timestep)
+{
+
 }
 
 
