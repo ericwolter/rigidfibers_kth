@@ -46,12 +46,21 @@ private:
     cl_mem b_buffer_;
     cl_mem c_buffer_;
 
+    cl_mem quadrature_points_buffer_;
+    cl_mem quadrature_weights_buffer_;
+    cl_mem legendre_polynomials_buffer_;
+
     std::map<std::string,cl_kernel> kernels_;
 
     void initalizeQueue();
     void initalizeKernels();
     void initalizeProgram();
     void initalizeBuffers();
+
+    void writeFiberStateToDevice();
+    void readFiberStateFromDevice();
+
+    void precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals);
 };
 
 #endif // FIBERS_SIMULATION_H_
