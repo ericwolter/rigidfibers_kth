@@ -313,8 +313,7 @@ PROGRAM ADVECT_FIBERS
   END DO
 
   !me:  Intializes the positons and @todo tVecs with data from the specified
-  !     input file. Curiously only column 3(=three) is filled with data.
-  !     @todo What are the other two columns used for?
+  !     input file.
   XcVecs=0.0d0
   tVecs=0.0d0
   DO j=1,M
