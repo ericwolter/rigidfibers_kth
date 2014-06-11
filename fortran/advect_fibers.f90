@@ -351,7 +351,7 @@ PROGRAM ADVECT_FIBERS
 
   OPEN(10,file="quadrature_points.out");
   OPEN(30,file="quadrature_weights.out");
-  DO i=1,N
+  DO i=1,NoQI
      ind=(i-1)*3
      WRITE(10,'(2F24.16)') pv(ind+1)
      WRITE(10,'(2F24.16)') pv(ind+2)
@@ -363,8 +363,14 @@ PROGRAM ADVECT_FIBERS
      WRITE(30,*) ' '
   END DO
 
-
+  OPEN(70,file="quadrature_vectors.out")
   LvecMat=compute_LVecs(N,LQ,pv);
+  DO j=1,N
+    DO i=1,LQ
+      WRITE(70,'(2F24.16)') LvecMat(i,j)
+    END DO
+    WRITE(70,*) ' '
+  END DO
   
   !=================================================================
   PRINT *,"=========== advect_fibers =============="

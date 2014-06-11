@@ -359,7 +359,9 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
         for (fiberuint point_index = 0; point_index < total_number_of_points; ++point_index)
         {
             legendre_polynomials[point_index + column_index * total_number_of_points] = calculateLegendrePolynomial(quadrature_points[point_index], column_index + 1);
+            std::cout << legendre_polynomials[point_index + column_index * total_number_of_points] << std::endl;
         }
+        std::cout << std::endl;
     }
 
     // write legendre polynomials to device
