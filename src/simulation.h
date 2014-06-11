@@ -60,6 +60,7 @@ private:
     void writeFiberStateToDevice();
     void readFiberStateFromDevice();
 
+    fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
     void precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals);
 };
 

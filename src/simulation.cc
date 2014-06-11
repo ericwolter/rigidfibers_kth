@@ -221,23 +221,63 @@ void Simulation::readFiberStateFromDevice()
 
 }
 
+fiberfloat Simulation::calculateLegendrePolynomial(fiberfloat x, fiberuint n) {
+
+    // Silence compiler warning here because if fiberfloat is actually a 32bit
+    // floating point number this causes an implicit conversion to 32bit because
+    // cmath's pow always returns a double.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+    // precompute legendre polynomials vectors
+    // see: http://en.wikipedia.org/wiki/Legendre_polynomials
+    // This also contains a listing of the formulas up to n = 10
+    // However we currently only allow up to n = 8 terms for the force expansion
+    // TODO What about numerical precision here? n = 8 might become an issue...
+    switch (n)
+    {
+    case 0:
+        return 1;
+    case 1:
+        return x;
+    case 2:
+        return (1.0 / 2.0) * (3.0 * pow(x, 2) - 1.0);
+    case 3:
+        return (1.0 / 2.0) * (5.0 * pow(x, 3) - 3.0 * x);
+    case 4:
+        return (1.0 / 8.0) * (35.0 * pow(x, 4) - 30.0 * pow(x, 2) + 3.0);
+    case 5:
+        return (1.0 / 8.0) * (63.0 * pow(x, 5) - 70.0 * pow(x, 3) + 15.0 * x);
+    case 6:
+        return (1.0 / 16.0) * (231.0 * pow(x, 6) - 315.0 * pow(x, 4) + 105.0 * pow(x, 2) - 5.0);
+    case 7:
+        return (1.0 / 16.0) * (429.0 * pow(x, 7) - 693.0 * pow(x, 5) + 315.0 * pow(x, 3) - 35.0 * x);
+    case 8:
+        return (1.0 / 128.0) * (6435.0 * pow(x, 8) - 12012.0 * pow(x, 6) + 6930.0 * pow(x, 4) - 1260.0 * pow(x, 2) + 35.0);
+    default:
+        std::cerr << "Could not precompute legendre polynomials - n not in range [1..8]: " << n << std::endl;
+        exit(EXIT_FAILURE);
+    }
+#pragma GCC diagnostic pop
+
+}
+
 void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals)
 {
-    // we are currently always using a hardcoded 3rd order Gauss-Legendre
-    // quadrature
-    const fiberuint number_of_points = 3;
-
     // Silence compiler warning here because if fiberfloat is actually a 32bit
     // floating point number this causes an implicit conversion to 32bit because
     // cmath's sqrt always returns a double.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
+    // we are currently always using a hardcoded 3rd order Gauss-Legendre
+    // quadrature
+    const fiberuint number_of_points_per_interval = 3;
+    const fiberuint total_number_of_points = number_of_points_per_interval * number_of_quadrature_intervals;
+
     // These are the precalculated points for a 3rd order gaussian quadrature
     // These can be looked up in the literature
     fiberfloat p0 = -sqrt(15.0) / 5.0;
     fiberfloat p1 = 0.0;
     fiberfloat p2 = sqrt(15.0) / 5.0;
-#pragma GCC diagnostic push
 
     // These are the correcponding weights also found in the literature
     fiberfloat w0 = 5.0 / 9.0;
@@ -253,11 +293,11 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
     // of subintervals.
     fiberfloat interval_size = 2.0 / number_of_quadrature_intervals;
 
-    fiberfloat *quadrature_points = new fiberfloat[number_of_points * number_of_quadrature_intervals];
-    fiberfloat *quadrature_weights = new fiberfloat[number_of_points * number_of_quadrature_intervals];
+    fiberfloat *quadrature_points = new fiberfloat[total_number_of_points];
+    fiberfloat *quadrature_weights = new fiberfloat[total_number_of_points];
     //  On wikipedia the mapping from [a, b] to [-1, 1] is done with a factor of
     // (b - a) / 2. However in our case b = a + iv, so the factor would simply
-    // be iv / 2. 
+    // be iv / 2.
     // Additionally the point as to be shifted by (a + b) / 2, which for us is
     // (a + a + iv) / 2 = (2 * a * iv) / 2.
     // So if we pull out dividing by 2 we arrive at formula below for the point
@@ -272,7 +312,7 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
         //      calculated outside the loop, however for clarity we leave and
         //      here right now and precomputing polynomials is not performance
         //      critcal anyway
-        fiberuint interval_start_index = interval_index * number_of_points;
+        fiberuint interval_start_index = interval_index * number_of_points_per_interval;
         quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
         quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
         quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
@@ -286,21 +326,45 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
     }
 
     // write quadrature points and weights to device
-    quadrature_points_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * number_of_points * configuration_.parameters.num_quadrature_intervals, NULL, NULL);
-    quadrature_weights_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * number_of_points * configuration_.parameters.num_quadrature_intervals, NULL, NULL);
+    quadrature_points_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * total_number_of_points, NULL, NULL);
+    quadrature_weights_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * total_number_of_points, NULL, NULL);
 
     cl_int err;
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature points..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * number_of_points * configuration_.parameters.num_quadrature_intervals, quadrature_points, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, quadrature_points_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * total_number_of_points, quadrature_points, 0, NULL, NULL);
     clCheckError(err, "Could not write data to quadrature points buffer");
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature weights..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * number_of_points * configuration_.parameters.num_quadrature_intervals, quadrature_weights, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, quadrature_weights_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * total_number_of_points, quadrature_weights, 0, NULL, NULL);
     clCheckError(err, "Could not write data to quadrature weights buffer");
+
+    // The output matrix contains the legendre polynomials evaluated at each
+    // quadrature point. So for each quadrature point we calculate each
+    // legendre polynomial up to the number of terms for the force expansion. 
+    // The results is a matrix where each row represents a point and each column
+    // entry represents a legendre polynomial evaluated at that point.
+    // The matrix is in column major order as is the default for GLM and GLSL.
+    fiberfloat *legendre_polynomials = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion * total_number_of_points];
+    for (fiberuint column_index = 0; column_index < configuration_.parameters.num_terms_in_force_expansion; ++column_index)
+    {
+        for (fiberuint point_index = 0; point_index < total_number_of_points; ++point_index)
+        {
+            legendre_polynomials[point_index + column_index * total_number_of_points] = calculateLegendrePolynomial(quadrature_points[point_index], column_index + 1);
+        }
+    }
+
+    // write legendre polynomials to device
+    legendre_polynomials_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat) * configuration_.parameters.num_terms_in_force_expansion * total_number_of_points, NULL, NULL);
+
+    std::cout << "[CPU] --> [GPU] : Writing precomputed legendre polynomials..." << std::endl;
+    err = clEnqueueWriteBuffer(queue_, legendre_polynomials_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * configuration_.parameters.num_terms_in_force_expansion * total_number_of_points, legendre_polynomials, 0, NULL, NULL);
+    clCheckError(err, "Could not write data to legendre polynomials buffer");
 
     // cleanup
     delete[] quadrature_points;
     delete[] quadrature_weights;
+    delete[] legendre_polynomials;
 
+#pragma GCC diagnostic pop
 }
 
 
