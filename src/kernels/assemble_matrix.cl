@@ -65,27 +65,24 @@ kernel void assemble_matrix(const fiberuint number_of_fibers,
                     const fiberfloat K11 = 1.0 / distance
                                            + (1.0 / distance) * ((difference.x / distance) * (difference.x / distance))
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.x / distance * difference.x / distance));
+                                                   - (3.0 / pown(distance, 3)) * ((difference.x / distance) * (difference.x / distance)));
                     const fiberfloat K22 = 1.0 / distance
                                            + (1.0 / distance) * ((difference.y / distance) * (difference.y / distance))
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.y / distance * difference.y / distance));
+                                                   - (3.0 / pown(distance, 3)) * ((difference.y / distance) * (difference.y / distance)));
                     const fiberfloat K33 = 1.0 / distance
                                            + (1.0 / distance) * ((difference.z / distance) * (difference.z / distance))
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.y / distance * difference.y / distance));
-                    const fiberfloat K12 = 1.0 / distance
-                                           + (1.0 / distance) * ((difference.x / distance) * (difference.y / distance))
+                                                   - (3.0 / pown(distance, 3)) * ((difference.y / distance) * (difference.y / distance)));
+                    const fiberfloat K12 = (1.0 / distance) * (difference.x / distance) * (difference.y / distance) 
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.x / distance * difference.y / distance));
-                    const fiberfloat K13 = 1.0 / distance
-                                           + (1.0 / distance) * ((difference.x / distance) * (difference.z / distance))
+                                                   * (-3.0 / pown(distance, 3)) * (difference.x / distance) * (difference.y / distance));
+                    const fiberfloat K13 = (1.0 / distance) * (difference.x / distance) * (difference.z / distance) 
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.x / distance * difference.z / distance));
-                    const fiberfloat K23 = 1.0 / distance
-                                           + (1.0 / distance) * ((difference.y / distance) * (difference.z / distance))
+                                                   * (-3.0 / pown(distance, 3)) * (difference.x / distance) * (difference.z / distance));
+                    const fiberfloat K23 = (1.0 / distance) * (difference.y / distance) * (difference.z / distance) 
                                            + 2.0 * slenderness * slenderness * ((1.0 / pown(distance, 3))
-                                                   - (3.0 / pown(distance, 3)) * (difference.y / distance * difference.z / distance));
+                                                   * (-3.0 / pown(distance, 3)) * (difference.y / distance) * (difference.z / distance));
 
                     const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_j];
                     const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_j + force_index * number_of_quadrature_points];
@@ -111,6 +108,10 @@ kernel void assemble_matrix(const fiberuint number_of_fibers,
             const fiberfloat Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
             const fiberfloat Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
             const fiberfloat Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
+
+            if(i==0 && j==1) {
+                printf("i=%d;j=%d;force_index=%d\nT11=%f;T22=%f;T33=%f;T12=%f;T13=%f;T23=%f\nQ1=%f\n",i,j,force_index,T11,T22,T33,T12,T13,T23,Q1);
+            }
 
             fiberuint x_row_index = i * number_of_terms_in_force_expansion * dimensions + force_index * dimensions + 0;
             fiberuint y_row_index = i * number_of_terms_in_force_expansion * dimensions + force_index * dimensions + 1;

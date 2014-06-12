@@ -362,6 +362,7 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
 
 void Simulation::step()
 {
+    clFinish(queue_);
     DECLARE_TIMING(assemble_matrix);
 
     std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
@@ -372,7 +373,7 @@ void Simulation::step()
     clFinish(queue_);
 
     STOP_TIMING(assemble_matrix);
-    
+
     std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) << GET_TIMING(assemble_matrix) << " sec to assemble matrix." << std::endl;
 
     dumpLinearSystem();
