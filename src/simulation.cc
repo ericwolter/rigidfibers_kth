@@ -95,6 +95,9 @@ Simulation::~Simulation()
     clReleaseMemObject(current_orientation_buffer_);
     clReleaseMemObject(next_orientation_buffer_);
 
+    clReleaseMemObject(a_matrix_buffer_);
+    clReleaseMemObject(b_matrix_buffer_);
+
     clReleaseProgram(program_);
     // @todo release all kernels
     clReleaseCommandQueue(queue_);
@@ -203,12 +206,21 @@ void Simulation::initalizeKernels()
 
 void Simulation::initalizeBuffers()
 {
-    previous_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    current_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    next_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    previous_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    current_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    next_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_ONLY, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    next_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    next_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+
+    fiberuint num_matrix_rows =
+        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
+    fiberuint num_matrix_columns = num_matrix_rows;
+
+    a_matrix_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
+                                      size(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
+    b_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
+                                      size(fiberfloat) * num_matrix_rows, NULL, NULL);
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -386,7 +398,17 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
 #pragma GCC diagnostic pop
 }
 
-void Simulation::step(__unused fiberfloat timestep)
+void Simulation::step()
+{
+
+}
+
+void assembleMatrix()
+{
+    
+}
+
+void aseembleRightHandSide()
 {
 
 }
