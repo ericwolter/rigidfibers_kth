@@ -31,6 +31,8 @@ class Simulation
 public:
     Simulation(cl_context context, const CLDevice *device, Configuration configuration);
     ~Simulation();
+
+    void step();
 private:
     DISALLOW_COPY_AND_ASSIGN(Simulation);
 
@@ -38,6 +40,7 @@ private:
     const CLDevice* device_;
 
     Configuration configuration_;
+    size_t global_work_size_;
 
     cl_command_queue queue_;
     cl_program program_;
@@ -69,9 +72,10 @@ private:
     fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
     void precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals);
 
-    void step();
     void assembleMatrix();
-    void aseembleRightHandSide();
+    void assembleRightHandSide();
+
+    void dumpLinearSystem();
 };
 
 #endif // FIBERS_SIMULATION_H_

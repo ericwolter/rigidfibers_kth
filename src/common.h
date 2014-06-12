@@ -76,26 +76,26 @@
 
     #define IntCeil(num, divider) ((((num) + (divider) - 1) / (divider)) * (divider))
 
+    // This struct is used on both the host and the device that's why it uses only
+    // our custom types, see details host sections for more details
+    typedef struct
+    {
+        fiberfloat slenderness;                 // the slenderness parameter
+                                                //   epsilon = a/2L (e.g. 0.01)
+        fiberfloat timestep;                    // the timestep size (e.g. 0.1)
+        fiberuint num_fibers;                   // the number of fibers
+        fiberuint num_timesteps;                // the number of timesteps
+        fiberuint num_terms_in_force_expansion; // the number of terms used for the
+                                                //   force expansion (e.g. 5)
+        fiberuint num_quadrature_intervals;     // the number of intervals the
+                                                //   integral is subdivided into
+                                                //   on each subinterval 3 gaussian
+                                                //   quadrature points are used
+                                                //   (e.g. 8)
+        fiberint use_analytical_integration;    // NOT YET USED
+        fiberint use_direct_solver;             // NOT YET USED
+    } FiberParams;
+    
 #endif
-
-// This struct is used on both the host and the device that's why it uses only
-// our custom types, see details host sections for more details
-typedef struct
-{
-    fiberfloat slenderness;                 // the slenderness parameter
-                                            //   epsilon = a/2L (e.g. 0.01)
-    fiberfloat timestep;                    // the timestep size (e.g. 0.1)
-    fiberuint num_fibers;                   // the number of fibers
-    fiberuint num_timesteps;                // the number of timesteps
-    fiberuint num_terms_in_force_expansion; // the number of terms used for the
-                                            //   force expansion (e.g. 5)
-    fiberuint num_quadrature_intervals;     // the number of intervals the
-                                            //   integral is subdivided into
-                                            //   on each subinterval 3 gaussian
-                                            //   quadrature points are used
-                                            //   (e.g. 8)
-    fiberint use_analytical_integration;    // NOT YET USED
-    fiberint use_direct_solver;             // NOT YET USED
-} FiberParams;
 
 #endif // FIBERS_COMMON_H_

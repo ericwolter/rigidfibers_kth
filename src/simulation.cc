@@ -20,7 +20,9 @@
 #include "simulation.h"
 
 #include <cmath>
+#include <ctime>
 #include <vector>
+#include <iomanip>  // used for standard output manipulation (e.g setprecision)
 
 #include "resources.h"
 
@@ -30,6 +32,8 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
     device_ = device;
     configuration_ = configuration;
 
+    global_work_size_ = IntCeil(configuration_.parameters.num_fibers, 32);
+
     initalizeQueue();
     initalizeProgram();
     initalizeKernels();
@@ -37,51 +41,6 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
 
     writeFiberStateToDevice();
     precomputeLegendrePolynomials(configuration_.parameters.num_quadrature_intervals);
-
-    // cl_int err;
-    // size_t count = configuration_.parameters.num_fibers * 4;
-
-    // cl_uint param = 0; cl_kernel kernel = kernels_["vadd"];
-    // err  = clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &b_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &c_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_uint), &count);
-    // clCheckError(err, "Could not set kernel arguments");
-
-    // const size_t global_work_size = IntCeil(count, 32);
-    // err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
-    // clCheckError(err, "Could not enqueue kernel");
-
-    // fiberfloat4 *a_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
-    // fiberfloat4 *b_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
-    // fiberfloat4 *c_data = (fiberfloat4 *)malloc(sizeof(fiberfloat4) * configuration_.parameters.num_fibers);
-    // err = clEnqueueReadBuffer(queue_, a_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, a_data, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from a buffer");
-    // err = clEnqueueReadBuffer(queue_, b_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, b_data, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from b buffer");
-    // err = clEnqueueReadBuffer(queue_, c_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, c_data, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from c buffer");
-
-    // fiberfloat4 tmp;
-    // for (size_t i = 0; i < configuration_.parameters.num_fibers; ++i)
-    // {
-    //     tmp.x = a_data[i].x + b_data[i].x;
-    //     tmp.y = a_data[i].y + b_data[i].y;
-    //     tmp.z = a_data[i].z + b_data[i].z;
-    //     tmp.w = a_data[i].w + b_data[i].w;
-    //     tmp.x -= c_data[i].x;
-    //     tmp.y -= c_data[i].y;
-    //     tmp.z -= c_data[i].z;
-    //     tmp.w -= c_data[i].w;
-    //     printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.x, a_data[i].x, b_data[i].x, c_data[i].x);
-    //     printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.y, a_data[i].y, b_data[i].y, c_data[i].y);
-    //     printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.z, a_data[i].z, b_data[i].z, c_data[i].z);
-    //     printf("%lu tmp %f h_a %f h_b %f h_c %f \n", i, tmp.w, a_data[i].w, b_data[i].w, c_data[i].w);
-    // }
-
-    // free(a_data);
-    // free(b_data);
-    // free(c_data);
 }
 
 Simulation::~Simulation()
@@ -96,7 +55,7 @@ Simulation::~Simulation()
     clReleaseMemObject(next_orientation_buffer_);
 
     clReleaseMemObject(a_matrix_buffer_);
-    clReleaseMemObject(b_matrix_buffer_);
+    clReleaseMemObject(b_vector_buffer_);
 
     clReleaseProgram(program_);
     // @todo release all kernels
@@ -120,6 +79,7 @@ void Simulation::initalizeProgram()
     {
         "common.h",
         "vadd.cl",
+        "assemble_matrix.cl",
         ""
     };
 
@@ -218,9 +178,9 @@ void Simulation::initalizeBuffers()
     fiberuint num_matrix_columns = num_matrix_rows;
 
     a_matrix_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
-                                      size(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
+                                      sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
     b_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
-                                      size(fiberfloat) * num_matrix_rows, NULL, NULL);
+                                      sizeof(fiberfloat) * num_matrix_rows, NULL, NULL);
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -400,17 +360,71 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
 
 void Simulation::step()
 {
+    clock_t t;
+
+    std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
+    t = clock();
+    assembleMatrix();
+    t = clock() - t;
+    std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) <<((float)t)/CLOCKS_PER_SEC << " sec to assemble matrix." << std::endl;
+
+    dumpLinearSystem();
+}
+
+void Simulation::assembleMatrix()
+{
+    cl_int err = 0;
+   
+    cl_uint param = 0; cl_kernel kernel = kernels_["assemble_matrix"];
+    err  = clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_fibers);
+    err |= clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_terms_in_force_expansion);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_points_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_weights_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
+    clCheckError(err, "Could not set kernel arguments for assembling matrix");
+
+    // let the opencl runtime determine optimal local work size
+    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, NULL);
+    clCheckError(err, "Could not enqueue kernel");
+}
+
+void Simulation::assembleRightHandSide()
+{
 
 }
 
-void assembleMatrix()
+void Simulation::dumpLinearSystem() 
 {
-    
-}
+    fiberuint num_matrix_rows =
+        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
+    fiberuint num_matrix_columns = num_matrix_rows;
 
-void aseembleRightHandSide()
-{
+    fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
 
+    cl_int err;
+    err = clEnqueueReadBuffer(queue_, a_matrix_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, a_matrix, 0, NULL, NULL);
+    clCheckError(err, "Could not read from a matrix");
+
+    std::string executablePath = Resources::getExecutablePath();
+
+    std::ofstream a_matrix_output_file;
+    a_matrix_output_file.open (executablePath + "/a_matrix.out");
+    a_matrix_output_file << std::setfill('-') << std::setw(80) << "-" << std::endl;
+    a_matrix_output_file << "A Matrix" << std::endl;
+    for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
+    {
+        for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
+        {
+            a_matrix_output_file << a_matrix[row_index + column_index * num_matrix_rows] << "\t";
+        }
+        a_matrix_output_file << std::endl;
+    }
+    a_matrix_output_file.close();
+
+    delete[] a_matrix;
 }
 
 

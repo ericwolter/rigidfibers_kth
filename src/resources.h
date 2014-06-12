@@ -27,8 +27,8 @@ class Resources
 {
 public:
     static const std::string getKernelSource(const std::string kernel_filename);
-private:
     static const std::string getExecutablePath();
+private:
     static const std::string getPathForKernel(const std::string kernel_filename);
 };
 

@@ -42,6 +42,8 @@ int main(int argc, char *argv[])
 
     Simulation simulation(context, selected_device, configuration);
 
+    simulation.step();
+
     // bool running = true;
 
     // do

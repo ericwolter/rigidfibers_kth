@@ -56,19 +56,19 @@ endif()
 set(KERNELS
     common.h
     kernels/vadd.cl
+    kernels/assemble_matrix.cl
 )
 
+add_custom_target(copy)
 foreach(KERNEL ${KERNELS})
     get_filename_component(FILENAME ${KERNEL} NAME)
     set(SRC "${CMAKE_SOURCE_DIR}/src/${KERNEL}")
     set(DST "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/kernels/${FILENAME}")
 
     # cmake -E copy_if_different automatically creates the required directories
-    # CAUTION:  copy_if_different does not appear to work reliably sometimes the
-    #           files are not copied even though they changed.
-    #           As a workaround we now ALWAYS copy the files, as long as we
-    #           don't have massive amounts of kernels we should be fine...
-    add_custom_command(TARGET fibers POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${SRC} ${DST}
+    add_custom_command(TARGET copy PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC} ${DST}
     )
 endforeach(KERNEL)
+
+add_dependencies(fibers copy)
