@@ -65,6 +65,11 @@
         TypeName(const TypeName&);             \
         void operator=(const TypeName&)
 
+    #define DECLARE_TIMING(s)  clock_t time_##s
+    #define START_TIMING(s)    time_##s = clock()
+    #define STOP_TIMING(s)     time_##s = (clock() - time_##s)
+    #define GET_TIMING(s)      ((double)time_##s / CLOCKS_PER_SEC)
+
     inline void clCheckError(cl_int err, const char *name)
     {
         if(err != CL_SUCCESS) 

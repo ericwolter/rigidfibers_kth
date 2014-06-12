@@ -75,6 +75,8 @@ void Simulation::initalizeProgram()
 {
     cl_int err;
 
+    std::cout << "     [CPU]      : Compiling OpenCL program..." << std::endl;
+
     const std::string kernel_filenames[] =
     {
         "common.h",
@@ -119,7 +121,7 @@ void Simulation::initalizeProgram()
     // no build log the size returned by clGetProgramBuildInfo still contains
     // one char. So we can ignore that one char and only show the build log when
     // we have a size larger than 1.
-    if (size > 1)
+    if (err)
     {
         char *buildLog = new char[size];
         err = clGetProgramBuildInfo(program_, device_->id(), CL_PROGRAM_BUILD_LOG, size, buildLog, NULL);
@@ -360,13 +362,18 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
 
 void Simulation::step()
 {
-    clock_t t;
+    DECLARE_TIMING(assemble_matrix);
 
     std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
-    t = clock();
+
+    START_TIMING(assemble_matrix);
+
     assembleMatrix();
-    t = clock() - t;
-    std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) <<((float)t)/CLOCKS_PER_SEC << " sec to assemble matrix." << std::endl;
+    clFinish(queue_);
+
+    STOP_TIMING(assemble_matrix);
+    
+    std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) << GET_TIMING(assemble_matrix) << " sec to assemble matrix." << std::endl;
 
     dumpLinearSystem();
 }
@@ -375,9 +382,16 @@ void Simulation::assembleMatrix()
 {
     cl_int err = 0;
    
+    const fiberuint number_of_points_per_quadrature_interval = 3;
+    const fiberuint total_number_of_quadrature_points = 
+        number_of_points_per_quadrature_interval * 
+        configuration_.parameters.num_quadrature_intervals;
+
     cl_uint param = 0; cl_kernel kernel = kernels_["assemble_matrix"];
     err  = clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_fibers);
     err |= clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_terms_in_force_expansion);
+    err |= clSetKernelArg(kernel, param++, sizeof(fiberuint), &total_number_of_quadrature_points);
+    err |= clSetKernelArg(kernel, param++, sizeof(fiberfloat), &configuration_.parameters.slenderness);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);
