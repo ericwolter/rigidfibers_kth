@@ -33,6 +33,7 @@ const Configuration Parameters::parseConfigurationFiles(const std::string parame
 
     FiberParams params = Parameters::parseParameterFile(parameters_filename);
     params.num_fibers = number_of_fibers;
+    params.num_quadrature_points_per_interval = 3;
 
     configuration.parameters = params;
     configuration.initial_positions = initial_positions; 
@@ -197,8 +198,15 @@ void Parameters::parseVersion1LayoutFile(std::ifstream &layout_file_stream, fibe
 
     parse_number_of_fibers >> *number_of_fibers;
 
+    // TODO Do not understand the full implication of this error, however its
+    // only in included in -Weverything which is not strictly recommended anyway
+    // and is only caused if using double precision. Also the C++ is not the
+    // prime focus and it works regardless.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wover-aligned"
     *initialPositions = new fiberfloat4[*number_of_fibers];
     *initialOrientations = new fiberfloat4[*number_of_fibers];
+#pragma GCC diagnostic pop
 
     for (fiberuint fiber_index = 0; fiber_index < *number_of_fibers; ++fiber_index)
     {

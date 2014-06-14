@@ -19,9 +19,12 @@
  */
 #include "simulation.h"
 
+ #include <stdio.h>
+
 #include <cmath>
 #include <ctime>
 #include <vector>
+#include <sstream>
 #include <iomanip>  // used for standard output manipulation (e.g setprecision)
 
 #include "resources.h"
@@ -40,7 +43,7 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
     initalizeBuffers();
 
     writeFiberStateToDevice();
-    precomputeLegendrePolynomials(configuration_.parameters.num_quadrature_intervals);
+    precomputeLegendrePolynomials();
 }
 
 Simulation::~Simulation()
@@ -112,7 +115,25 @@ void Simulation::initalizeProgram()
     program_ = clCreateProgramWithSource(context_, (cl_uint)cstr_kernel_sources.size(), &cstr_kernel_sources[0], NULL, &err);
     clCheckError(err, "Could not create program from sources");
 
-    cl_int buildError = clBuildProgram(program_, 0, NULL, NULL, NULL, NULL);
+    // All precomputable constants are passed to the OpenCL compiler so that
+    // it can generate optimal code for the given constants
+    std::ostringstream clflags;
+    clflags << "-w" << " ";
+
+    clflags << "-DDIMENSIONS=" << 3 << " ";
+    clflags << "-DNUMBER_OF_FIBERS=" << configuration_.parameters.num_fibers << " ";
+    clflags << "-DSLENDERNESS=" << configuration_.parameters.slenderness << " ";
+    clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
+    clflags << "-DTOTAL_NUMBER_OF_QUADRATURE_POINTS="   << configuration_.parameters.num_quadrature_points_per_interval
+                                                            * configuration_.parameters.num_quadrature_intervals    << " ";
+
+    // TODO This is totally weird... why can't we just pass in clflags.str().c_str()?!?
+    // Should be exactly the same...                                                   
+    std::string stdstr_options = clflags.str();
+    char *options = (char*)malloc(sizeof(char) * stdstr_options.length());
+    sprintf(options, "%s", stdstr_options.c_str());
+
+    cl_int buildError = clBuildProgram(program_, 0, NULL, options, NULL, NULL);
 
     size_t size;
     err = clGetProgramBuildInfo(program_, device_->id(), CL_PROGRAM_BUILD_LOG, 0, NULL, &size);
@@ -121,7 +142,7 @@ void Simulation::initalizeProgram()
     // no build log the size returned by clGetProgramBuildInfo still contains
     // one char. So we can ignore that one char and only show the build log when
     // we have a size larger than 1.
-    if (err)
+    if (size > 1)
     {
         char *buildLog = new char[size];
         err = clGetProgramBuildInfo(program_, device_->id(), CL_PROGRAM_BUILD_LOG, size, buildLog, NULL);
@@ -242,17 +263,16 @@ fiberfloat Simulation::calculateLegendrePolynomial(fiberfloat x, fiberuint n)
 
 }
 
-void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals)
+void Simulation::precomputeLegendrePolynomials()
 {
     // Silence compiler warning here because if fiberfloat is actually a 32bit
     // floating point number this causes an implicit conversion to 32bit because
     // cmath's sqrt always returns a double.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-    // we are currently always using a hardcoded 3rd order Gauss-Legendre
-    // quadrature
-    const fiberuint number_of_points_per_interval = 3;
-    const fiberuint total_number_of_points = number_of_points_per_interval * number_of_quadrature_intervals;
+    const fiberuint total_number_of_points = 
+        configuration_.parameters.num_quadrature_points_per_interval 
+        * configuration_.parameters.num_quadrature_intervals;
 
     // These are the precalculated points for a 3rd order gaussian quadrature
     // These can be looked up in the literature
@@ -272,7 +292,7 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
     // Calculate the size of a single subinterval. The overall integral bounds
     // are [-1, 1] so the range is 2, which can simply be divided by the number
     // of subintervals.
-    fiberfloat interval_size = 2.0 / number_of_quadrature_intervals;
+    fiberfloat interval_size = 2.0 / configuration_.parameters.num_quadrature_intervals;
 
     fiberfloat *quadrature_points = new fiberfloat[total_number_of_points];
     fiberfloat *quadrature_weights = new fiberfloat[total_number_of_points];
@@ -286,7 +306,7 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
     // for us. If we now plug in iv = 2 / NoQI the factor simply becomes
     // 1 / NoQI. So the weights can simply be divided by the number of
     // subintervals as in the formula below
-    for (fiberuint interval_index = 0; interval_index < number_of_quadrature_intervals; ++interval_index)
+    for (fiberuint interval_index = 0; interval_index < configuration_.parameters.num_quadrature_intervals; ++interval_index)
     {
         // TODO potential micro optimizations as p*, w*, interval_size
         //      number_of_quadrature_intervals are constant they could be
@@ -295,14 +315,14 @@ void Simulation::precomputeLegendrePolynomials(fiberuint number_of_quadrature_in
         //      critcal anyway
         // TODO potential memory savings because weights are the same for each
         //      interval
-        fiberuint interval_start_index = interval_index * number_of_points_per_interval;
+        fiberuint interval_start_index = interval_index * configuration_.parameters.num_quadrature_points_per_interval;
         quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
         quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
         quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
 
-        quadrature_weights[interval_start_index + 0] = w0 / number_of_quadrature_intervals;
-        quadrature_weights[interval_start_index + 1] = w1 / number_of_quadrature_intervals;
-        quadrature_weights[interval_start_index + 2] = w2 / number_of_quadrature_intervals;
+        quadrature_weights[interval_start_index + 0] = w0 / configuration_.parameters.num_quadrature_intervals;
+        quadrature_weights[interval_start_index + 1] = w1 / configuration_.parameters.num_quadrature_intervals;
+        quadrature_weights[interval_start_index + 2] = w2 / configuration_.parameters.num_quadrature_intervals;
 
         // std::cout << quadrature_points[interval_start_index + 0] << std::endl;
         // std::cout << quadrature_points[interval_start_index + 1] << std::endl;
@@ -383,16 +403,7 @@ void Simulation::assembleMatrix()
 {
     cl_int err = 0;
    
-    const fiberuint number_of_points_per_quadrature_interval = 3;
-    const fiberuint total_number_of_quadrature_points = 
-        number_of_points_per_quadrature_interval * 
-        configuration_.parameters.num_quadrature_intervals;
-
     cl_uint param = 0; cl_kernel kernel = kernels_["assemble_matrix"];
-    err  = clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_fibers);
-    err |= clSetKernelArg(kernel, param++, sizeof(fiberuint), &configuration_.parameters.num_terms_in_force_expansion);
-    err |= clSetKernelArg(kernel, param++, sizeof(fiberuint), &total_number_of_quadrature_points);
-    err |= clSetKernelArg(kernel, param++, sizeof(fiberfloat), &configuration_.parameters.slenderness);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);

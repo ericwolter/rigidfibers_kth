@@ -70,7 +70,7 @@ private:
     void readFiberStateFromDevice();
 
     fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
-    void precomputeLegendrePolynomials(fiberuint number_of_quadrature_intervals);
+    void precomputeLegendrePolynomials();
 
     void assembleMatrix();
     void assembleRightHandSide();

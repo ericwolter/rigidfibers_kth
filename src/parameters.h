@@ -22,6 +22,10 @@
 #include "common.h"
 #include <fstream>
 
+// The alignment of the configuration struct does not matter so we can safely
+// ignore this warning 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
 // Simple container for the setup configuration which allows the simulation to
 // set itself up correctly
 typedef struct {
@@ -29,6 +33,7 @@ typedef struct {
     fiberfloat4 *initial_positions;
     fiberfloat4 *initial_orientations;
 } Configuration;
+#pragma GCC diagnostic pop
 
 class Parameters
 {

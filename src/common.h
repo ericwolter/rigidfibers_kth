@@ -7,13 +7,13 @@
     // floating points
     #ifdef USE_DOUBLE_PRECISION
 
-        #if defined(cl_khr_fp64)
+        #ifdef cl_khr_fp64
             #pragma OPENCL EXTENSION cl_khr_fp64 : enable
         #elif defined(cl_amd_fp64)
             #pragma OPENCL EXTENSION cl_amd_fp64 : enable
         #else
-            #error "Device does not support double precision extensions!"
-        #endif // cl_khr_fp64
+            #error "Double precision floating point not supported by OpenCL implementation."
+        #endif
 
         typedef double fiberfloat;
         typedef double4 fiberfloat4;
@@ -85,20 +85,22 @@
     // our custom types, see details host sections for more details
     typedef struct
     {
-        fiberfloat slenderness;                 // the slenderness parameter
-                                                //   epsilon = a/2L (e.g. 0.01)
-        fiberfloat timestep;                    // the timestep size (e.g. 0.1)
-        fiberuint num_fibers;                   // the number of fibers
-        fiberuint num_timesteps;                // the number of timesteps
-        fiberuint num_terms_in_force_expansion; // the number of terms used for the
-                                                //   force expansion (e.g. 5)
-        fiberuint num_quadrature_intervals;     // the number of intervals the
-                                                //   integral is subdivided into
-                                                //   on each subinterval 3 gaussian
-                                                //   quadrature points are used
-                                                //   (e.g. 8)
-        fiberint use_analytical_integration;    // NOT YET USED
-        fiberint use_direct_solver;             // NOT YET USED
+        fiberfloat slenderness;                         // the slenderness parameter
+                                                        //   epsilon = a/2L (e.g. 0.01)
+        fiberfloat timestep;                            // the timestep size (e.g. 0.1)
+        fiberuint num_fibers;                           // the number of fibers
+        fiberuint num_timesteps;                        // the number of timesteps
+        fiberuint num_terms_in_force_expansion;         // the number of terms used for the
+                                                        //   force expansion (e.g. 5)
+        fiberuint num_quadrature_intervals;             // the number of intervals the
+                                                        //   integral is subdivided into
+                                                        //   on each subinterval 3 gaussian
+                                                        //   quadrature points are used
+                                                        //   (e.g. 8)
+        fiberuint num_quadrature_points_per_interval;   // the number of points per
+                                                        //   quadrature points (e.g. 3)
+        fiberint use_analytical_integration;            // NOT YET USED
+        fiberint use_direct_solver;                     // NOT YET USED
     } FiberParams;
     
 #endif
