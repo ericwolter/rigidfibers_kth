@@ -438,13 +438,17 @@ void Simulation::dumpLinearSystem()
 
     std::ofstream a_matrix_output_file;
     a_matrix_output_file.open (executablePath + "/a_matrix.out");
-    a_matrix_output_file << std::setfill('-') << std::setw(80) << "-" << std::endl;
-    a_matrix_output_file << "A Matrix" << std::endl;
+    a_matrix_output_file << std::fixed << std::setprecision(8);
     for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
     {
         for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
         {
-            a_matrix_output_file << a_matrix[row_index + column_index * num_matrix_rows] << "\t";
+            fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
+            if(value < 0) {
+                a_matrix_output_file << "     " << a_matrix[row_index + column_index * num_matrix_rows];    
+            } else {
+                a_matrix_output_file << "      " << a_matrix[row_index + column_index * num_matrix_rows];    
+            }
         }
         a_matrix_output_file << std::endl;
     }
