@@ -23,6 +23,9 @@ ADVECT_FIBERS
 # build output
 build/
 
+# random layouts
+tools/*.in
+
 ##################################################
 #
 # OSX.gitignore
