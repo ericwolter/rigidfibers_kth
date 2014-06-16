@@ -2,8 +2,20 @@
 # separate the binary from the source lets put it into its own directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# make compiler as strict as possible, if needed this can be relaxed later
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # using Clang
+    # make compiler as strict as possible, if needed this can be relaxed later
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wpedantic -Wextra -Weverything -Werror -Wfatal-errors")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    # using Intel C++
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    # using Visual Studio C++
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif()
 
 # defines all source code files
 set(SOURCE
