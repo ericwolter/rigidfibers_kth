@@ -396,7 +396,7 @@ void Simulation::step()
 
     std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) << GET_TIMING(assemble_matrix) << " sec to assemble matrix." << std::endl;
 
-    dumpLinearSystem();
+    //dumpLinearSystem();
 }
 
 void Simulation::assembleMatrix()
