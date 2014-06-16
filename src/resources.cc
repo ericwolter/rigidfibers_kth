@@ -55,6 +55,7 @@ const std::string Resources::getExecutablePath()
 		char absolute_path[PATH_MAX + 1];
 		ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
 		if(len != 1) {
+			path[len] = '\0';
 			realpath(path, absolute_path);			
 		}
 		
