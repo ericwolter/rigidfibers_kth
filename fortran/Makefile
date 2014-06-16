@@ -15,7 +15,7 @@ MOD_DIR = $(HOME)
 RM       = rm -f
 MV       = mv -f
 
-F90FLAGS += -g -Og
+F90FLAGS += -O3
 #	    -C\
            # -xtarget=ultra2i -xcache=16/32/1:2048/64/1 \
 	   # -xlibmopt \
