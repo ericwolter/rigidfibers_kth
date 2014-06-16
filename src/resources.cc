@@ -30,7 +30,9 @@
 #elif defined(__WINDOWS__)
   // @todo
 #else // Unix
-  // @todo
+	#include <linux/limits.h>
+    #include <libgen.h>
+    #include <unistd.h>
 #endif
 
 // see: http://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe
@@ -39,15 +41,24 @@ const std::string Resources::getExecutablePath()
     #if defined(__APPLE__)
         char path[PATH_MAX + 1];
         char absolute_path[PATH_MAX + 1];
-        uint32_t size = sizeof(path);
-        if (_NSGetExecutablePath(path, &size) == 0)
+        uint32_t size = sizeof(path) - 1;
+        if (_NSGetExecutablePath(path, &size) == 0) {
             realpath(path, absolute_path);
-
+        }
+        
         return dirname(absolute_path);
     #elif defined(_WINDOWS)
         // @todo
     #else // Unix
-        // @todo
+		// see: https://www.securecoding.cert.org/confluence/display/seccode/POS30-C.+Use+the+readlink%28%29+function+properly
+		char path[PATH_MAX + 1];
+		char absolute_path[PATH_MAX + 1];
+		ssize_t len = readlink("/proc/self/exe", path, sizeof(path) - 1);
+		if(len != 1) {
+			realpath(path, absolute_path);			
+		}
+		
+		return dirname(absolute_path);
     #endif
 }
 

@@ -178,7 +178,7 @@ const FiberParams Parameters::parseVersion1ParameterFile(std::ifstream &paramete
 
     return params;
 }
-const FiberParams Parameters::parseVersion2ParameterFile(__unused std::ifstream &parameters_file_stream)
+const FiberParams Parameters::parseVersion2ParameterFile(std::ifstream &parameters_file_stream)
 {
     FiberParams params;
     return params;

@@ -87,18 +87,18 @@ void Simulation::initalizeProgram()
         "assemble_matrix.cl",
         ""
     };
-
+	
     // load kernel sources
     std::vector<std::string> kernel_sources;
     for (int i = 0; kernel_filenames[i] != ""; i++)
     {
         // Read source from disk
         std::string source = Resources::getKernelSource(kernel_filenames[i]);
-
+        
         // Load into compile list
         kernel_sources.push_back(source);
     }
-
+	
     // the OpenCL is a C API and thus only supports const char*. However for
     // convenience we use proper std::string everywhere else and only convert
     // to C-Land at the last moment
@@ -108,7 +108,7 @@ void Simulation::initalizeProgram()
     {
         cstr_kernel_sources.push_back(kernel_sources[i].c_str());
     }
-
+    
     // -Wshorten-64-to-32 for cstr_kernel_sources.str() is totally fine here
     // We have no other option than to conform to the OpenCL API here and
     // regardless 32bit for the number of kernels should be enough anyway...
@@ -436,8 +436,9 @@ void Simulation::dumpLinearSystem()
 
     std::string executablePath = Resources::getExecutablePath();
 
+	std::string outputPath = executablePath + "/a_matrix.out";
     std::ofstream a_matrix_output_file;
-    a_matrix_output_file.open (executablePath + "/a_matrix.out");
+    a_matrix_output_file.open (outputPath.c_str());
     a_matrix_output_file << std::fixed << std::setprecision(8);
     for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
     {

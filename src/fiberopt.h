@@ -218,7 +218,7 @@ int parse_long(Tokens *ts, Elements *elements)
     return 0;
 }
 
-int parse_short(__unused Tokens *ts, __unused Elements *elements)
+int parse_short(Tokens *ts, Elements *elements)
 {
     return 1;
 }
