@@ -1,8 +1,6 @@
 #ifndef FIBERS_COMMON_H_
 #define FIBERS_COMMON_H_
 
-#define USE_DOUBLE_PRECISION
-
 #ifdef __OPENCL_VERSION__ // device
 
     // take precautions to easily switch between single/double precision
