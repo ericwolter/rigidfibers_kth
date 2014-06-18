@@ -39,6 +39,7 @@ public:
 
     cl_event* getEvent(std::string eventName);
     void updateEvent(std::string eventName);
+    void printEvent(std::string eventName);
     void dump();
 private:
     DISALLOW_COPY_AND_ASSIGN(Performance);

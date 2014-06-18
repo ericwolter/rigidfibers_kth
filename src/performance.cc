@@ -53,6 +53,12 @@ void Performance::updateEvent(std::string eventName)
     performance_event->second.last_time = end - start;
 }
 
+void Performance::printEvent(std::string eventName) 
+{
+    std::map<std::string, PerformanceEvent>::iterator performance_event = events_.find(eventName);
+    std::cout << "  [BENCHMARK]   : " << performance_event->second.eventName << " took " << performance_event->second.last_time*1e-09 << " sec" << std::endl;
+}
+
 void Performance::dump() 
 {
     std::map<std::string, PerformanceEvent>::iterator iter;

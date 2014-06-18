@@ -211,11 +211,15 @@ void Simulation::writeFiberStateToDevice()
 {
     cl_int err;
     std::cout << "[CPU] --> [GPU] : Writing initial fiber positions..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, performance_->getEvent("write_positions"));
     clCheckError(err, "Could not write data to positions buffer");
+    performance_->updateEvent("write_positions");
+    performance_->printEvent("write_positions");
     std::cout << "[CPU] --> [GPU] : Writing initial fiber orientations..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, performance_->getEvent("write_orientations"));
     clCheckError(err, "Could not write data to orientations buffer");
+    performance_->updateEvent("write_orientations");
+    performance_->printEvent("write_orientations");
 }
 
 void Simulation::readFiberStateFromDevice()
@@ -384,27 +388,19 @@ void Simulation::precomputeLegendrePolynomials()
 void Simulation::step()
 {
     clFinish(queue_);
-    DECLARE_TIMING(assemble_matrix);
 
     std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
-
-    START_TIMING(assemble_matrix);
-
     assembleMatrix();
+
     clFinish(queue_);
 
-    STOP_TIMING(assemble_matrix);
-
-    std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) << GET_TIMING(assemble_matrix) << " sec to assemble matrix." << std::endl;
-
     //dumpLinearSystem();
-    performance_->dump();
 }
 
 void Simulation::assembleMatrix()
 {
     cl_int err = 0;
-   
+
     cl_uint param = 0; cl_kernel kernel = kernels_["assemble_matrix"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
@@ -417,8 +413,9 @@ void Simulation::assembleMatrix()
     // let the opencl runtime determine optimal local work size
     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getEvent("assemble_matrix"));
     clCheckError(err, "Could not enqueue kernel");
-    
+
     performance_->updateEvent("assemble_matrix");
+    performance_->printEvent("assemble_matrix");
 }
 
 void Simulation::assembleRightHandSide()

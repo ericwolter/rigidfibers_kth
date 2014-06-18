@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
 
     const CLPlatform *selected_platform = CLUtils::selectPlatform();
     const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
+    std::cout << std::endl;
 
     cl_context context = CLUtils::createContext(selected_platform, selected_device);
 
