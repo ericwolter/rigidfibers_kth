@@ -34,6 +34,7 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
     context_ = context;
     device_ = device;
     configuration_ = configuration;
+    performance_ = new Performance();
 
     global_work_size_ = IntCeil(configuration_.parameters.num_fibers, 32);
 
@@ -70,7 +71,7 @@ void Simulation::initalizeQueue()
 {
     cl_int err;
 
-    queue_ = clCreateCommandQueue(context_, device_->id(), 0, &err);
+    queue_ = clCreateCommandQueue(context_, device_->id(), CL_QUEUE_PROFILING_ENABLE, &err);
     clCheckError(err, "Could not create command queue");
 }
 
@@ -397,6 +398,7 @@ void Simulation::step()
     std::cout << "  [BENCHMARK]   : It took " << std::fixed << std::setprecision(8) << GET_TIMING(assemble_matrix) << " sec to assemble matrix." << std::endl;
 
     //dumpLinearSystem();
+    performance_->dump();
 }
 
 void Simulation::assembleMatrix()
@@ -413,8 +415,10 @@ void Simulation::assembleMatrix()
     clCheckError(err, "Could not set kernel arguments for assembling matrix");
 
     // let the opencl runtime determine optimal local work size
-    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getEvent("assemble_matrix"));
     clCheckError(err, "Could not enqueue kernel");
+    
+    performance_->updateEvent("assemble_matrix");
 }
 
 void Simulation::assembleRightHandSide()

@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "parameters.h"
+#include "performance.h"
 #include "ocl/cldevice.h"
 
 class Simulation
@@ -38,6 +39,8 @@ private:
 
     cl_context context_;
     const CLDevice* device_;
+
+    Performance* performance_;
 
     Configuration configuration_;
     size_t global_work_size_;

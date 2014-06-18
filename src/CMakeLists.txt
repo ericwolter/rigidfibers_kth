@@ -22,6 +22,7 @@ set(SOURCE
     main.cc
     resources.cc
     parameters.cc
+    performance.cc
     simulation.cc
     ocl/cldevice.cc
     ocl/clplatform.cc
@@ -33,6 +34,7 @@ set(HEADER
     common.h
     fiberopt.h
     parameters.h
+    performance.h
     resources.h
     simulation.h
     ocl/cldevice.h
