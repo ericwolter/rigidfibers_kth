@@ -1,0 +1,21 @@
+{
+  "name": "rigidfibers",
+  "version": "0.0.0",
+  "homepage": "https://github.com/ericwolter/rigidfibers",
+  "authors": [
+    "Eric Wolter <eric.wolter@gmx.de>"
+  ],
+  "license": "GPLv2",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "vega": "~1.4.0"
+  }
+}

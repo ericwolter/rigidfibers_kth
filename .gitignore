@@ -26,6 +26,9 @@ build/
 # random layouts
 tools/*.in
 
+# html
+bower_components/
+
 ##################################################
 #
 # OSX.gitignore
