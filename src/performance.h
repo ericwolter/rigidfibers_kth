@@ -24,27 +24,36 @@
 #include "common.h"
 
 typedef struct {
-    std::string eventName;
+    std::string name;
+    
     cl_event event;
 
-    cl_ulong last_time;
-    cl_ulong avg_time;
-} PerformanceEvent;
+    std::chrono::high_resolution_clock::time_point host_start;
+
+    double host_last_time;
+    double host_average_time;
+
+    double device_last_time;
+    double device_average_time;
+} PerformanceTracker;
 
 class Performance
 {
 public:
-    Performance();
+    Performance(cl_command_queue queue);
     ~Performance();
 
-    cl_event* getEvent(std::string eventName);
-    void updateEvent(std::string eventName);
-    void printEvent(std::string eventName);
+    cl_event* getDeviceEvent(std::string name);
+    void start(std::string name);
+    void stop(std::string name);
+    void print(std::string name);
     void dump();
 private:
     DISALLOW_COPY_AND_ASSIGN(Performance);
 
-    std::map<std::string, PerformanceEvent> events_;
+    cl_command_queue queue_;
+
+    std::map<std::string, PerformanceTracker> trackers_;
 };
 
 #endif // FIBERS_PERFORMANCE_H_

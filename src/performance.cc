@@ -19,52 +19,79 @@
  */
 #include "performance.h"
 
-Performance::Performance() {}
+Performance::Performance(cl_command_queue queue)
+{
+    queue_ = queue;
+}
 Performance::~Performance() {}
 
-cl_event* Performance::getEvent(std::string eventName) 
+cl_event* Performance::getDeviceEvent(std::string name) 
 {
-    std::map<std::string, PerformanceEvent>::iterator performance_event = events_.find(eventName);
+    std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
 
     // create a new event if this is the first time we encounter it
-    if(performance_event == events_.end()) 
+    if(performance_tracker == trackers_.end()) 
     {
-        PerformanceEvent event;
-        event.eventName = eventName;
+        PerformanceTracker tracker;
+        tracker.name = name;
 
-        events_[eventName] = event;
+        trackers_[name] = tracker;
 
-        performance_event = events_.find(eventName);
+        performance_tracker = trackers_.find(name);
     }
 
-    return &(performance_event->second).event;
+    return &(performance_tracker->second).event;
 }
 
-void Performance::updateEvent(std::string eventName) 
-{   
-    std::map<std::string, PerformanceEvent>::iterator performance_event = events_.find(eventName);
-
-    clWaitForEvents(1, &performance_event->second.event);
-
-    cl_ulong start, end;
-    clGetEventProfilingInfo(performance_event->second.event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
-    clGetEventProfilingInfo(performance_event->second.event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-
-    performance_event->second.last_time = end - start;
-}
-
-void Performance::printEvent(std::string eventName) 
+void Performance::start(std::string name)
 {
-    std::map<std::string, PerformanceEvent>::iterator performance_event = events_.find(eventName);
-    std::cout << "  [BENCHMARK]   : " << performance_event->second.eventName << " took " << performance_event->second.last_time*1e-09 << " sec" << std::endl;
+    clFinish(queue_);
+    std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
+
+    // create a new event if this is the first time we encounter it
+    if(performance_tracker == trackers_.end()) 
+    {
+        PerformanceTracker tracker;
+        tracker.name = name;
+
+        trackers_[name] = tracker;
+
+        performance_tracker = trackers_.find(name);
+    }
+
+    performance_tracker->second.host_start = std::chrono::high_resolution_clock::now();
+}
+
+void Performance::stop(std::string name)
+{
+    clFinish(queue_);
+    std::chrono::high_resolution_clock::time_point host_end = std::chrono::high_resolution_clock::now();
+
+    std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
+
+    std::chrono::high_resolution_clock::time_point host_start = performance_tracker->second.host_start;
+    performance_tracker->second.host_last_time = (std::chrono::duration_cast<std::chrono::duration<double> >(host_end - host_start)).count();
+
+    cl_ulong device_start, device_end;
+    clGetEventProfilingInfo(performance_tracker->second.event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &device_start, NULL);
+    clGetEventProfilingInfo(performance_tracker->second.event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &device_end, NULL);
+
+    performance_tracker->second.device_last_time = (device_end - device_start) * 1e-9;
+}
+
+void Performance::print(std::string name) 
+{
+    std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
+
+    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(host)   took " << performance_tracker->second.host_last_time << " sec" << std::endl;
+    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_last_time << " sec" << std::endl;
 }
 
 void Performance::dump() 
 {
-    std::map<std::string, PerformanceEvent>::iterator iter;
-    for (iter = events_.begin(); iter != events_.end(); ++iter) {
-        PerformanceEvent event = iter->second;
-        std::cout << "  [BENCHMARK]   : " << event.eventName << " took " << event.last_time*1e-09 << " sec" << std::endl;
+    std::map<std::string, PerformanceTracker>::iterator iter;
+    for (iter = trackers_.begin(); iter != trackers_.end(); ++iter) {
+        print(iter->second.name);
     }
 }
 

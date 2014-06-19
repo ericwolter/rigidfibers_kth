@@ -34,7 +34,6 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
     context_ = context;
     device_ = device;
     configuration_ = configuration;
-    performance_ = new Performance();
 
     global_work_size_ = IntCeil(configuration_.parameters.num_fibers, 32);
 
@@ -72,6 +71,8 @@ void Simulation::initalizeQueue()
     cl_int err;
 
     queue_ = clCreateCommandQueue(context_, device_->id(), CL_QUEUE_PROFILING_ENABLE, &err);
+    performance_ = new Performance(queue_);
+
     clCheckError(err, "Could not create command queue");
 }
 
@@ -211,10 +212,10 @@ void Simulation::writeFiberStateToDevice()
 {
     cl_int err;
     std::cout << "[CPU] --> [GPU] : Writing initial fiber positions..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, performance_->getEvent("write_positions"));
+    err = clEnqueueWriteBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_positions, 0, NULL, performance_->getDeviceEvent("write_positions"));
     clCheckError(err, "Could not write data to positions buffer");
     std::cout << "[CPU] --> [GPU] : Writing initial fiber orientations..." << std::endl;
-    err = clEnqueueWriteBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, performance_->getEvent("write_orientations"));
+    err = clEnqueueWriteBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, configuration_.initial_orientations, 0, NULL, performance_->getDeviceEvent("write_orientations"));
     clCheckError(err, "Could not write data to orientations buffer");
 }
 
@@ -406,15 +407,13 @@ void Simulation::assembleMatrix()
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
     clCheckError(err, "Could not set kernel arguments for assembling matrix");
 
-    DECLARE_TIMING(assemble_matrix);
-    START_TIMING(assemble_matrix, queue_);
-
+    performance_->start("assemble_matrix");
     // let the opencl runtime determine optimal local work size
-    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getEvent("assemble_matrix"));
+    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("assemble_matrix"));
     clCheckError(err, "Could not enqueue kernel");
 
-    STOP_TIMING(assemble_matrix, queue_);
-    PRINT_TIMING(assemble_matrix);
+    performance_->stop("assemble_matrix");
+    performance_->print("assemble_matrix");
 }
 
 void Simulation::assembleRightHandSide()
