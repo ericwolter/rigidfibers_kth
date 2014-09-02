@@ -43,22 +43,16 @@ int main(int argc, char *argv[])
 
     Simulation simulation(context, selected_device, configuration);
 
-    bool running = true;
-    unsigned long current_timestep = 0;
-    do
-    {
-        std::cout << "     [CPU]      : Timestep " << current_timestep + 1 << " of " << configuration.parameters.num_timesteps << std::endl;
-        simulation.step();
+    simulation.step();
 
-        current_timestep++;
+    // bool running = true;
 
-        if(current_timestep >= configuration.parameters.num_timesteps) {
-            running = false;
-        }
-    }
-    while (running);
-
-    simulation.exportPerformanceMeasurments();
+    // do
+    // {
+    //     std::cout << context << std::endl;
+    //     std::cout << queue << std::endl;
+    // }
+    // while (running);
 
     // cleanup
     delete[] configuration.initial_positions;
