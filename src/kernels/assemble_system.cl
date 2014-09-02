@@ -68,9 +68,10 @@ const fiberfloat *compute_G(fiberfloat4 position_i,
     return G;
 }
 
-kernel void assemble_matrix(const global fiberfloat4 *positions,
+kernel void assemble_system(const global fiberfloat4 *positions,
                             const global fiberfloat4 *orientations,
                             global fiberfloat *a_matrix,
+                            global fiberfloat *b_vector,
                             global fiberfloat *quadrature_points,
                             global fiberfloat *quadrature_weights,
                             global fiberfloat *legendre_polynomials)

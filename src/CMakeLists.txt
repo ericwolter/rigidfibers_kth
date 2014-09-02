@@ -70,7 +70,7 @@ endif()
 set(KERNELS
     common.h
     kernels/vadd.cl
-    kernels/assemble_matrix.cl
+    kernels/assemble_system.cl
 )
 
 add_custom_target(copy)

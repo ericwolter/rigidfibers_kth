@@ -86,7 +86,7 @@ void Simulation::initalizeProgram()
     {
         "common.h",
         "vadd.cl",
-        "assemble_matrix.cl",
+        "assemble_system.cl",
         ""
     };
 
@@ -384,7 +384,7 @@ void Simulation::precomputeLegendrePolynomials()
 
 void Simulation::step()
 {
-    std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
+    std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleMatrix();
 
     dumpLinearSystem();
@@ -394,22 +394,23 @@ void Simulation::assembleMatrix()
 {
     cl_int err = 0;
 
-    cl_uint param = 0; cl_kernel kernel = kernels_["assemble_matrix"];
+    cl_uint param = 0; cl_kernel kernel = kernels_["assemble_system"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &b_vector_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_points_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_weights_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
-    clCheckError(err, "Could not set kernel arguments for assembling matrix");
+    clCheckError(err, "Could not set kernel arguments for assembling system");
 
-    performance_->start("assemble_matrix");
+    performance_->start("assemble_system");
     // let the opencl runtime determine optimal local work size
-    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("assemble_matrix"));
+    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("assemble_system"));
     clCheckError(err, "Could not enqueue kernel");
 
-    performance_->stop("assemble_matrix");
-    performance_->print("assemble_matrix");
+    performance_->stop("assemble_system");
+    performance_->print("assemble_system");
 }
 
 void Simulation::assembleRightHandSide()
