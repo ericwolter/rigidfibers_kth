@@ -52,6 +52,12 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
   
+  OPEN(10,file="BVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (Brhs(i))
+  END DO
+  CLOSE(10)
+
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL dgesv(nocc,1,AMat,nocc,IPIV,Brhs,nocc,info)
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
