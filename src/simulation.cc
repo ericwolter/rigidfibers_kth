@@ -19,7 +19,7 @@
  */
 #include "simulation.h"
 
- #include <stdio.h>
+#include <stdio.h>
 
 #include <cmath>
 #include <ctime>
@@ -384,12 +384,8 @@ void Simulation::precomputeLegendrePolynomials()
 
 void Simulation::step()
 {
-    clFinish(queue_);
-
     std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
     assembleMatrix();
-
-    clFinish(queue_);
 
     //dumpLinearSystem();
 }
@@ -455,6 +451,11 @@ void Simulation::dumpLinearSystem()
     a_matrix_output_file.close();
 
     delete[] a_matrix;
+}
+
+void Simulation::exportPerformanceMeasurments()
+{
+    performance_->exportMeasurements("performance.out");
 }
 
 

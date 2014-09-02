@@ -1,4 +1,4 @@
-const fiberfloat *compute_G(fiberfloat4 position_i,
+const float8 *compute_G(fiberfloat4 position_i,
                             fiberfloat4 orientation_i,
                             fiberfloat4 position_j,
                             fiberfloat4 orientation_j,
@@ -7,62 +7,62 @@ const fiberfloat *compute_G(fiberfloat4 position_i,
                             global fiberfloat *quadrature_weights,
                             global fiberfloat *legendre_polynomials)
 {
-    fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+    float8 G[TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
         const fiberfloat4 position_on_fiber_i = position_i + quadrature_points[quadrature_index_i] * orientation_i;
 
-        G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-
+        float8 test;
         for (fiberuint quadrature_index_j = 0; quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_j)
         {
             const fiberfloat quadrature_point = quadrature_points[quadrature_index_j];
             const fiberfloat4 position_on_fiber_j = position_j + quadrature_point * orientation_j;
             const fiberfloat4 difference = position_on_fiber_i - position_on_fiber_j;
-            const fiberfloat distance = length(difference);
+
+            const fiberfloat inv_distance = rsqrt(difference.x * difference.x + difference.y * difference.y + difference.z * difference.z);
+            const fiberfloat inv_distance_pow_3 = inv_distance * inv_distance * inv_distance;
+            const fiberfloat4 norm_difference = difference * inv_distance;
+
+            const fiberfloat s = 2.0 * SLENDERNESS * SLENDERNESS * (inv_distance_pow_3);
+            const fiberfloat r = 3.0 * inv_distance_pow_3;
+            const fiberfloat sr = s * (-r);
 
             // equation 10
             // Note:    The outer product of a vector with itself is always a symmetric matrix
             //          so to save computation we only compute the upper triangle.
             // TODO calculation can be optimized (i.e. not dividing by distance, simpifing etc.)
-            const fiberfloat K11 = 1.0 / distance
-                                   + (1.0 / distance) * ((difference.x / distance) * (difference.x / distance))
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           - (3.0 / (distance * distance * distance)) * ((difference.x / distance) * (difference.x / distance)));
-            const fiberfloat K22 = 1.0 / distance
-                                   + (1.0 / distance) * ((difference.y / distance) * (difference.y / distance))
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           - (3.0 / (distance * distance * distance)) * ((difference.y / distance) * (difference.y / distance)));
-            const fiberfloat K33 = 1.0 / distance
-                                   + (1.0 / distance) * ((difference.z / distance) * (difference.z / distance))
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           - (3.0 / (distance * distance * distance)) * ((difference.y / distance) * (difference.y / distance)));
-            const fiberfloat K12 = (1.0 / distance) * (difference.x / distance) * (difference.y / distance)
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.y / distance));
-            const fiberfloat K13 = (1.0 / distance) * (difference.x / distance) * (difference.z / distance)
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.z / distance));
-            const fiberfloat K23 = (1.0 / distance) * (difference.y / distance) * (difference.z / distance)
-                                   + 2.0 * SLENDERNESS * SLENDERNESS * ((1.0 / (distance * distance * distance))
-                                           * (-3.0 / (distance * distance * distance)) * (difference.y / distance) * (difference.z / distance));
+            const fiberfloat K11 = inv_distance
+                                   + (inv_distance) * (norm_difference.x * norm_difference.x)
+                                   + s
+                                           - (r) * (norm_difference.x * norm_difference.x);
+            const fiberfloat K22 = inv_distance
+                                   + (inv_distance) * (norm_difference.y * norm_difference.y)
+                                   + s
+                                           - (r) * (norm_difference.y * norm_difference.y);
+            const fiberfloat K33 = inv_distance
+                                   + (inv_distance) * (norm_difference.z * norm_difference.z)
+                                   + s
+                                           - (r) * (norm_difference.z * norm_difference.z);
+            const fiberfloat K12 = norm_difference.x * norm_difference.y * ((inv_distance) + sr);
+            const fiberfloat K13 = norm_difference.x * norm_difference.z * ((inv_distance) + sr);
+            const fiberfloat K23 = norm_difference.y * norm_difference.z * ((inv_distance) + sr);
 
             const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_j];
             const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_j + force_index * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 
-            G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K11 * legendre_polynomial;
-            G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K22 * legendre_polynomial;
-            G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K33 * legendre_polynomial;
-            G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K12 * legendre_polynomial;
-            G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K13 * legendre_polynomial;
-            G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K23 * legendre_polynomial;
+            const fiberfloat ql = quadrature_weight * legendre_polynomial;
+            test += ql * (float8)(K11,K22,K33,K12,K13,K23,0,0);
+
+            // G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K11 * legendre_polynomial;
+            // G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K22 * legendre_polynomial;
+            // G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K33 * legendre_polynomial;
+            // G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K12 * legendre_polynomial;
+            // G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K13 * legendre_polynomial;
+            // G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K23 * legendre_polynomial;
         }
+
+        G[quadrature_index_i] = test;
     }
 
     return G;
@@ -147,32 +147,23 @@ kernel void assemble_matrix(const global fiberfloat4 *positions,
 
             fiberuint force_index_j = 0;
 
-            // theta in equation 23
-            fiberfloat T11 = 0.0;
-            fiberfloat T22 = 0.0;
-            fiberfloat T33 = 0.0;
-            fiberfloat T12 = 0.0;
-            fiberfloat T13 = 0.0;
-            fiberfloat T23 = 0.0;
+            float8 T;
 
             // TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
-            fiberfloat *G = compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, quadrature_points, quadrature_weights, legendre_polynomials);
+            float8 *G = compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, quadrature_points, quadrature_weights, legendre_polynomials);
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
                 const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_i];
                 const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-                T11 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                T22 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                T33 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                T12 += quadrature_weight * G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                const fiberfloat ql = quadrature_weight * legendre_polynomial;
+
+                T += ql * G[quadrature_index_i];
             }
 
-            Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
-            Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
-            Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
+            Q1 = T.s0 * orientation_i.x + T.s3 * orientation_i.y + T.s4 * orientation_i.z;
+            Q2 = T.s3 * orientation_i.x + T.s1 * orientation_i.y + T.s5 * orientation_i.z;
+            Q3 = T.s4 * orientation_i.x + T.s5 * orientation_i.y + T.s2 * orientation_i.z;
 
             // if (i == 0 && j == 1)
             // {
@@ -191,42 +182,36 @@ kernel void assemble_matrix(const global fiberfloat4 *positions,
             //     printf("%d,%d,%d:\t\t(%d,%d,%d)\t\t(%d,%d,%d)\n",i,j,force_index_i,x_row_index,y_row_index,z_row_index,x_column_index,y_column_index,z_column_index);
             // }
 
-            a_matrix[x_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.x * Q1;
-            a_matrix[x_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.x * Q2;
-            a_matrix[x_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.x * Q3;
-            a_matrix[y_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.y * Q1;
-            a_matrix[y_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.y * Q2;
-            a_matrix[y_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.y * Q3;
-            a_matrix[z_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.z * Q1;
-            a_matrix[z_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.z * Q2;
-            a_matrix[z_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.z * Q3;
+            const fiberfloat4 a = D1 * orientation_i * (fiberfloat4)(Q1, Q2, Q3, 0);
+
+            a_matrix[x_row_index + x_column_index * total_number_of_rows] = a.x;
+            a_matrix[x_row_index + y_column_index * total_number_of_rows] = a.y;
+            a_matrix[x_row_index + z_column_index * total_number_of_rows] = a.z;
+            a_matrix[y_row_index + x_column_index * total_number_of_rows] = a.x;
+            a_matrix[y_row_index + y_column_index * total_number_of_rows] = a.y;
+            a_matrix[y_row_index + z_column_index * total_number_of_rows] = a.z;
+            a_matrix[z_row_index + x_column_index * total_number_of_rows] = a.x;
+            a_matrix[z_row_index + y_column_index * total_number_of_rows] = a.y;
+            a_matrix[z_row_index + z_column_index * total_number_of_rows] = a.z;
 
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
             {
-                fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0)/(d+e-cc*lambda[force_index_j]);
+                const fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0)/(d+e-cc*lambda[force_index_j]);
 
-                fiberfloat T11 = 0.0;
-                fiberfloat T22 = 0.0;
-                fiberfloat T33 = 0.0;
-                fiberfloat T12 = 0.0;
-                fiberfloat T13 = 0.0;
-                fiberfloat T23 = 0.0;
+                T *= 0.0;
 
                 for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
                 {
                     const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_i];
                     const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_i + force_index_j * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-                    T11 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    T22 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    T33 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    T12 += quadrature_weight * G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    const fiberfloat ql = quadrature_weight * legendre_polynomial;
+
+                    T += ql * G[quadrature_index_i];
                 }
 
-                Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
-                Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
-                Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
+                Q1 = T.s0 * orientation_i.x + T.s3 * orientation_i.y + T.s4 * orientation_i.z;
+                Q2 = T.s3 * orientation_i.x + T.s1 * orientation_i.y + T.s5 * orientation_i.z;
+                Q3 = T.s4 * orientation_i.x + T.s5 * orientation_i.y + T.s2 * orientation_i.z;
 
                 // if (i == 1 && j == 0 && force_index_i == 0 && force_index_j == 1)
                 // {
@@ -240,17 +225,19 @@ kernel void assemble_matrix(const global fiberfloat4 *positions,
 
                 x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 0;
                 y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 1;
-                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;                    
+                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;     
 
-                a_matrix[x_row_index + x_column_index * total_number_of_rows] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
-                a_matrix[x_row_index + y_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
-                a_matrix[x_row_index + z_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.x * Q3);
-                a_matrix[y_row_index + x_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.y * Q1);
-                a_matrix[y_row_index + y_column_index * total_number_of_rows] = gamma * (T22 - eigen[force_index_j] * orientation_i.y * Q2);
-                a_matrix[y_row_index + z_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.y * Q3);
-                a_matrix[z_row_index + x_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
-                a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
-                a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
+                const fiberfloat4 a = eigen[force_index_j] * orientation_i * (fiberfloat4)(Q1, Q2, Q3, 0);
+
+                a_matrix[x_row_index + x_column_index * total_number_of_rows] = gamma * (T.s0 - a.x);
+                a_matrix[x_row_index + y_column_index * total_number_of_rows] = gamma * (T.s3 - a.y);
+                a_matrix[x_row_index + z_column_index * total_number_of_rows] = gamma * (T.s4 - a.z);
+                a_matrix[y_row_index + x_column_index * total_number_of_rows] = gamma * (T.s3 - a.x);
+                a_matrix[y_row_index + y_column_index * total_number_of_rows] = gamma * (T.s1 - a.y);
+                a_matrix[y_row_index + z_column_index * total_number_of_rows] = gamma * (T.s5 - a.z);
+                a_matrix[z_row_index + x_column_index * total_number_of_rows] = gamma * (T.s4 - a.x);
+                a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T.s5 - a.y);
+                a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T.s2 - a.z);
             }            
         }
     }
