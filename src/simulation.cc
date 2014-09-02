@@ -19,7 +19,7 @@
  */
 #include "simulation.h"
 
- #include <stdio.h>
+#include <stdio.h>
 
 #include <cmath>
 #include <ctime>
@@ -89,18 +89,18 @@ void Simulation::initalizeProgram()
         "assemble_matrix.cl",
         ""
     };
-	
+
     // load kernel sources
     std::vector<std::string> kernel_sources;
     for (int i = 0; kernel_filenames[i] != ""; i++)
     {
         // Read source from disk
         std::string source = Resources::getKernelSource(kernel_filenames[i]);
-        
+
         // Load into compile list
         kernel_sources.push_back(source);
     }
-	
+
     // the OpenCL is a C API and thus only supports const char*. However for
     // convenience we use proper std::string everywhere else and only convert
     // to C-Land at the last moment
@@ -110,7 +110,7 @@ void Simulation::initalizeProgram()
     {
         cstr_kernel_sources.push_back(kernel_sources[i].c_str());
     }
-    
+
     // -Wshorten-64-to-32 for cstr_kernel_sources.str() is totally fine here
     // We have no other option than to conform to the OpenCL API here and
     // regardless 32bit for the number of kernels should be enough anyway...
@@ -127,12 +127,12 @@ void Simulation::initalizeProgram()
     clflags << "-DSLENDERNESS=" << configuration_.parameters.slenderness << " ";
     clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
     clflags << "-DTOTAL_NUMBER_OF_QUADRATURE_POINTS="   << configuration_.parameters.num_quadrature_points_per_interval
-                                                            * configuration_.parameters.num_quadrature_intervals    << " ";
+            * configuration_.parameters.num_quadrature_intervals    << " ";
 
     // TODO This is totally weird... why can't we just pass in clflags.str().c_str()?!?
-    // Should be exactly the same...                                                   
+    // Should be exactly the same...
     std::string stdstr_options = clflags.str();
-    char *options = (char*)malloc(sizeof(char) * stdstr_options.length());
+    char *options = (char *)malloc(sizeof(char) * stdstr_options.length());
     sprintf(options, "%s", stdstr_options.c_str());
 
     cl_int buildError = clBuildProgram(program_, 0, NULL, options, NULL, NULL);
@@ -272,8 +272,8 @@ void Simulation::precomputeLegendrePolynomials()
     // cmath's sqrt always returns a double.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-    const fiberuint total_number_of_points = 
-        configuration_.parameters.num_quadrature_points_per_interval 
+    const fiberuint total_number_of_points =
+        configuration_.parameters.num_quadrature_points_per_interval
         * configuration_.parameters.num_quadrature_intervals;
 
     // These are the precalculated points for a 3rd order gaussian quadrature
@@ -384,14 +384,10 @@ void Simulation::precomputeLegendrePolynomials()
 
 void Simulation::step()
 {
-    clFinish(queue_);
-
     std::cout << "     [GPU]      : Assembling matrix..." << std::endl;
     assembleMatrix();
 
-    clFinish(queue_);
-
-    //dumpLinearSystem();
+    dumpLinearSystem();
 }
 
 void Simulation::assembleMatrix()
@@ -418,10 +414,10 @@ void Simulation::assembleMatrix()
 
 void Simulation::assembleRightHandSide()
 {
-
+    cl_int err = 0;
 }
 
-void Simulation::dumpLinearSystem() 
+void Simulation::dumpLinearSystem()
 {
     fiberuint num_matrix_rows =
         3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
@@ -435,7 +431,7 @@ void Simulation::dumpLinearSystem()
 
     std::string executablePath = Resources::getExecutablePath();
 
-	std::string outputPath = executablePath + "/a_matrix.out";
+    std::string outputPath = executablePath + "/a_matrix.out";
     std::ofstream a_matrix_output_file;
     a_matrix_output_file.open (outputPath.c_str());
     a_matrix_output_file << std::fixed << std::setprecision(8);
@@ -444,10 +440,13 @@ void Simulation::dumpLinearSystem()
         for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
         {
             fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
-            if(value < 0) {
-                a_matrix_output_file << "     " << a_matrix[row_index + column_index * num_matrix_rows];    
-            } else {
-                a_matrix_output_file << "      " << a_matrix[row_index + column_index * num_matrix_rows];    
+            if (value < 0)
+            {
+                a_matrix_output_file << "     " << a_matrix[row_index + column_index * num_matrix_rows];
+            }
+            else
+            {
+                a_matrix_output_file << "      " << a_matrix[row_index + column_index * num_matrix_rows];
             }
         }
         a_matrix_output_file << std::endl;
@@ -457,4 +456,7 @@ void Simulation::dumpLinearSystem()
     delete[] a_matrix;
 }
 
-
+void Simulation::exportPerformanceMeasurments()
+{
+    performance_->exportMeasurements("performance.out");
+}

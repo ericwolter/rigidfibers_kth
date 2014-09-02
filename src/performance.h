@@ -30,9 +30,11 @@ typedef struct {
 
     std::chrono::high_resolution_clock::time_point host_start;
 
+    unsigned long host_count;
     double host_last_time;
     double host_average_time;
 
+    unsigned long device_count;
     double device_last_time;
     double device_average_time;
 } PerformanceTracker;
@@ -48,6 +50,7 @@ public:
     void stop(std::string name);
     void print(std::string name);
     void dump();
+    void exportMeasurements(std::string name);
 private:
     DISALLOW_COPY_AND_ASSIGN(Performance);
 

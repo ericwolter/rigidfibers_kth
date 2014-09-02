@@ -34,6 +34,8 @@ public:
     ~Simulation();
 
     void step();
+
+    void exportPerformanceMeasurments();
 private:
     DISALLOW_COPY_AND_ASSIGN(Simulation);
 

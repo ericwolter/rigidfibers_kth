@@ -118,6 +118,7 @@ kernel void assemble_matrix(const global fiberfloat4 *positions,
         {
             // we only need to write the diagonals because the rest of the matrix
             // stays 0 throughout the simulation and is only initialised once
+            // TODO: why even do that on the GPU at all?
             for (fiberuint force_index = 0; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
             {
                 x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
