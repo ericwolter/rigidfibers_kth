@@ -29,6 +29,11 @@ tools/*.in
 # html
 bower_components/
 
+# docs
+# binary file, too large for git
+# only needed for debugging
+docs/raw_data_comparison.xlsb
+
 ##################################################
 #
 # OSX.gitignore
