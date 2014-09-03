@@ -228,7 +228,7 @@ FUNCTION mat_prod(xvec,eeps,M,N,XcVecs,tVecs,LQ,LvecMat,pv,wv);
         DO i=1,LQ
           xbar=xc+pv(i)*ta;  
           Gmat(i,:)=G_f_GQ(xcb,tb,xbar,eeps,&
-                     LQ,Fmatx(:,fno),Fmaty(:,fno),Fmatz(:,fno),pv,wv);  
+                     LQ,Fmatx(:,fno),Fmaty(:,fno),Fmatz(:,fno),pv,wv,0);  
 
         END DO
   
@@ -627,6 +627,7 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   REAL*8,DIMENSION(LQ,3):: Gmat
   INTEGER:: i,j,ii,ind,filno,fno,kk,nocc
   INTEGER:: rowno,p
+  INTEGER:: DEBUG
   REAL*8 Q1,Q2,Q3,ta_dot_ac
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
@@ -644,6 +645,8 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   Ekvec=(d-e-cc*lambdavec)/2.0d0/(d-cc*lambdavec);
 
   nocc=3*M*N;
+
+  DEBUG=0;
   !!Order: a_x^1,a_y^1,a_z^1,a_x^2,etc for first fib.
   !!Then the same for second. 
 
@@ -664,30 +667,58 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
         Fvec_x=0.5d0*ExtForce(ind+1)
         Fvec_y=0.5d0*ExtForce(ind+2)
         Fvec_z=0.5d0*ExtForce(ind+3)
-        
-       
+
         xcb=XcVecs(ind+1:ind+3);
         tb=tVecs(ind+1:ind+3);
         
         DO i=1,LQ
           xbar=xc+pv(i)*ta;  
           
+          IF (filno==1) THEN
+            IF (fno-1==4) THEN
+              IF (i==15) THEN
+                DEBUG=1;
+              END IF
+            END IF
+          END IF
           
           Gmat(i,:)=G_f_GQ(xcb,tb,xbar,eeps,&
-               LQ,Fvec_x,Fvec_y,Fvec_z,pv,wv)
-             
+               LQ,Fvec_x,Fvec_y,Fvec_z,pv,wv,DEBUG)
+
+          DEBUG=0;
           
           END DO
           
         DO i=1,3
           contr(i)=sum(wv*Gmat(:,i)*LvecMat(:,1));
+        !!  IF (filno == 1) THEN
+        !!    IF (fno == 2) THEN
+        !!      PRINT '(F16.8)', Gmat(:,i)
+        !!      PRINT *,'-------'
+        !!    END IF
+        !!  END IF
         END DO
-  
+
         ta_dot_ac=ta(1)*contr(1)+ta(2)*contr(2)+ta(3)*contr(3);
+
+        IF (filno == 1) THEN
+          IF (fno == 2) THEN
+            PRINT '(F16.8)', contr(1), contr(2), contr(3), ta_dot_ac
+            PRINT *,'-------'
+          END IF
+        END IF
+
+
         Brhs(rowno)=Brhs(rowno)-D1*ta_dot_ac*ta(1);
         Brhs(rowno+1)=Brhs(rowno+1)-D1*ta_dot_ac*ta(2);
         Brhs(rowno+2)=Brhs(rowno+2)-D1*ta_dot_ac*ta(3);
         
+        IF (filno == 1) THEN
+          IF (fno == 2) THEN
+            !!PRINT '(F16.8)', Brhs(rowno),Brhs(rowno+1),Brhs(rowno+2)
+            !!PRINT *,'-------'
+          END IF
+        END IF
   
         !!For higher k, same formula, so now we can loop. 
         DO kk=2,N
@@ -696,6 +727,15 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
           gammak=0.5d0*(2.0d0*kk+1.0d0)/(d+e-cc*lambdavec(kk));
           DO i=1,3
             contr(i)=sum(wv*Gmat(:,i)*LvecMat(:,kk));
+            IF (filno==1) THEN
+              IF (fno-1==4) THEN
+                IF (kk==2) THEN
+                  IF (i==1) THEN 
+                    !!PRINT '(F16.6)', Gmat(:,i)
+                  END IF
+                END IF
+              END IF
+            END IF
           END DO
           ta_dot_ac=ta(1)*contr(1)+ta(2)*contr(2)+ta(3)*contr(3);
   
@@ -703,6 +743,16 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
           Brhs(rowno)=Brhs(rowno)-gammak*(contr(1)-Ek*ta_dot_ac*ta(1));
           Brhs(rowno+1)=Brhs(rowno+1)-gammak*(contr(2)-Ek*ta_dot_ac*ta(2));
           Brhs(rowno+2)=Brhs(rowno+2)-gammak*(contr(3)-Ek*ta_dot_ac*ta(3));
+
+          IF (filno==1) THEN
+            IF (kk==2) THEN
+              IF (fno-1==4) THEN
+                !!PRINT *, fno-1,':'
+                !!PRINT '(F16.8)', Brhs(rowno),gammak,contr(1),Ek,ta(1),ta_dot_ac
+              END IF
+            END IF
+          END IF
+
           !disp(['For the third of these rows, adding ' num2str(-gammak*(contr(3)-Ek*ta_dot_ac*ta(3))) '.']);
   
         END DO !!for kk=2:N.

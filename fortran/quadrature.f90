@@ -163,7 +163,7 @@ FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m);
 
 END FUNCTION G_COMPUTE_GQ
 
-FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv);
+FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,DEBUG);
   !!Contr. from filament b to point xbar. 
   !!G is integral over filament b, with kernel 
   !!multiplied fvec.
@@ -178,6 +178,8 @@ FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv);
   !pv,wv,and Lvec_m should be of length LQ. 
   REAL*8,DIMENSION(LQ),INTENT(IN)::fvec_x,fvec_y,fvec_z
   REAL*8,DIMENSION(LQ),INTENT(IN)::pv,wv
+
+  INTEGER, INTENT(IN):: DEBUG
 
   INTEGER i
   REAL*8,DIMENSION(3):: G_f_GQ
@@ -217,6 +219,13 @@ FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv);
   G_f_GQ(1)=sum(wv*(K11*fvec_x+K12*fvec_y+K13*fvec_z));
   G_f_GQ(2)=sum(wv*(K12*fvec_x+K22*fvec_y+K23*fvec_z));
   G_f_GQ(3)=sum(wv*(K13*fvec_x+K23*fvec_y+K33*fvec_z));
+
+  IF (DEBUG==1) THEN
+    PRINT *,'-------'
+    PRINT *,'quadrature'
+    PRINT '(F16.6)', K11
+    PRINT *,'-------'
+  END IF
   
 END FUNCTION G_f_GQ
 
@@ -247,7 +256,7 @@ FUNCTION TH_f_GQ(xb,pb,xa,pa,eeps,fvec_x,fvec_y,fvec_z,LQ,pv,wv,Lvec);
     
   DO i=1,LQ
      xbar=xa+pv(i)*pa;  
-     Gmat(i,:)=G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv);
+     Gmat(i,:)=G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,0);
      
   END DO
   
