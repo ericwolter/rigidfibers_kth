@@ -385,12 +385,12 @@ void Simulation::precomputeLegendrePolynomials()
 void Simulation::step()
 {
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
-    assembleMatrix();
+    assembleSystem();
 
-    dumpLinearSystem();
+    //dumpLinearSystem();
 }
 
-void Simulation::assembleMatrix()
+void Simulation::assembleSystem()
 {
     cl_int err = 0;
 
@@ -411,11 +411,6 @@ void Simulation::assembleMatrix()
 
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
-}
-
-void Simulation::assembleRightHandSide()
-{
-    cl_int err = 0;
 }
 
 void Simulation::dumpLinearSystem()

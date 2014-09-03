@@ -77,8 +77,7 @@ private:
     fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
     void precomputeLegendrePolynomials();
 
-    void assembleMatrix();
-    void assembleRightHandSide();
+    void assembleSystem();
 
     void dumpLinearSystem();
 };

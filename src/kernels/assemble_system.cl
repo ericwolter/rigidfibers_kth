@@ -1,24 +1,18 @@
-const fiberfloat *compute_G(fiberfloat4 position_i,
+void *compute_G(fiberfloat4 position_i,
                             fiberfloat4 orientation_i,
                             fiberfloat4 position_j,
                             fiberfloat4 orientation_j,
                             fiberuint force_index,
+                            fiberfloat4 external_force,
                             global fiberfloat *quadrature_points,
                             global fiberfloat *quadrature_weights,
-                            global fiberfloat *legendre_polynomials)
+                            global fiberfloat *legendre_polynomials,
+                            fiberfloat *G,
+                            fiberfloat *GF) // @TODO better names
 {
-    fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
-
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
         const fiberfloat4 position_on_fiber_i = position_i + quadrature_points[quadrature_index_i] * orientation_i;
-
-        G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
-        G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = 0.0;
 
         for (fiberuint quadrature_index_j = 0; quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_j)
         {
@@ -62,6 +56,10 @@ const fiberfloat *compute_G(fiberfloat4 position_i,
             G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K12 * legendre_polynomial;
             G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K13 * legendre_polynomial;
             G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * K23 * legendre_polynomial;
+
+            GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K11 * external_force.x + K12 * external_force.y + K13 * external_force.z);
+            GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K12 * external_force.x + K22 * external_force.y + K23 * external_force.z);
+            GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K13 * external_force.x + K23 * external_force.y + K33 * external_force.z);
         }
     }
 
@@ -88,6 +86,9 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
     const fiberfloat4 position_i = positions[i];
     const fiberfloat4 orientation_i = orientations[i];
+
+    // @TODO Constant external force
+    const fiberfloat4 external_force = fiberfloat4(0,0,-1,0)
 
     const fiberuint total_number_of_rows = NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS;
 
@@ -158,7 +159,9 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             fiberfloat T23 = 0.0;
 
             // TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
-            fiberfloat *G = compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, quadrature_points, quadrature_weights, legendre_polynomials);
+            fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+            fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+            compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force,quadrature_points, quadrature_weights, legendre_polynomials, G, GF);
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
