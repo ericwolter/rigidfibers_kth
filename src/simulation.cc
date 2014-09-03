@@ -387,7 +387,7 @@ void Simulation::step()
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
 
-    //dumpLinearSystem();
+    dumpLinearSystem();
 }
 
 void Simulation::assembleSystem()
@@ -420,17 +420,28 @@ void Simulation::dumpLinearSystem()
     fiberuint num_matrix_columns = num_matrix_rows;
 
     fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
+    fiberfloat *b_vector = new fiberfloat[num_matrix_rows];
 
     cl_int err;
     err = clEnqueueReadBuffer(queue_, a_matrix_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, a_matrix, 0, NULL, NULL);
-    clCheckError(err, "Could not read from a matrix");
+    clCheckError(err, "Could not read from a_matrix");
+    err = clEnqueueReadBuffer(queue_, a_matrix_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, a_matrix, 0, NULL, NULL);
+    clCheckError(err, "Could not read from b_vector");
 
     std::string executablePath = Resources::getExecutablePath();
 
-    std::string outputPath = executablePath + "/a_matrix.out";
+    std::string a_matrix_output_path = executablePath + "/a_matrix.out";
+    std::string b_vector_output_path = executablePath + "/b_vector.out";
+
     std::ofstream a_matrix_output_file;
-    a_matrix_output_file.open (outputPath.c_str());
+    std::ofstream b_vector_output_file;
+
+    a_matrix_output_file.open (a_matrix_output_path.c_str());
+    b_vector_output_file.open (b_vector_output_path.c_str());
+
     a_matrix_output_file << std::fixed << std::setprecision(8);
+    b_vector_output_file << std::fixed << std::setprecision(8);
+
     for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
     {
         for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
@@ -445,11 +456,25 @@ void Simulation::dumpLinearSystem()
                 a_matrix_output_file << "      " << a_matrix[row_index + column_index * num_matrix_rows];
             }
         }
+
+        fiberfloat value = b_vector[row_index];
+        if (value < 0)
+        {
+            b_vector_output_file << "     " << b_vector[row_index];
+        }
+        else
+        {
+            b_vector_output_file << "      " << b_vector[row_index];
+        }
+
         a_matrix_output_file << std::endl;
+        b_vector_output_file << std::endl;
     }
     a_matrix_output_file.close();
+    b_vector_output_file.close();
 
     delete[] a_matrix;
+    delete[] b_vector;
 }
 
 void Simulation::exportPerformanceMeasurments()

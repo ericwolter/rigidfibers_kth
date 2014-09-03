@@ -88,7 +88,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
     const fiberfloat4 orientation_i = orientations[i];
 
     // @TODO Constant external force
-    const fiberfloat4 external_force = fiberfloat4(0,0,-1,0)
+    const fiberfloat4 external_force = 0.5 * fiberfloat4(0,0,-1,0);
 
     const fiberuint total_number_of_rows = NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS;
 
@@ -158,6 +158,12 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             fiberfloat T13 = 0.0;
             fiberfloat T23 = 0.0;
 
+            fiberfloat QF;
+
+            fiberfloat TF1 = 0.0;
+            fiberfloat TF2 = 0.0;
+            fiberfloat TF3 = 0.0;
+
             // TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
             fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
             fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
@@ -173,11 +179,17 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 T12 += quadrature_weight * G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+
+                TF1 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                TF2 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                TF3 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
             }
 
             Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
             Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
             Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
+
+            QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
             // if (i == 0 && j == 1)
             // {
@@ -206,6 +218,10 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             a_matrix[z_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.z * Q2;
             a_matrix[z_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.z * Q3;
 
+            b_vector[x_row_index] = -D1 * orientation_i.x * QF;
+            b_vector[y_row_index] = -D1 * orientation_i.y * QF;
+            b_vector[z_row_index] = -D1 * orientation_i.z * QF;
+
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
             {
                 fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0)/(d+e-cc*lambda[force_index_j]);
@@ -217,6 +233,10 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 fiberfloat T13 = 0.0;
                 fiberfloat T23 = 0.0;
 
+                fiberfloat TF1 = 0.0;
+                fiberfloat TF2 = 0.0;
+                fiberfloat TF3 = 0.0;
+
                 for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
                 {
                     const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_i];
@@ -227,11 +247,17 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                     T12 += quadrature_weight * G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+
+                    TF1 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    TF2 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    TF3 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 }
 
                 Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
                 Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
                 Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
+
+                QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
                 // if (i == 1 && j == 0 && force_index_i == 0 && force_index_j == 1)
                 // {
@@ -256,6 +282,10 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 a_matrix[z_row_index + x_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
                 a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
                 a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
+
+                b_vector[x_row_index] = -gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF);
+                b_vector[y_row_index] = -gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF);
+                b_vector[z_row_index] = -gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF);
             }            
         }
     }
