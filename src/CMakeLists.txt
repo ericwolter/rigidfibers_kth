@@ -2,6 +2,12 @@
 # separate the binary from the source lets put it into its own directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# ViennaCL is a linear algebra library for many-core architectures
+# It is a header-only library, so we have to simply in include it here
+include_directories(
+    ${CMAKE_SOURCE_DIR}/lib/viennacl
+)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
     # make compiler as strict as possible, if needed this can be relaxed later
