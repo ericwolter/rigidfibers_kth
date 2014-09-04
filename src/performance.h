@@ -23,6 +23,11 @@
 #include <string>
 #include "common.h"
 
+// @TODO read up on padding again
+// For now simply ignore padding warning because this isn't really
+// critical here anyway
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpadded"
 typedef struct {
     std::string name;
     
@@ -37,7 +42,10 @@ typedef struct {
     unsigned long device_count;
     double device_last_time;
     double device_average_time;
+
+    bool host_only;
 } PerformanceTracker;
+#pragma GCC diagnostic pop
 
 class Performance
 {
@@ -46,7 +54,7 @@ public:
     ~Performance();
 
     cl_event* getDeviceEvent(std::string name);
-    void start(std::string name);
+    void start(std::string name, bool host_only);
     void stop(std::string name);
     void print(std::string name);
     void dump();

@@ -37,10 +37,12 @@ Simulation::Simulation(cl_context context, const CLDevice *device, Configuration
 
     global_work_size_ = IntCeil(configuration_.parameters.num_fibers, 32);
 
-    initalizeQueue();
-    initalizeProgram();
-    initalizeKernels();
-    initalizeBuffers();
+    initializeQueue();
+    initializeViennaCL();
+
+    initializeProgram();
+    initializeKernels();
+    initializeBuffers();
 
     writeFiberStateToDevice();
     precomputeLegendrePolynomials();
@@ -66,7 +68,7 @@ Simulation::~Simulation()
     queue_ = NULL;
 }
 
-void Simulation::initalizeQueue()
+void Simulation::initializeQueue()
 {
     cl_int err;
 
@@ -76,7 +78,7 @@ void Simulation::initalizeQueue()
     clCheckError(err, "Could not create command queue");
 }
 
-void Simulation::initalizeProgram()
+void Simulation::initializeProgram()
 {
     cl_int err;
 
@@ -155,7 +157,7 @@ void Simulation::initalizeProgram()
     clCheckError(buildError, "Could not build program");
 }
 
-void Simulation::initalizeKernels()
+void Simulation::initializeKernels()
 {
     cl_int err;
 
@@ -189,7 +191,7 @@ void Simulation::initalizeKernels()
     kernels_ = kernel_map;
 }
 
-void Simulation::initalizeBuffers()
+void Simulation::initializeBuffers()
 {
     previous_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
     current_position_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
@@ -206,6 +208,15 @@ void Simulation::initalizeBuffers()
                                       sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
     b_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
                                       sizeof(fiberfloat) * num_matrix_rows, NULL, NULL);
+
+    a_matrix_vienna_ = viennacl::matrix<fiberfloat, viennacl::column_major>(a_matrix_buffer_, num_matrix_rows, num_matrix_columns);
+    b_vector_vienna_ = viennacl::vector<fiberfloat>(b_vector_buffer_, num_matrix_rows);
+}
+
+void Simulation::initializeViennaCL()
+{
+    // Just using the default context id 0 here. No explicit switch to it is necessary
+    viennacl::ocl::setup_context(0, context_, device_->id(), queue_);
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -386,8 +397,9 @@ void Simulation::step()
 {
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
+    solveSystem();
 
-    dumpLinearSystem();
+    //dumpLinearSystem();
 }
 
 void Simulation::assembleSystem()
@@ -404,13 +416,22 @@ void Simulation::assembleSystem()
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
     clCheckError(err, "Could not set kernel arguments for assembling system");
 
-    performance_->start("assemble_system");
+    performance_->start("assemble_system", false);
     // let the opencl runtime determine optimal local work size
     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("assemble_system"));
     clCheckError(err, "Could not enqueue kernel");
 
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
+}
+
+void Simulation::solveSystem()
+{
+    performance_->start("solve_system", true);
+    //viennacl::linalg::gmres_tag custom_gmres(1e-10, 100, 30);
+    b_vector_vienna_ = viennacl::linalg::solve(a_matrix_vienna_, b_vector_vienna_, viennacl::linalg::gmres_tag());
+    performance_->stop("solve_system");
+    performance_->print("solve_system");
 }
 
 void Simulation::dumpLinearSystem()

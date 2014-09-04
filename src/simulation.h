@@ -22,6 +22,29 @@
 #include <string>
 #include <map>
 
+// Don't bother with warnings in external dependencies
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wdeprecated"
+#pragma GCC diagnostic ignored "-Wdocumentation-unknown-command"
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+#pragma GCC diagnostic ignored "-Wexit-time-destructors"
+#pragma GCC diagnostic ignored "-Wglobal-constructors"
+#pragma GCC diagnostic ignored "-Wpadded"
+#pragma GCC diagnostic ignored "-Wweak-vtables"
+#pragma GCC diagnostic ignored "-Wcovered-switch-default"
+#pragma GCC diagnostic ignored "-Wextra-semi"
+#pragma GCC diagnostic ignored "-Wdocumentation"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wfloat-equal"
+#define VIENNACL_WITH_OPENCL
+#include "viennacl/ocl/backend.hpp"
+#include "viennacl/matrix.hpp"
+#include "viennacl/vector.hpp"
+#include "viennacl/linalg/gmres.hpp"
+#pragma GCC diagnostic pop
+
 #include "common.h"
 #include "parameters.h"
 #include "performance.h"
@@ -60,16 +83,20 @@ private:
     cl_mem a_matrix_buffer_;
     cl_mem b_vector_buffer_;
 
+    viennacl::matrix<fiberfloat, viennacl::column_major> a_matrix_vienna_;
+    viennacl::vector<fiberfloat> b_vector_vienna_;
+
     cl_mem quadrature_points_buffer_;
     cl_mem quadrature_weights_buffer_;
     cl_mem legendre_polynomials_buffer_;
 
     std::map<std::string,cl_kernel> kernels_;
 
-    void initalizeQueue();
-    void initalizeKernels();
-    void initalizeProgram();
-    void initalizeBuffers();
+    void initializeQueue();
+    void initializeKernels();
+    void initializeProgram();
+    void initializeBuffers();
+    void initializeViennaCL();
 
     void writeFiberStateToDevice();
     void readFiberStateFromDevice();
@@ -78,6 +105,7 @@ private:
     void precomputeLegendrePolynomials();
 
     void assembleSystem();
+    void solveSystem();
 
     void dumpLinearSystem();
 };

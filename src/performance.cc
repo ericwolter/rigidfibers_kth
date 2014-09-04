@@ -31,17 +31,18 @@ Performance::Performance(cl_command_queue queue)
 }
 Performance::~Performance() {}
 
-cl_event* Performance::getDeviceEvent(std::string name) 
+cl_event *Performance::getDeviceEvent(std::string name)
 {
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
 
     // create a new event if this is the first time we encounter it
-    if(performance_tracker == trackers_.end()) 
+    if (performance_tracker == trackers_.end())
     {
         PerformanceTracker tracker;
         tracker.name = name;
         tracker.host_count = 0;
         tracker.device_count = 0;
+        tracker.host_only = false;
 
         trackers_[name] = tracker;
 
@@ -51,18 +52,19 @@ cl_event* Performance::getDeviceEvent(std::string name)
     return &(performance_tracker->second).event;
 }
 
-void Performance::start(std::string name)
+void Performance::start(std::string name, bool host_only)
 {
     clFinish(queue_);
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
 
     // create a new event if this is the first time we encounter it
-    if(performance_tracker == trackers_.end()) 
+    if (performance_tracker == trackers_.end())
     {
         PerformanceTracker tracker;
         tracker.name = name;
         tracker.host_count = 0;
         tracker.device_count = 0;
+        tracker.host_only = host_only;
 
         trackers_[name] = tracker;
 
@@ -82,35 +84,42 @@ void Performance::stop(std::string name)
 
     tracker->host_count++;
     tracker->host_last_time = (std::chrono::duration_cast<std::chrono::duration<double> >(host_end - tracker->host_start)).count();
-    tracker->host_average_time = tracker->host_average_time + ((tracker->host_last_time - tracker->host_average_time)/tracker->host_count);
+    tracker->host_average_time = tracker->host_average_time + ((tracker->host_last_time - tracker->host_average_time) / tracker->host_count);
 
-    cl_ulong device_start, device_end;
-    clGetEventProfilingInfo(tracker->event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &device_start, NULL);
-    clGetEventProfilingInfo(tracker->event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &device_end, NULL);
+    if (!tracker->host_only)
+    {
+        cl_ulong device_start, device_end;
+        clGetEventProfilingInfo(tracker->event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &device_start, NULL);
+        clGetEventProfilingInfo(tracker->event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &device_end, NULL);
 
-    tracker->device_count++;
-    tracker->device_last_time = (device_end - device_start) * 1e-9;
-    tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time)/tracker->device_count);
+        tracker->device_count++;
+        tracker->device_last_time = (device_end - device_start) * 1e-9;
+        tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / tracker->device_count);
+    }
 }
 
-void Performance::print(std::string name) 
+void Performance::print(std::string name)
 {
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
     std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(host)   took " << performance_tracker->second.host_average_time << " sec on average" << std::endl;
     std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(host)   took " << performance_tracker->second.host_last_time << " sec last time" << std::endl;
-    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_average_time << " sec on average" << std::endl;
-    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_last_time << " sec last time" << std::endl;
+    if (!performance_tracker->second.host_only)
+    {
+        std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_average_time << " sec on average" << std::endl;
+        std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_last_time << " sec last time" << std::endl;
+    }
 }
 
-void Performance::dump() 
+void Performance::dump()
 {
     std::map<std::string, PerformanceTracker>::iterator iter;
-    for (iter = trackers_.begin(); iter != trackers_.end(); ++iter) {
+    for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
+    {
         print(iter->second.name);
     }
 }
 
-void Performance::exportMeasurements(std::string filename) 
+void Performance::exportMeasurements(std::string filename)
 {
     std::string executablePath = Resources::getExecutablePath();
 
@@ -119,7 +128,8 @@ void Performance::exportMeasurements(std::string filename)
     performance_output_file.open (outputPath.c_str());
     performance_output_file << std::fixed << std::setprecision(8);
     std::map<std::string, PerformanceTracker>::iterator iter;
-    for (iter = trackers_.begin(); iter != trackers_.end(); ++iter) {
+    for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
+    {
         PerformanceTracker *tracker = &iter->second;
 
         performance_output_file << tracker->name << ";" << tracker->host_average_time << std::endl;
