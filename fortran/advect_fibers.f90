@@ -461,6 +461,8 @@ PROGRAM ADVECT_FIBERS
                  restart,max_iters,tol,init_guess)
          END IF
       END IF
+
+      PRINT *, coeffvec
       
       init_guess=coeffvec;
       old=new; 
