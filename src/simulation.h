@@ -43,6 +43,9 @@
 #include "viennacl/matrix.hpp"
 #include "viennacl/vector.hpp"
 #include "viennacl/linalg/gmres.hpp"
+#include "viennacl/linalg/cg.hpp"
+#include "viennacl/linalg/bicgstab.hpp"
+#include "viennacl/linalg/lu.hpp"
 #pragma GCC diagnostic pop
 
 #include "common.h"
@@ -82,9 +85,6 @@ private:
 
     cl_mem a_matrix_buffer_;
     cl_mem b_vector_buffer_;
-
-    viennacl::matrix<fiberfloat, viennacl::column_major> a_matrix_vienna_;
-    viennacl::vector<fiberfloat> b_vector_vienna_;
 
     cl_mem quadrature_points_buffer_;
     cl_mem quadrature_weights_buffer_;

@@ -208,9 +208,6 @@ void Simulation::initializeBuffers()
                                       sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
     b_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
                                       sizeof(fiberfloat) * num_matrix_rows, NULL, NULL);
-
-    a_matrix_vienna_ = viennacl::matrix<fiberfloat, viennacl::column_major>(a_matrix_buffer_, num_matrix_rows, num_matrix_columns);
-    b_vector_vienna_ = viennacl::vector<fiberfloat>(b_vector_buffer_, num_matrix_rows);
 }
 
 void Simulation::initializeViennaCL()
@@ -399,7 +396,7 @@ void Simulation::step()
     assembleSystem();
     solveSystem();
 
-    //dumpLinearSystem();
+    dumpLinearSystem();
 }
 
 void Simulation::assembleSystem()
@@ -427,9 +424,16 @@ void Simulation::assembleSystem()
 
 void Simulation::solveSystem()
 {
+    fiberuint num_matrix_rows =
+        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
+    fiberuint num_matrix_columns = num_matrix_rows;
+
+    viennacl::matrix<fiberfloat, viennacl::column_major> a_matrix_vienna(a_matrix_buffer_, num_matrix_rows, num_matrix_columns);
+    viennacl::vector<fiberfloat> b_vector_vienna(b_vector_buffer_, num_matrix_rows);
+
+    viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
     performance_->start("solve_system", true);
-    //viennacl::linalg::gmres_tag custom_gmres(1e-10, 100, 30);
-    b_vector_vienna_ = viennacl::linalg::solve(a_matrix_vienna_, b_vector_vienna_, viennacl::linalg::gmres_tag());
+    b_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
     performance_->stop("solve_system");
     performance_->print("solve_system");
 }

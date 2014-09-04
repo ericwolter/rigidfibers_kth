@@ -47,7 +47,8 @@ const CLPlatform* CLUtils::selectPlatform() {
     cl_uint selectedPlatformIndex;
 
     std::cout << "> ";
-    std::cin >> selectedPlatformIndex;
+    //std::cin >> selectedPlatformIndex;
+    selectedPlatformIndex = 0;
 
     return platforms.at(selectedPlatformIndex);
 }
@@ -75,7 +76,8 @@ const CLDevice* CLUtils::selectDevice(const CLPlatform *platform) {
     cl_uint selectedDeviceIndex;
 
     std::cout << "> ";
-    std::cin >> selectedDeviceIndex;
+    //std::cin >> selectedDeviceIndex;
+    selectedDeviceIndex = 0;
 
     return devices.at(selectedDeviceIndex);
 }

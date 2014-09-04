@@ -145,7 +145,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
     const fiberfloat4 orientation_i = orientations[i];
 
     // @TODO Constant external force
-    const fiberfloat4 external_force = 0.5 * (fiberfloat4)(0.0, 0.0, -1.0, 0.0);
+    const fiberfloat4 external_force = 0.5f * (fiberfloat4)(0.0, 0.0, -1.0, 0.0);
 
     const fiberuint total_number_of_rows = NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS;
 
