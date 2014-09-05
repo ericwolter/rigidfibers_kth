@@ -89,6 +89,7 @@ void Simulation::initializeProgram()
         "common.h",
         "vadd.cl",
         "assemble_system.cl",
+        "update_velocities.cl",
         ""
     };
 
@@ -200,6 +201,9 @@ void Simulation::initializeBuffers()
     current_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
     next_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
 
+    translational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    rotational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+
     fiberuint num_matrix_rows =
         3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
     fiberuint num_matrix_columns = num_matrix_rows;
@@ -207,6 +211,9 @@ void Simulation::initializeBuffers()
     a_matrix_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
                                       sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, NULL, NULL);
     b_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
+                                      sizeof(fiberfloat) * num_matrix_rows, NULL, NULL);
+    // @TODO might be able to just use B vector for the solution
+    x_vector_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE,
                                       sizeof(fiberfloat) * num_matrix_rows, NULL, NULL);
 }
 
@@ -394,9 +401,13 @@ void Simulation::step()
 {
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
+    std::cout << "     [GPU]      : Solving system..." << std::endl;
     solveSystem();
+    std::cout << "     [GPU]      : Updating velocities..." << std::endl;
+    updateVelocities();
 
-    dumpLinearSystem();
+    //dumpLinearSystem();
+    dumpVelocities();
 }
 
 void Simulation::assembleSystem()
@@ -430,12 +441,37 @@ void Simulation::solveSystem()
 
     viennacl::matrix<fiberfloat, viennacl::column_major> a_matrix_vienna(a_matrix_buffer_, num_matrix_rows, num_matrix_columns);
     viennacl::vector<fiberfloat> b_vector_vienna(b_vector_buffer_, num_matrix_rows);
+    viennacl::vector<fiberfloat> x_vector_vienna(x_vector_buffer_, num_matrix_rows);
 
     viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
     performance_->start("solve_system", true);
-    b_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
+    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
     performance_->stop("solve_system");
     performance_->print("solve_system");
+}
+
+void Simulation::updateVelocities()
+{
+    cl_int err = 0;
+
+    cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &x_vector_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &translational_velocity_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &rotational_velocity_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_points_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_weights_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
+    clCheckError(err, "Could not set kernel arguments for updating velocities");
+
+    performance_->start("update_velocities", false);
+    // let the opencl runtime determine optimal local work size
+    err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_velocities"));
+    clCheckError(err, "Could not enqueue kernel");
+
+    performance_->stop("update_velocities");
+    performance_->print("update_velocities");
 }
 
 void Simulation::dumpLinearSystem()
@@ -446,26 +482,33 @@ void Simulation::dumpLinearSystem()
 
     fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
     fiberfloat *b_vector = new fiberfloat[num_matrix_rows];
+    fiberfloat *x_vector = new fiberfloat[num_matrix_rows];
 
     cl_int err;
     err = clEnqueueReadBuffer(queue_, a_matrix_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, a_matrix, 0, NULL, NULL);
     clCheckError(err, "Could not read from a_matrix");
     err = clEnqueueReadBuffer(queue_, b_vector_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows, b_vector, 0, NULL, NULL);
     clCheckError(err, "Could not read from b_vector");
+    err = clEnqueueReadBuffer(queue_, x_vector_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows, x_vector, 0, NULL, NULL);
+    clCheckError(err, "Could not read from x_vector");
 
     std::string executablePath = Resources::getExecutablePath();
 
     std::string a_matrix_output_path = executablePath + "/a_matrix.out";
     std::string b_vector_output_path = executablePath + "/b_vector.out";
+    std::string x_vector_output_path = executablePath + "/x_vector.out";
 
     std::ofstream a_matrix_output_file;
     std::ofstream b_vector_output_file;
+    std::ofstream x_vector_output_file;
 
     a_matrix_output_file.open (a_matrix_output_path.c_str());
     b_vector_output_file.open (b_vector_output_path.c_str());
+    x_vector_output_file.open (x_vector_output_path.c_str());
 
     a_matrix_output_file << std::fixed << std::setprecision(8);
     b_vector_output_file << std::fixed << std::setprecision(8);
+    x_vector_output_file << std::fixed << std::setprecision(8);
 
     for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
     {
@@ -474,32 +517,111 @@ void Simulation::dumpLinearSystem()
             fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
             if (value < 0)
             {
-                a_matrix_output_file << "     " << a_matrix[row_index + column_index * num_matrix_rows];
+                a_matrix_output_file << "     " << value;
             }
             else
             {
-                a_matrix_output_file << "      " << a_matrix[row_index + column_index * num_matrix_rows];
+                a_matrix_output_file << "      " << value;
             }
         }
 
-        fiberfloat value = b_vector[row_index];
+        fiberfloat value;
+        value = b_vector[row_index];
         if (value < 0)
         {
-            b_vector_output_file << "     " << b_vector[row_index];
+            b_vector_output_file << "     " << value;
         }
         else
         {
-            b_vector_output_file << "      " << b_vector[row_index];
+            b_vector_output_file << "      " << value;
+        }
+        value = x_vector[row_index];
+        if (value < 0)
+        {
+            x_vector_output_file << "     " << value;
+        }
+        else
+        {
+            x_vector_output_file << "      " << value;
         }
 
         a_matrix_output_file << std::endl;
         b_vector_output_file << std::endl;
+        x_vector_output_file << std::endl;
     }
     a_matrix_output_file.close();
     b_vector_output_file.close();
+    x_vector_output_file.close();
 
     delete[] a_matrix;
     delete[] b_vector;
+    delete[] x_vector;
+}
+
+void Simulation::dumpVelocities()
+{
+    fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
+
+    fiberfloat *t_vel = new fiberfloat[num_rows];
+    fiberfloat *r_vel = new fiberfloat[num_rows];
+
+    cl_int err;
+    err = clEnqueueReadBuffer(queue_, translational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, t_vel, 0, NULL, NULL);
+    clCheckError(err, "Could not read from t_vel");
+    err = clEnqueueReadBuffer(queue_, rotational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, r_vel, 0, NULL, NULL);
+    clCheckError(err, "Could not read from r_vel");
+
+    std::string executablePath = Resources::getExecutablePath();
+
+    std::string t_vel_output_path = executablePath + "/t_vel.out";
+    std::string r_vel_output_path = executablePath + "/r_vel.out";
+
+    std::ofstream t_vel_output_file;
+    std::ofstream r_vel_output_file;
+
+    t_vel_output_file.open (t_vel_output_path.c_str());
+    r_vel_output_file.open (r_vel_output_path.c_str());
+
+    t_vel_output_file << std::fixed << std::setprecision(8);
+    r_vel_output_file << std::fixed << std::setprecision(8);
+
+    int coordinate = 0;
+    for (fiberuint row_index = 0; row_index < num_rows; ++row_index)
+    {
+        if (coordinate == 3) {
+            coordinate = 0;
+            continue;
+        } else {
+            coordinate++;
+        }
+
+        fiberfloat t_value = t_vel[row_index];
+        fiberfloat r_value = r_vel[row_index];
+        if (t_value < 0)
+        {
+            t_vel_output_file << "     " << t_value;
+        }
+        else
+        {
+            t_vel_output_file << "      " << t_value;
+        }
+        if (r_value < 0)
+        {
+            r_vel_output_file << "     " << r_value;
+        }
+        else
+        {
+            r_vel_output_file << "      " << r_value;
+        }
+
+        t_vel_output_file << std::endl;
+        r_vel_output_file << std::endl;
+    }
+    t_vel_output_file.close();
+    r_vel_output_file.close();
+
+    delete[] t_vel;
+    delete[] r_vel;    
 }
 
 void Simulation::exportPerformanceMeasurments()

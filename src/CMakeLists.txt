@@ -78,6 +78,7 @@ set(KERNELS
     common.h
     kernels/vadd.cl
     kernels/assemble_system.cl
+    kernels/update_velocities.cl
 )
 
 add_custom_target(copy)

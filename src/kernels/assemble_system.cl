@@ -119,8 +119,6 @@ void *compute_G(fiberfloat4 position_i,
             }
         }
     }
-
-    return G;
 }
 
 kernel void assemble_system(const global fiberfloat4 *positions,

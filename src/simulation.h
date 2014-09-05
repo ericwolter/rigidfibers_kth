@@ -83,8 +83,12 @@ private:
     cl_mem current_orientation_buffer_;
     cl_mem next_orientation_buffer_;
 
+    cl_mem translational_velocity_buffer_;
+    cl_mem rotational_velocity_buffer_;
+
     cl_mem a_matrix_buffer_;
     cl_mem b_vector_buffer_;
+    cl_mem x_vector_buffer_;
 
     cl_mem quadrature_points_buffer_;
     cl_mem quadrature_weights_buffer_;
@@ -106,8 +110,10 @@ private:
 
     void assembleSystem();
     void solveSystem();
+    void updateVelocities();
 
     void dumpLinearSystem();
+    void dumpVelocities();
 };
 
 #endif // FIBERS_SIMULATION_H_
