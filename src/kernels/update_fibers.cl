@@ -1,13 +1,13 @@
-kernel void update_fibers_firststep(const global fiberfloat4 *previous_positions,
+kernel void update_fibers(const global fiberfloat4 *previous_positions,
                                     const global fiberfloat4 *current_positions,
                                     global fiberfloat4 *next_positions,
                                     const global fiberfloat4 *previous_orientations,
                                     const global fiberfloat4 *current_orientations,
                                     global fiberfloat4 *next_orientations,
                                     const global fiberfloat4 *previous_translational_velocities,
-                                    const global fiberfloat4 *previous_rotational_velocities,
                                     const global fiberfloat4 *current_translational_velocities,
-                                    const global fiberfloat4 *current_rotational_velocities)
+                                    const global fiberfloat4 *current_rotational_velocities,
+                                    const global fiberfloat4 *previous_rotational_velocities)
 {
     size_t i = get_global_id(0);
 

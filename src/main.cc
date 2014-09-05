@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     do
     {
         std::cout << "     [CPU]      : Timestep " << current_timestep + 1 << " of " << configuration.parameters.num_timesteps << std::endl;
-        simulation.step();
+        simulation.step(current_timestep);
 
         current_timestep++;
 

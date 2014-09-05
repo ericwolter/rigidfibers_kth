@@ -59,7 +59,7 @@ public:
     Simulation(cl_context context, const CLDevice *device, Configuration configuration);
     ~Simulation();
 
-    void step();
+    void step(unsigned long current_timestep);
 
     void exportPerformanceMeasurments();
 private:
@@ -113,7 +113,9 @@ private:
     void assembleSystem();
     void solveSystem();
     void updateVelocities();
+    void updateFibers(bool first_timestep);
 
+    void dumpFibers();
     void dumpLinearSystem();
     void dumpVelocities();
 };

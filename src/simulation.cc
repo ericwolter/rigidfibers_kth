@@ -90,6 +90,8 @@ void Simulation::initializeProgram()
         "vadd.cl",
         "assemble_system.cl",
         "update_velocities.cl",
+        "update_fibers_firststep.cl",
+        "update_fibers.cl",
         ""
     };
 
@@ -126,7 +128,7 @@ void Simulation::initializeProgram()
     clflags << "-w" << " ";
 
     clflags << "-DDIMENSIONS=" << 3 << " ";
-    clflags << "-DTIMESTEP=" << configuration_.parameters.timestep << " ";
+    clflags << "-DTIMESTEP=" << configuration_.parameters.timestep << "f ";
     clflags << "-DNUMBER_OF_FIBERS=" << configuration_.parameters.num_fibers << " ";
     clflags << "-DSLENDERNESS=" << configuration_.parameters.slenderness << " ";
     clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
@@ -400,7 +402,7 @@ void Simulation::precomputeLegendrePolynomials()
 #pragma GCC diagnostic pop
 }
 
-void Simulation::step()
+void Simulation::step(unsigned long current_timestep)
 {
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
@@ -411,6 +413,11 @@ void Simulation::step()
 
     //dumpLinearSystem();
     //dumpVelocities();
+
+    std::cout << "     [GPU]      : Updating fibers..." << std::endl;
+    updateFibers(current_timestep == 0);
+
+    //dumpFibers();
 
     DoubleSwap(cl_mem, previous_translational_velocity_buffer_, current_translational_velocity_buffer_);
     DoubleSwap(cl_mem, previous_rotational_velocity_buffer_, current_rotational_velocity_buffer_);
@@ -481,6 +488,122 @@ void Simulation::updateVelocities()
 
     performance_->stop("update_velocities");
     performance_->print("update_velocities");
+}
+
+void Simulation::updateFibers(bool first_timestep)
+{
+    if(first_timestep) {
+        cl_int err = 0;
+
+        cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_position_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_orientation_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
+        clCheckError(err, "Could not set kernel arguments for updating fibers");
+
+        performance_->start("update_fibers_firststep", false);
+        // let the opencl runtime determine optimal local work size
+        err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers_firststep"));
+        clCheckError(err, "Could not enqueue kernel");
+
+        performance_->stop("update_fibers_firststep");
+        performance_->print("update_fibers_firststep");
+    } else {
+        cl_int err = 0;
+
+        cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_position_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_position_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_orientation_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_orientation_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_translational_velocity_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_rotational_velocity_buffer_);
+        err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
+        clCheckError(err, "Could not set kernel arguments for updating fibers");
+
+        performance_->start("update_fibers_firststep", false);
+        // let the opencl runtime determine optimal local work size
+        err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers_firststep"));
+        clCheckError(err, "Could not enqueue kernel");
+
+        performance_->stop("update_fibers_firststep");
+        performance_->print("update_fibers_firststep");
+    }
+}
+
+void Simulation::dumpFibers() 
+{
+    fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
+
+    fiberfloat *p = new fiberfloat[num_rows];
+    fiberfloat *o = new fiberfloat[num_rows];
+
+    cl_int err;
+    err = clEnqueueReadBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, p, 0, NULL, NULL);
+    clCheckError(err, "Could not read from p");
+    err = clEnqueueReadBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, o, 0, NULL, NULL);
+    clCheckError(err, "Could not read from o");
+
+    std::string executablePath = Resources::getExecutablePath();
+
+    std::string p_output_path = executablePath + "/positions.out";
+    std::string o_output_path = executablePath + "/orientations.out";
+
+    std::ofstream p_output_file;
+    std::ofstream o_output_file;
+
+    p_output_file.open (p_output_path.c_str());
+    o_output_file.open (o_output_path.c_str());
+
+    p_output_file << std::fixed << std::setprecision(8);
+    o_output_file << std::fixed << std::setprecision(8);
+
+    int coordinate = 0;
+    for (fiberuint row_index = 0; row_index < num_rows; ++row_index)
+    {
+        if (coordinate == 3)
+        {
+            coordinate = 0;
+            continue;
+        }
+        else
+        {
+            coordinate++;
+        }
+
+        fiberfloat p_value = p[row_index];
+        fiberfloat o_value = o[row_index];
+        if (p_value < 0)
+        {
+            p_output_file << "     " << p_value;
+        }
+        else
+        {
+            p_output_file << "      " << p_value;
+        }
+        if (o_value < 0)
+        {
+            o_output_file << "     " << o_value;
+        }
+        else
+        {
+            o_output_file << "      " << o_value;
+        }
+
+        p_output_file << std::endl;
+        o_output_file << std::endl;
+    }
+    p_output_file.close();
+    o_output_file.close();
+
+    delete[] p;
+    delete[] o;    
 }
 
 void Simulation::dumpLinearSystem()
@@ -597,10 +720,13 @@ void Simulation::dumpVelocities()
     int coordinate = 0;
     for (fiberuint row_index = 0; row_index < num_rows; ++row_index)
     {
-        if (coordinate == 3) {
+        if (coordinate == 3)
+        {
             coordinate = 0;
             continue;
-        } else {
+        }
+        else
+        {
             coordinate++;
         }
 
@@ -630,7 +756,7 @@ void Simulation::dumpVelocities()
     r_vel_output_file.close();
 
     delete[] t_vel;
-    delete[] r_vel;    
+    delete[] r_vel;
 }
 
 void Simulation::exportPerformanceMeasurments()
