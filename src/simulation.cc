@@ -126,6 +126,7 @@ void Simulation::initializeProgram()
     clflags << "-w" << " ";
 
     clflags << "-DDIMENSIONS=" << 3 << " ";
+    clflags << "-DTIMESTEP=" << configuration_.parameters.timestep << " ";
     clflags << "-DNUMBER_OF_FIBERS=" << configuration_.parameters.num_fibers << " ";
     clflags << "-DSLENDERNESS=" << configuration_.parameters.slenderness << " ";
     clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
@@ -201,8 +202,10 @@ void Simulation::initializeBuffers()
     current_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
     next_orientation_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
 
-    translational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
-    rotational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_translational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    previous_rotational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_translational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
+    current_rotational_velocity_buffer_ = clCreateBuffer(context_, CL_MEM_READ_WRITE, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, NULL, NULL);
 
     fiberuint num_matrix_rows =
         3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
@@ -407,7 +410,13 @@ void Simulation::step()
     updateVelocities();
 
     //dumpLinearSystem();
-    dumpVelocities();
+    //dumpVelocities();
+
+    DoubleSwap(cl_mem, previous_translational_velocity_buffer_, current_translational_velocity_buffer_);
+    DoubleSwap(cl_mem, previous_rotational_velocity_buffer_, current_rotational_velocity_buffer_);
+
+    TripleSwap(cl_mem, previous_position_buffer_, current_position_buffer_, next_position_buffer_);
+    TripleSwap(cl_mem, previous_orientation_buffer_, current_orientation_buffer_, next_orientation_buffer_);
 }
 
 void Simulation::assembleSystem()
@@ -458,8 +467,8 @@ void Simulation::updateVelocities()
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &x_vector_buffer_);
-    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &translational_velocity_buffer_);
-    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &rotational_velocity_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
+    err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_points_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_weights_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
@@ -566,9 +575,9 @@ void Simulation::dumpVelocities()
     fiberfloat *r_vel = new fiberfloat[num_rows];
 
     cl_int err;
-    err = clEnqueueReadBuffer(queue_, translational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, t_vel, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue_, current_translational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, t_vel, 0, NULL, NULL);
     clCheckError(err, "Could not read from t_vel");
-    err = clEnqueueReadBuffer(queue_, rotational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, r_vel, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(queue_, current_rotational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, r_vel, 0, NULL, NULL);
     clCheckError(err, "Could not read from r_vel");
 
     std::string executablePath = Resources::getExecutablePath();

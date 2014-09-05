@@ -79,6 +79,8 @@ set(KERNELS
     kernels/vadd.cl
     kernels/assemble_system.cl
     kernels/update_velocities.cl
+    kernels/update_fibers_firststep.cl
+    kernels/update_fibers.cl
 )
 
 add_custom_target(copy)

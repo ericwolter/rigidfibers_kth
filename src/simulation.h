@@ -83,8 +83,10 @@ private:
     cl_mem current_orientation_buffer_;
     cl_mem next_orientation_buffer_;
 
-    cl_mem translational_velocity_buffer_;
-    cl_mem rotational_velocity_buffer_;
+    cl_mem previous_translational_velocity_buffer_;
+    cl_mem current_translational_velocity_buffer_;
+    cl_mem previous_rotational_velocity_buffer_;
+    cl_mem current_rotational_velocity_buffer_;
 
     cl_mem a_matrix_buffer_;
     cl_mem b_vector_buffer_;

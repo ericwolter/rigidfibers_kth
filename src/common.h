@@ -83,6 +83,8 @@
     }
 
     #define IntCeil(num, divider) ((((num) + (divider) - 1) / (divider)) * (divider))
+    #define DoubleSwap(t, a, b) { t tmp = a; a = b; b = tmp; }
+    #define TripleSwap(t, a, b, c) {t tmp = a; a = b; b = c; c = tmp; } 
 
     // This struct is used on both the host and the device that's why it uses only
     // our custom types, see details host sections for more details

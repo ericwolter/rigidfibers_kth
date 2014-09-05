@@ -101,13 +101,15 @@ void Performance::stop(std::string name)
 void Performance::print(std::string name)
 {
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
-    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(host)   took " << performance_tracker->second.host_average_time << " sec on average" << std::endl;
-    std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(host)   took " << performance_tracker->second.host_last_time << " sec last time" << std::endl;
-    if (!performance_tracker->second.host_only)
-    {
-        std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_average_time << " sec on average" << std::endl;
-        std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_last_time << " sec last time" << std::endl;
-    }
+    std::cout << "  [BENCHMARK]   : " << std::left << std::setw(17) << std::setfill(' ') 
+                                      << performance_tracker->second.name
+                                      << std::setprecision(2)
+                                      << " : " << performance_tracker->second.host_last_time << "(" << performance_tracker->second.host_average_time << ")" << " sec" << std::endl;
+    // if (!performance_tracker->second.host_only)
+    // {
+    //     std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_average_time << " sec on average" << std::endl;
+    //     std::cout << "  [BENCHMARK]   : " << performance_tracker->second.name << "(device) took " << performance_tracker->second.device_last_time << " sec last time" << std::endl;
+    // }
 }
 
 void Performance::dump()
