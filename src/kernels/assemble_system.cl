@@ -113,10 +113,6 @@ void *compute_G(fiberfloat4 position_i,
             GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K11 * external_force.x + K12 * external_force.y + K13 * external_force.z);
             GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K12 * external_force.x + K22 * external_force.y + K23 * external_force.z);
             GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K13 * external_force.x + K23 * external_force.y + K33 * external_force.z);
-
-            if(debug && quadrature_index_i==15-1) {
-                printf("     %f\n", K11);
-            }
         }
     }
 }
@@ -359,11 +355,6 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                     b_vector[x_row_index] -= gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF);
                     b_vector[y_row_index] -= gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF);
                     b_vector[z_row_index] -= gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF);
-
-                    if (i == 0 && force_index_i == 0 && force_index_j == 1 && j == 4)
-                    {
-                        printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d;\nB.x=%f;d1=%f;d2=%f;d3=%f;d4=%f;d5=%f;\n", i, j, force_index_i, force_index_j, b_vector[x_row_index], gamma, TF1, eigen[force_index_j], orientation_i.x, QF);
-                    }
                 }
             }            
         }

@@ -153,14 +153,7 @@ kernel void update_velocities(const global fiberfloat4 *positions,
                                         TF3A1 - (orientation_i.x * orientation_i.z * TF1A1 + orientation_i.y * orientation_i.z * TF2A1 + orientation_i.z * orientation_i.z * TF3A1),
                                         0.0
                                     );
-
-        if (i == 0)
-        {
-            printf("i=%d;j=%d\n%f %f %f\n", i, j, rotational_velocities[i].x, rotational_velocities[i].y, rotational_velocities[i].z);
-        }
-
     }
-
 
     translational_velocities[i] /= d;
     rotational_velocities[i] /= d;
