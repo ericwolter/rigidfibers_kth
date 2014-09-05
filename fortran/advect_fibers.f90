@@ -171,7 +171,6 @@ PROGRAM ADVECT_FIBERS
   !me:  @todo ???
   REAL*8 CPU_p
 
-
   !****************************************************************************!
   !                                                                            !
   ! Read Parameters from Standard In                                           !
@@ -435,7 +434,7 @@ PROGRAM ADVECT_FIBERS
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,no_ts
+  DO tt=1,1
      IF (mod(tt,5)==0) THEN
         PRINT *,"time step no ",tt
      END IF
@@ -462,8 +461,6 @@ PROGRAM ADVECT_FIBERS
          END IF
       END IF
 
-      PRINT *, coeffvec
-      
       init_guess=coeffvec;
       old=new; 
       new=3-old; 
@@ -496,6 +493,8 @@ PROGRAM ADVECT_FIBERS
       !     1,2,3 -> 2,3,1 => 3,2   -> 1
       
       !! Update postition and orientation by solving (24) and (25) in time
+      CALL SYSTEM_CLOCK(count1, count_rate, count_max)
+
       IF (tt==1) THEN
          !!first time step. 
          XcVecs(:,three)=XcVecs(:,two)+dt*VelVecs(:,new);
@@ -522,6 +521,10 @@ PROGRAM ADVECT_FIBERS
       tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
       
       tVecs(:,three)=tVecs(:,three)/tmod;
+
+      CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+      CPU_p = real(count2-count1)/count_rate
+      PRINT *,"Updating fibers took ",CPU_p," seconds."
       
       
       t=t+dt;
