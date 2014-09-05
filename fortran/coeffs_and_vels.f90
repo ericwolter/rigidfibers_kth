@@ -560,11 +560,6 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
         VelVecs(ind+1:ind+3)=VelVecs(ind+1:ind+3)+0.5d0*IF_a0;
         RotVecs(ind+1:ind+3)=RotVecs(ind+1:ind+3)+1.5d0*(IF_a1-sum(ta*IF_a1)*ta);
 
-        IF (filno == 1) THEN
-          PRINT "(F16.6)", RotVecs(ind+1:ind+3)
-          PRINT *, "=========="
-        END IF
-
       END IF
     END DO
   END DO
@@ -575,12 +570,6 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Updating velocities took ",CPU_p," seconds."
-
-  OPEN(10,file="RotVecs.out");
-  DO i=1,3*M
-    WRITE(10,'(*(F16.8))') (RotVecs(i))
-  END DO
-  CLOSE(10)
 
   
 END SUBROUTINE compute_velocities

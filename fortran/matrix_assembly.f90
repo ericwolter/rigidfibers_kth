@@ -701,12 +701,12 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
 
         ta_dot_ac=ta(1)*contr(1)+ta(2)*contr(2)+ta(3)*contr(3);
 
-        IF (filno == 1) THEN
-          IF (fno == 2) THEN
-            PRINT '(F16.8)', contr(1), contr(2), contr(3), ta_dot_ac
-            PRINT *,'-------'
-          END IF
-        END IF
+        !!IF (filno == 1) THEN
+        !!  IF (fno == 2) THEN
+        !!    PRINT '(F16.8)', contr(1), contr(2), contr(3), ta_dot_ac
+        !!    PRINT *,'-------'
+        !!  END IF
+        !!END IF
 
 
         Brhs(rowno)=Brhs(rowno)-D1*ta_dot_ac*ta(1);

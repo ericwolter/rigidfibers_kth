@@ -219,13 +219,6 @@ FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,DEBUG);
   G_f_GQ(1)=sum(wv*(K11*fvec_x+K12*fvec_y+K13*fvec_z));
   G_f_GQ(2)=sum(wv*(K12*fvec_x+K22*fvec_y+K23*fvec_z));
   G_f_GQ(3)=sum(wv*(K13*fvec_x+K23*fvec_y+K33*fvec_z));
-
-  IF (DEBUG==1) THEN
-    PRINT *,'-------'
-    PRINT *,'quadrature'
-    PRINT '(F16.6)', K11
-    PRINT *,'-------'
-  END IF
   
 END FUNCTION G_f_GQ
 
