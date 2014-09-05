@@ -10,8 +10,12 @@ Extensions
 Open questions?
 ---------------
 
-OpenCL vs CUDA?
-Library for solver?
+OpenCL vs CUDA? -> OpenCL
+Library for solver? -> ViennaCL, clMAGMA
+
+Eq 24,25 missing 1/2 and 3/2?
+
+
 
 
 Closed question
