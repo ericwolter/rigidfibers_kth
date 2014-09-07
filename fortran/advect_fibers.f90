@@ -434,7 +434,7 @@ PROGRAM ADVECT_FIBERS
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,1
+  DO tt=1,2 !!no_ts
      IF (mod(tt,5)==0) THEN
         PRINT *,"time step no ",tt
      END IF
@@ -521,6 +521,19 @@ PROGRAM ADVECT_FIBERS
       tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
       
       tVecs(:,three)=tVecs(:,three)/tmod;
+
+      OPEN(90,file="Position.out");
+      DO i=1,3*M
+        WRITE(90,'(*(F16.8))') (XcVecs(i,three))
+      END DO
+      CLOSE(90)
+
+      OPEN(90,file="Orientation.out");
+      DO i=1,3*M
+        WRITE(90,'(*(F16.8))') (tVecs(i,three))
+      END DO
+      CLOSE(90)
+
 
       CALL SYSTEM_CLOCK(count2, count_rate, count_max)
       CPU_p = real(count2-count1)/count_rate

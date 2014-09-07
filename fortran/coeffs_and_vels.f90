@@ -65,11 +65,11 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
  
   solve_coeffs=Brhs
-  !!OPEN(10,file="Coeff.out");
-  !!DO i=1,3*M*N
-  !!  WRITE(10,'(*(F16.8))') (solve_coeffs(i))
-  !!END DO
-  !!CLOSE(10)
+  OPEN(10,file="Coeff.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (solve_coeffs(i))
+  END DO
+  CLOSE(10)
 
   !DO j=1,M
   !   PRINT *,"coeff, element ",(j-1)*3*N+6,":",solve_coeffs((j-1)*3*N+6)

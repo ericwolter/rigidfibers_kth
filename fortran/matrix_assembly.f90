@@ -691,12 +691,12 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
           
         DO i=1,3
           contr(i)=sum(wv*Gmat(:,i)*LvecMat(:,1));
-        !!  IF (filno == 1) THEN
-        !!    IF (fno == 2) THEN
-        !!      PRINT '(F16.8)', Gmat(:,i)
-        !!      PRINT *,'-------'
-        !!    END IF
-        !!  END IF
+          !!IF (filno == 1) THEN
+          !!  IF (fno == 2) THEN
+          !!    PRINT '(F16.8)', Gmat(:,i)
+          !!    PRINT *,'-------'
+          !!  END IF
+          !!END IF
         END DO
 
         ta_dot_ac=ta(1)*contr(1)+ta(2)*contr(2)+ta(3)*contr(3);
@@ -709,17 +709,24 @@ SUBROUTINE assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
         !!END IF
 
 
+        !!IF (filno == 1) THEN
+        !!  IF (fno == 2) THEN
+        !!    PRINT '(F16.8)', Brhs(rowno),Brhs(rowno+1),Brhs(rowno+2), D1, ta_dot_ac
+        !!    PRINT *,'-------'
+        !!  END IF
+        !!END IF
+
         Brhs(rowno)=Brhs(rowno)-D1*ta_dot_ac*ta(1);
         Brhs(rowno+1)=Brhs(rowno+1)-D1*ta_dot_ac*ta(2);
         Brhs(rowno+2)=Brhs(rowno+2)-D1*ta_dot_ac*ta(3);
-        
-        IF (filno == 1) THEN
-          IF (fno == 2) THEN
-            !!PRINT '(F16.8)', Brhs(rowno),Brhs(rowno+1),Brhs(rowno+2)
-            !!PRINT *,'-------'
-          END IF
-        END IF
   
+        !!IF (filno == 1) THEN
+        !!  IF (fno == 2) THEN
+        !!    PRINT '(F16.8)', Brhs(rowno),Brhs(rowno+1),Brhs(rowno+2), D1, ta_dot_ac
+        !!    PRINT *,'-------'
+        !!  END IF
+        !!END IF
+
         !!For higher k, same formula, so now we can loop. 
         DO kk=2,N
           rowno=(filno-1)*3*N+3*(kk-1)+1;
