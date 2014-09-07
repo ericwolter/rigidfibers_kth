@@ -6,8 +6,8 @@ kernel void update_fibers(const global fiberfloat4 *previous_positions,
                                     global fiberfloat4 *next_orientations,
                                     const global fiberfloat4 *previous_translational_velocities,
                                     const global fiberfloat4 *current_translational_velocities,
-                                    const global fiberfloat4 *current_rotational_velocities,
-                                    const global fiberfloat4 *previous_rotational_velocities)
+                                    const global fiberfloat4 *previous_rotational_velocities,
+                                    const global fiberfloat4 *current_rotational_velocities)
 {
     size_t i = get_global_id(0);
 

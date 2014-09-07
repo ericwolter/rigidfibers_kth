@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= 1) {
+        if(current_timestep >= 2) {
             running = false;
         }
     }

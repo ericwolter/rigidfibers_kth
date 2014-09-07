@@ -411,19 +411,19 @@ void Simulation::step(unsigned long current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    //dumpLinearSystem();
+    dumpLinearSystem();
     //dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
     updateFibers(current_timestep == 0);
-
-    //dumpFibers();
 
     DoubleSwap(cl_mem, previous_translational_velocity_buffer_, current_translational_velocity_buffer_);
     DoubleSwap(cl_mem, previous_rotational_velocity_buffer_, current_rotational_velocity_buffer_);
 
     TripleSwap(cl_mem, previous_position_buffer_, current_position_buffer_, next_position_buffer_);
     TripleSwap(cl_mem, previous_orientation_buffer_, current_orientation_buffer_, next_orientation_buffer_);
+
+    dumpFibers();
 }
 
 void Simulation::assembleSystem()
@@ -514,7 +514,7 @@ void Simulation::updateFibers(bool first_timestep)
     } else {
         cl_int err = 0;
 
-        cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
+        cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers"];
         err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_position_buffer_);
         err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
         err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_position_buffer_);
@@ -527,13 +527,13 @@ void Simulation::updateFibers(bool first_timestep)
         err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
         clCheckError(err, "Could not set kernel arguments for updating fibers");
 
-        performance_->start("update_fibers_firststep", false);
+        performance_->start("update_fibers", false);
         // let the opencl runtime determine optimal local work size
-        err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers_firststep"));
+        err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers"));
         clCheckError(err, "Could not enqueue kernel");
 
-        performance_->stop("update_fibers_firststep");
-        performance_->print("update_fibers_firststep");
+        performance_->stop("update_fibers");
+        performance_->print("update_fibers");
     }
 }
 

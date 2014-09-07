@@ -155,6 +155,11 @@ kernel void assemble_system(const global fiberfloat4 *positions,
     fiberfloat eigen[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
     lambda[0] = 2.0;
     eigen[0] = ((d - e - cc * lambda[0])/2.0) / (d - cc * lambda[0]);
+
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0;
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0;
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0;    
+
     for (fiberuint force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
         lambda[force_index] = lambda[force_index - 1] + 2.0 / (force_index + 1);
@@ -250,7 +255,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
             QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
-            //if (i == 0 && j == 1)
+            //if (i == 0 && j == 1 && force_index_i == 0)
             //{
             //    printf("i=%d;j=%d;force_index_i=%d\nTF1=%f;TF2=%f;TF3=%f;QF=%f\n", i, j, force_index_i, TF1, TF2, TF3, QF);
             //}
@@ -279,9 +284,17 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
             if(force_index_i == 0) 
             {
+                //if (i == 0 && j == 1)
+                //{
+                //    printf("i=%d;j=%d\nBx=%f;By=%f;Bz=%f;D1=%f;QF=%f\n", i, j, b_vector[x_row_index], b_vector[y_row_index], b_vector[z_row_index], D1, QF);
+                //}
                 b_vector[x_row_index] -= D1 * orientation_i.x * QF;
                 b_vector[y_row_index] -= D1 * orientation_i.y * QF;
                 b_vector[z_row_index] -= D1 * orientation_i.z * QF;
+                //if (i == 0 && j == 1)
+                //{
+                //    printf("i=%d;j=%d\nBx=%f;By=%f;Bz=%f;D1=%f;QF=%f\n", i, j, b_vector[x_row_index], b_vector[y_row_index], b_vector[z_row_index], D1, QF);
+                //}
             }
 
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)

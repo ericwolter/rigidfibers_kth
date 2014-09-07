@@ -3,11 +3,11 @@ void *compute_GV(fiberuint j,
                 fiberfloat4 orientation_i,
                 fiberfloat4 position_j,
                 fiberfloat4 orientation_j,
-                global fiberfloat *coefficients,
+                const global fiberfloat *coefficients,
                 fiberfloat4 external_force,
-                global fiberfloat *quadrature_points,
-                global fiberfloat *quadrature_weights,
-                global fiberfloat *legendre_polynomials,
+                const global fiberfloat *quadrature_points,
+                const global fiberfloat *quadrature_weights,
+                const global fiberfloat *legendre_polynomials,
                 fiberfloat *GF,
                 bool debug) // @TODO better names
 {
@@ -83,12 +83,12 @@ void *compute_GV(fiberuint j,
 
 kernel void update_velocities(const global fiberfloat4 *positions,
                              const global fiberfloat4 *orientations,
-                             global fiberfloat *coefficients,
+                             const global fiberfloat *coefficients,
                              global fiberfloat4 *translational_velocities,
                              global fiberfloat4 *rotational_velocities,
-                             global fiberfloat *quadrature_points,
-                             global fiberfloat *quadrature_weights,
-                             global fiberfloat *legendre_polynomials)
+                             const global fiberfloat *quadrature_points,
+                             const global fiberfloat *quadrature_weights,
+                             const global fiberfloat *legendre_polynomials)
 {
     size_t i = get_global_id(0);
 
