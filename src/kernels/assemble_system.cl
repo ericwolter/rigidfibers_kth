@@ -183,7 +183,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
         {
             // we only need to write the diagonals because the rest of the matrix
             // stays 0 throughout the simulation and is only initialised once
-            // TODO: why even do that on the GPU at all?
+            // @TODO: why even do that on the GPU at all?
             for (fiberuint force_index = 0; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
             {
                 x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
@@ -227,7 +227,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             fiberfloat TF2 = 0.0;
             fiberfloat TF3 = 0.0;
 
-            // TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
+            // @TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
             fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
             fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
             compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF);
