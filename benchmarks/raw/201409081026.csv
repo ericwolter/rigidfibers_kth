@@ -1,0 +1,5 @@
+name,time
+assemble_system,0.28141271
+solve_system,0.26426512
+update_fibers,0.00007040
+update_velocities,0.06007067
