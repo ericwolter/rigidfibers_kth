@@ -27,7 +27,7 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   !       so the length of R is:
   !         |R| = sqrt(c + s'^2 + b * s')
 
-  !me:  The current quadrature point index
+  !me:  The current force expansion index
   INTEGER,INTENT(IN)::N
   !me:  The position of the other fiber which influence we are currently
   !     calculating
@@ -173,8 +173,6 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
 END IF
  
  
-!me:  @todo Why is this a loop? N is constant for each call to this subroutine
-!     and L vector is always completely overwritten in each loop?
 DO ii=1,N+1
   IF (ii==1 .OR. ii==2) THEN
      L11(ii) = I(ii);
@@ -643,7 +641,7 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
 
   REAL*8,DIMENSION(3)::R_0
 
-  !me:  The current quadrature point index
+  !me:  The current force expansion index
   INTEGER, INTENT(IN):: N
   REAL*8,DIMENSION(N+1)::L11,L12,L13,L14,L22,L23,L24
   !!REAL*8,DIMENSION(N+1)::L11n,L12n,L13n,L14n,L22n,L23n,L24n
