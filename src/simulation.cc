@@ -429,7 +429,9 @@ void Simulation::assembleSystem()
 {
     cl_int err = 0;
 
-    cl_uint param = 0; cl_kernel kernel = kernels_["assemble_system"];
+    cl_uint param = 0;
+    cl_kernel kernel = configuration_.parameters.use_analytical_integration ?
+                       kernels_["assemble_system"] : kernels_["assemble_system"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);
@@ -468,7 +470,9 @@ void Simulation::updateVelocities()
 {
     cl_int err = 0;
 
-    cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
+    cl_uint param = 0; 
+    cl_kernel kernel = configuration_.parameters.use_analytical_integration ?
+                       kernels_["update_velocities"] : kernels_["update_velocities"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &x_vector_buffer_);
@@ -493,7 +497,8 @@ void Simulation::updateFibers(bool first_timestep)
     // @TODO Why? Which one?
     // The first time step is a simple forward euler
 
-    if(first_timestep) {
+    if (first_timestep)
+    {
         cl_int err = 0;
 
         cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
@@ -511,7 +516,9 @@ void Simulation::updateFibers(bool first_timestep)
 
         performance_->stop("update_fibers_firststep");
         performance_->print("update_fibers_firststep");
-    } else {
+    }
+    else
+    {
         cl_int err = 0;
 
         cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers"];
@@ -536,7 +543,7 @@ void Simulation::updateFibers(bool first_timestep)
     }
 }
 
-void Simulation::dumpFibers() 
+void Simulation::dumpFibers()
 {
     fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
 
@@ -602,7 +609,7 @@ void Simulation::dumpFibers()
     o_output_file.close();
 
     delete[] p;
-    delete[] o;    
+    delete[] o;
 }
 
 void Simulation::dumpLinearSystem()
