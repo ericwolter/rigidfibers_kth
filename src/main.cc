@@ -29,7 +29,7 @@
 
 int main(int argc, char *argv[])
 {
-    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "0.1.0");
+    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.1.0");
 
     Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
 
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= 100) {
+        if(current_timestep >= configuration.parameters.num_timesteps) {
             running = false;
         }
     }

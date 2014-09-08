@@ -1,0 +1,12 @@
+## RigidFibersGPU v0.1.0 Release Notes
+September 2, 2014
+
+### Additions
+
+- Complete port of existing code base from Fortran to C++/OpenCL
+
+### Removals
+
+### Changes
+
+### Fixes
