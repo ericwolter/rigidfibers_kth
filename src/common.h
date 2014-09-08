@@ -66,13 +66,6 @@
         TypeName(const TypeName&);             \
         void operator=(const TypeName&)
 
-    #define DECLARE_TIMING(s)   std::chrono::high_resolution_clock::time_point time_##s; std::chrono::duration<double> diff_##s;
-    #define START_TIMING(s, q)  clFinish(q); time_##s = std::chrono::high_resolution_clock::now()
-    #define STOP_TIMING(s, q)   clFinish(q); diff_##s = std::chrono::duration_cast<std::chrono::duration<double> >(std::chrono::high_resolution_clock::now() - time_##s)
-    #define GET_TIMING(s)       diff_##s.count()
-    #define PRINT_TIMING(s)     std::cout << "  [BENCHMARK]   : " << #s << " took " << diff_##s.count() << " sec" << std::endl;
-
-
     inline void clCheckError(cl_int err, const char *name)
     {
         if(err != CL_SUCCESS) 

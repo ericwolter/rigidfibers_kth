@@ -76,7 +76,6 @@ endif()
 
 set(KERNELS
     common.h
-    kernels/vadd.cl
     kernels/assemble_system.cl
     kernels/update_velocities.cl
     kernels/update_fibers_firststep.cl
