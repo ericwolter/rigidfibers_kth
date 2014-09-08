@@ -1,4 +1,4 @@
-void *compute_GV(fiberuint j,
+    void *compute_GV(fiberuint j,
                 fiberfloat4 position_i,
                 fiberfloat4 orientation_i,
                 fiberfloat4 position_j,
@@ -8,8 +8,7 @@ void *compute_GV(fiberuint j,
                 const global fiberfloat *quadrature_points,
                 const global fiberfloat *quadrature_weights,
                 const global fiberfloat *legendre_polynomials,
-                fiberfloat *GF,
-                bool debug) // @TODO better names
+                fiberfloat *GF) // @TODO better names
 {
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
@@ -72,11 +71,6 @@ void *compute_GV(fiberuint j,
             GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K11 * force_on_fiber_j.x + K12 * force_on_fiber_j.y + K13 * force_on_fiber_j.z);
             GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K12 * force_on_fiber_j.x + K22 * force_on_fiber_j.y + K23 * force_on_fiber_j.z);
             GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K13 * force_on_fiber_j.x + K23 * force_on_fiber_j.y + K33 * force_on_fiber_j.z);
-
-            if (debug && quadrature_index_i == 15 - 1)
-            {
-                printf("     %f\n", K11);
-            }
         }
     }
 }
@@ -122,7 +116,7 @@ kernel void update_velocities(const global fiberfloat4 *positions,
         const fiberfloat4 orientation_j = orientations[j];
 
         fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
-        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, quadrature_points, quadrature_weights, legendre_polynomials, GF, false);
+        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, quadrature_points, quadrature_weights, legendre_polynomials, GF);
 
         fiberfloat TF1A0 = 0.0;
         fiberfloat TF2A0 = 0.0;

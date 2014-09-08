@@ -8,8 +8,7 @@ void *compute_G(fiberfloat4 position_i,
                             global fiberfloat *quadrature_weights,
                             global fiberfloat *legendre_polynomials,
                             fiberfloat *G,
-                            fiberfloat *GF,
-                            bool debug) // @TODO better names
+                            fiberfloat *GF) // @TODO better names
 {
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
@@ -231,7 +230,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             // TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
             fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
             fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
-            compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 0 && j == 4 && force_index_i == 0);
+            compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF);
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
