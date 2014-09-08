@@ -31,95 +31,106 @@ $(document).ready(function() {
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    queue()
-        .defer(d3.csv, "raw/201409081026.csv")
-        .defer(d3.csv, "raw/201409081239.csv")
-        .awaitAll(function(err, results) {
-            console.log(results);
+    benchmarks = [
+        "raw/fortran_100_numeric_direct.csv",
+        "raw/fortran_100_numeric_gmres.csv",
+        "raw/fortran_100_analytic_direct.csv",
+        "raw/fortran_100_analytic_gmres.csv",
+    ]
 
-            color.domain(_.chain(results)
-                .flatten()
-                .map(function(d) {
-                    return d.name
-                })
-                .unique()
-                .value());
+    var q = queue(1)
+    benchmarks.forEach(function(b) {
+        q.defer(d3.csv, b)
+    });
 
-            var max = 0.0;
-            for (var i = results.length - 1; i >= 0; i--) {
-                var result = results[i];
+    q.awaitAll(function(err, results) {
+        console.log(results);
 
-                var total = 0.0;
-                var y0 = 0.0;
-                result.forEach(function(d, i) {
-                    d.y0 = y0;
-                    d.y1 = (y0 += +d.time);
-                    total += (+d.time);
-                });
+        color.domain(_.chain(results)
+            .flatten()
+            .map(function(d) {
+                return d.name
+            })
+            .unique()
+            .value());
 
-                if (total > max) {
-                    max = total;
-                }
-            };
-            max *= 1.1;
+        var max = 0.0;
+        for (var i = results.length - 1; i >= 0; i--) {
+            var result = results[i];
 
-            x.domain([0, results.length - 1])
-            y.domain([0, max]);
+            var total = 0.0;
+            var y0 = 0.0;
+            result.forEach(function(d, i) {
+                d.y0 = y0;
+                d.y1 = (y0 += +d.time);
+                total += (+d.time);
+            });
 
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
+            if (total > max) {
+                max = total;
+            }
+        };
+        max *= 1.1;
 
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis);
+        columns = benchmarks.map(function(b) { return b.split('/')[1]; }); 
 
-            var run = svg.selectAll(".run")
-                .data(results)
-                .enter().append("g")
-                .attr("class", "g")
-                .attr("transform", function(d, i) {
-                    return "translate(" + x(i) + ",0)";
-                });
+        x.domain(columns);
+        y.domain([0, max]);
 
-            run.selectAll("rect")
-                .data(function(d) {
-                    return d;
-                })
-                .enter().append("rect")
-                .attr("width", x.rangeBand())
-                .attr("y", function(d) {
-                    return y(d.y1);
-                })
-                .attr("height", function(d) {
-                    return y(d.y0) - y(d.y1);
-                })
-                .style("fill", function(d) {
-                    return color(d.name);
-                });
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
 
-            var legend = svg.selectAll(".legend")
-                .data(color.domain().slice().reverse())
-                .enter().append("g")
-                .attr("class", "legend")
-                .attr("transform", function(d, i) {
-                    return "translate(0," + i * 20 + ")";
-                });
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(yAxis);
 
-            legend.append("rect")
-                .attr("x", width - 18)
-                .attr("width", 18)
-                .attr("height", 18)
-                .style("fill", color);
+        var run = svg.selectAll(".run")
+            .data(results)
+            .enter().append("g")
+            .attr("class", "g")
+            .attr("transform", function(d, i) {
+                return "translate(" + x(columns[i]) + ",0)";
+            });
 
-            legend.append("text")
-                .attr("x", width - 24)
-                .attr("y", 9)
-                .attr("dy", ".35em")
-                .style("text-anchor", "end")
-                .text(function(d) {
-                    return d;
-                });
-        });
+        run.selectAll("rect")
+            .data(function(d) {
+                return d;
+            })
+            .enter().append("rect")
+            .attr("width", x.rangeBand())
+            .attr("y", function(d) {
+                return y(d.y1);
+            })
+            .attr("height", function(d) {
+                return y(d.y0) - y(d.y1);
+            })
+            .style("fill", function(d) {
+                return color(d.name);
+            });
+
+        var legend = svg.selectAll(".legend")
+            .data(color.domain().slice().reverse())
+            .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) {
+                return "translate(0," + i * 20 + ")";
+            });
+
+        legend.append("rect")
+            .attr("x", width - 18)
+            .attr("width", 18)
+            .attr("height", 18)
+            .style("fill", color);
+
+        legend.append("text")
+            .attr("x", width - 24)
+            .attr("y", 9)
+            .attr("dy", ".35em")
+            .style("text-anchor", "end")
+            .text(function(d) {
+                return d;
+            });
+    });
 });
