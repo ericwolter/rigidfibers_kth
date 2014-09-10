@@ -2,7 +2,7 @@ MODULE Int_analytical
 IMPLICIT NONE
 CONTAINS
 
-SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
+SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
   IMPLICIT NONE
 
   !me:  @todo What does this function really do?
@@ -26,6 +26,8 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   !         |R|^2 = c + s'^2 + b * s'
   !       so the length of R is:
   !         |R| = sqrt(c + s'^2 + b * s')
+
+  INTEGER,INTENT(IN)::DEBUG
 
   !me:  The current force expansion index
   INTEGER,INTENT(IN)::N
@@ -115,10 +117,21 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
      I(30)=0.0d0;
      I(29)=0.0d0;
      nn=27.0d0;
+
+      !!IF (DEBUG == 1) THEN
+      !!  PRINT '(*(F10.6))', REAL(29), I(30)
+      !!  PRINT '(*(F10.6))', REAL(28), I(30)
+      !!END IF
+
+
      DO ii=28,3,-1
         
         I(ii) =(nn+2)/((nn+1)*c)*(se**(nn+1)*ue/(nn+2) - sb**(nn+1)*ub/(nn+2) + &
              (1-2*(nn+2))/(2*(nn+2))*b*I(ii+1)- I(ii+2));
+        !!IF (DEBUG == 1) THEN
+        !!  PRINT '(*(F10.6))', REAL(ii-1.0), I(ii), I(ii+1), I(ii+2), &
+        !!    se**(nn+1)*ue/(nn+2) - sb**(nn+1)*ub/(nn+2), (nn+2)
+        !!END IF
         nn=nn-1.0d0;
      END DO
   END IF
@@ -171,8 +184,7 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
      S(ii)=1/c*(J(ii)-b*S(ii+1)-S(ii+2));
   END DO
 END IF
- 
- 
+
 DO ii=1,N+1
   IF (ii==1 .OR. ii==2) THEN
      L11(ii) = I(ii);
@@ -182,7 +194,7 @@ DO ii=1,N+1
      L22(ii) = S(ii);
      L23(ii) = S(ii+1);
      L24(ii) = S(ii+2);
-    
+
   ELSEIF (ii==3) THEN
      L11(ii) = 0.5*(3.0d0*I(ii)-I(ii-2));
      L12(ii) = 0.5*(3.0d0*J(ii)-J(ii-2));
@@ -192,6 +204,7 @@ DO ii=1,N+1
      L23(ii) = 0.5*(3.0d0*S(ii+1)-S(ii-1));
      L24(ii) = 0.5*(3.0d0*S(ii+2)-S(ii));
      
+
   ELSEIF (ii==4) THEN
      L11(ii) = 0.5d0*(5.0d0*I(ii)-3.0d0*I(ii-2));
      L12(ii) = 0.5d0*(5.0d0*J(ii)-3.0d0*J(ii-2));
@@ -200,7 +213,6 @@ DO ii=1,N+1
      L22(ii) = 0.5d0*(5.0d0*S(ii)-3.0d0*S(ii-2));
      L23(ii) = 0.5d0*(5.0d0*S(ii+1)-3.0d0*S(ii-1));
      L24(ii) = 0.5d0*(5.0d0*S(ii+2)-3.0d0*S(ii));
-     
   ELSEIF (ii==5) THEN
      L11(ii) = 0.125d0*(35.0d0*I(ii)-30.0d0*I(ii-2)+3.0d0*I(ii-4));
      L12(ii) = 0.125d0*(35.0d0*J(ii)-30.0d0*J(ii-2)+3.0d0*J(ii-4));
@@ -217,6 +229,9 @@ DO ii=1,N+1
      L22(ii) = 0.125d0*(63.0d0*S(ii)-70.0d0*S(ii-2)+15.0d0*S(ii-4));
      L23(ii) = 0.125d0*(63.0d0*S(ii+1)-70.0d0*S(ii-1)+15.0d0*S(ii-3));
      L24(ii) = 0.125d0*(63.0d0*S(ii+2)-70.0d0*S(ii)+15.0d0*S(ii-2));
+     IF (DEBUG == 1) THEN
+        PRINT '(*(F10.6))', I(ii), I(ii-2), I(ii-4), 7.875d0*I(ii),8.75d0*I(ii-2),1.875d0*I(ii-4), L11(ii)
+     END IF
   ELSEIF (ii==7) THEN
      L11(ii) = 0.0625d0*(231.0d0*I(ii)-315.0d0*I(ii-2)+105.0d0*I(ii-4)-5.0d0*I(ii-6));
      L12(ii) = 0.0625d0*(231.0d0*J(ii)-315.0d0*J(ii-2)+105.0d0*J(ii-4)-5.0d0*J(ii-6));
@@ -385,6 +400,8 @@ DO ii=1,N+1
     L22(ii) = 0.125d0*(35.0d0*S(ii)-30.0d0*S(ii-2)+3.0d0*S(ii-4));
     L23(ii) = 0.125d0*(35.0d0*S(ii+1)-30.0d0*S(ii-1)+3.0d0*S(ii-3));
     L24(ii) = 0.125d0*(35.0d0*S(ii+2)-30.0d0*S(ii)+3.0d0*S(ii-2));
+
+
   ELSEIF (ii==6) THEN
      L11(ii) = 0.125d0*(63.0d0*I(ii)-70.0d0*I(ii-2)+15.0d0*I(ii-4));
      L12(ii) = 0.125d0*(63.0d0*J(ii)-70.0d0*J(ii-2)+15.0d0*J(ii-4));
@@ -619,13 +636,15 @@ END SUBROUTINE Analytical_intIII
 
 
 
-FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
+FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N, DEBUG);
 
   !!Contr. from filament b to point xbar. 
   !!G is integral over filament b, with kernel 
   !!multiplied by L_m(s).
   !!Result are 6 values stored in Gvec:
   !!G11,G22,G33,G12,G13,G23.
+
+  INTEGER,INTENT(IN)::DEBUG
 
   !me:  The positon of the other fiber which influence we want to calculate
   REAL*8,DIMENSION(3),INTENT(IN)::xb
@@ -687,8 +706,19 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
 
   
-  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24);
-  
+  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24, DEBUG);
+
+  IF(DEBUG==1) THEN
+    PRINT '(*(F10.6))', L11(N+1),L12(N+1),L22(N+1),L13(N+1),L23(N+1),L14(N+1),L24(N+1)
+    PRINT '(*(F10.6))', L11
+    PRINT '(*(F10.6))', L12
+    PRINT '(*(F10.6))', L22
+    PRINT '(*(F10.6))', L13
+    PRINT '(*(F10.6))', L23
+    PRINT '(*(F10.6))', L14
+    PRINT '(*(F10.6))', L24
+  ENDIF
+
   
   Gvec_tmp =L11(N+1)*Identity + R_00*L12(N+1) - (pb_R_0+R_0_pb)*L13(N+1)+pb_pb*L14(N+1) &
   +2.0d0*eeps**2*(Identity*L12(N+1)-3.0d0*R_00*L22(N+1)+3.0d0*(pb_R_0+R_0_pb)*L23(N+1)-3.0d0*pb_pb*L24(N+1));
@@ -703,6 +733,11 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
   G_compute_GQ_kg(5)=Gvec_tmp(1,3);
   G_compute_GQ_kg(6)=Gvec_tmp(2,3);
 
+  !!IF(DEBUG==1) THEN
+  !!  PRINT '(*(F10.6))', (pb_R_0+R_0_pb)
+  !!  PRINT '(*(F10.6))', L13(N+1)
+  !!  PRINT '(*(F10.6))', (pb_R_0+R_0_pb)*L13(N+1)
+  !!ENDIF
   
 
 END FUNCTION G_compute_GQ_kg
@@ -740,7 +775,7 @@ FUNCTION G_compute_GQ_f_kg(M,N,xb,pb,xbar,eeps,ExtForce, coeffvec,fno);
   END DO
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
   
-  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24);
+  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,0);
   
   
 
@@ -827,9 +862,7 @@ FUNCTION G_f_GQ_kg(N,xb,pb,xbar,fvec_x,fvec_y,fvec_z,eeps);
   END DO
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
   
-  CALL Analytical_int(xb,pb,xbar,0,L11,L12,L13,L14,L22,L23,L24);
-  
-  
+  CALL Analytical_int(xb,pb,xbar,0,L11,L12,L13,L14,L22,L23,L24,0);
  
    Gvec_tmp =L11(1)*Identity + R_00*L12(1) - (pb_R_0+R_0_pb)*L13(1)+pb_pb*L14(1) &
  + 2.0d0*eeps**2*(Identity*L12(1)-3.0d0*R_00*L22(1)+3.0d0*(pb_R_0+ R_0_pb)*L23(1)-3.0d0*pb_pb*L24(1));

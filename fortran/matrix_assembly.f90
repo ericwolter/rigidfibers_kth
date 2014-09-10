@@ -443,6 +443,8 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
 
+  INTEGER::DEBUG
+
   !me:  A constant defined between eq.2 and eq.3 which models the slenderness
   !     of the fiber.
   c=log(eeps**2*exp(1.0d0));
@@ -529,9 +531,17 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
           !Gmat=zeros(6,LQ);  
           
           DO i=1,LQ
-             xbar=xc+pv(i)*ta;  
+             xbar=xc+pv(i)*ta; 
+
+
+             IF (filno==4 .AND. fno==3 .AND. l==1 .AND. i==18) THEN
+              DEBUG=1
+             ENDIF
+
              
-             Gmat(i,:)=G_compute_GQ_kg(xcb,tb,xbar,eeps,l);
+             Gmat(i,:)=G_compute_GQ_kg(xcb,tb,xbar,eeps,l, DEBUG);
+
+             DEBUG=0;
             
              
           END DO
