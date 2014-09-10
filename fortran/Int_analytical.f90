@@ -104,6 +104,14 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
   
   I(1) = LOG(ABS(2.0d0*se+b+2.0d0*ue))-LOG(ABS(2.0d0*sb + b + 2.0d0*ub));
   I(2) = ue-ub-1/2.0d0*b*I(1);
+
+ 
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F32.16))', REAL(0), I(1)
+    PRINT '(*(F32.16))', REAL(1), I(2)
+ END IF
+
+
   IF (c<clim) THEN
      nn=2.0d0; 
      DO ii=3,N+3
@@ -112,6 +120,11 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
         I(ii) = -se**(ii-2)*ue/(1.0d0-nn) + sb**(ii-2)*ub/(1.0d0-nn) &
              - (0.5d0-(nn-1.0d0))*b/(1.0d0-nn)*I(ii-1) &
              + (nn-2.0d0)*c/(1.0d0-nn)*I(ii-2);
+
+     IF (DEBUG == 1) THEN
+        PRINT '(*(F32.16))', REAL(ii-1.0), I(ii)
+     END IF
+
      END DO
   ELSE
      I(30)=0.0d0;
@@ -185,6 +198,10 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
   END DO
 END IF
 
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F16.6))', c,LOG(ABS(2.0d0*se+b+2.0d0*ue)),I(1),I(2),I(3),I(4),I(5),I(6),I(7),I(8)
+ END IF
+
 DO ii=1,N+1
   IF (ii==1 .OR. ii==2) THEN
      L11(ii) = I(ii);
@@ -194,7 +211,6 @@ DO ii=1,N+1
      L22(ii) = S(ii);
      L23(ii) = S(ii+1);
      L24(ii) = S(ii+2);
-
   ELSEIF (ii==3) THEN
      L11(ii) = 0.5*(3.0d0*I(ii)-I(ii-2));
      L12(ii) = 0.5*(3.0d0*J(ii)-J(ii-2));
@@ -230,7 +246,7 @@ DO ii=1,N+1
      L23(ii) = 0.125d0*(63.0d0*S(ii+1)-70.0d0*S(ii-1)+15.0d0*S(ii-3));
      L24(ii) = 0.125d0*(63.0d0*S(ii+2)-70.0d0*S(ii)+15.0d0*S(ii-2));
      IF (DEBUG == 1) THEN
-        PRINT '(*(F10.6))', I(ii), I(ii-2), I(ii-4), 7.875d0*I(ii),8.75d0*I(ii-2),1.875d0*I(ii-4), L11(ii)
+        PRINT '(*(F16.6))', L11(ii), L12(ii), L22(ii), L13(ii), L23(ii), L14(ii), L24(ii)
      END IF
   ELSEIF (ii==7) THEN
      L11(ii) = 0.0625d0*(231.0d0*I(ii)-315.0d0*I(ii-2)+105.0d0*I(ii-4)-5.0d0*I(ii-6));
@@ -708,23 +724,11 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N, DEBUG);
   
   CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24, DEBUG);
 
-  IF(DEBUG==1) THEN
-    PRINT '(*(F10.6))', L11(N+1),L12(N+1),L22(N+1),L13(N+1),L23(N+1),L14(N+1),L24(N+1)
-    PRINT '(*(F10.6))', L11
-    PRINT '(*(F10.6))', L12
-    PRINT '(*(F10.6))', L22
-    PRINT '(*(F10.6))', L13
-    PRINT '(*(F10.6))', L23
-    PRINT '(*(F10.6))', L14
-    PRINT '(*(F10.6))', L24
-  ENDIF
-
-  
   Gvec_tmp =L11(N+1)*Identity + R_00*L12(N+1) - (pb_R_0+R_0_pb)*L13(N+1)+pb_pb*L14(N+1) &
   +2.0d0*eeps**2*(Identity*L12(N+1)-3.0d0*R_00*L22(N+1)+3.0d0*(pb_R_0+R_0_pb)*L23(N+1)-3.0d0*pb_pb*L24(N+1));
   
- 
-  
+  !!Gvec_tmp = 2.0d0*eeps**2*(Identity*L12(N+1)-3.0d0*R_00*L22(N+1)+3.0d0*(pb_R_0+R_0_pb)*L23(N+1)-3.0d0*pb_pb*L24(N+1))
+    
  
   G_compute_GQ_kg(1)=Gvec_tmp(1,1);
   G_compute_GQ_kg(2)=Gvec_tmp(2,2);
@@ -732,6 +736,18 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N, DEBUG);
   G_compute_GQ_kg(4)=Gvec_tmp(1,2);
   G_compute_GQ_kg(5)=Gvec_tmp(1,3);
   G_compute_GQ_kg(6)=Gvec_tmp(2,3);
+
+  IF(DEBUG==1) THEN
+    PRINT '(*(F16.6))', L11(N+1),L12(N+1),L22(N+1),L13(N+1),L23(N+1),L14(N+1),L24(N+1)
+!!    PRINT '(*(F16.6))', L11
+  !!  PRINT '(*(F16.6))', L12
+    !!PRINT '(*(F16.6))', L22
+    !!PRINT '(*(F16.6))', L13
+    !!PRINT '(*(F16.6))', L23
+    !!PRINT '(*(F16.6))', L14
+    !!PRINT '(*(F16.6))', L24
+    !!PRINT '(*(F16.6))', Gvec_tmp(2,3)
+  ENDIF
 
   !!IF(DEBUG==1) THEN
   !!  PRINT '(*(F10.6))', (pb_R_0+R_0_pb)

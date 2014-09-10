@@ -534,7 +534,7 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
              xbar=xc+pv(i)*ta; 
 
 
-             IF (filno==4 .AND. fno==3 .AND. l==1 .AND. i==18) THEN
+             IF (filno==90 .AND. fno==22 .AND. l==5 .AND. i==13) THEN
               DEBUG=1
              ENDIF
 
@@ -587,7 +587,15 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
             Q1=thvec(1)*ta(1)+thvec(4)*ta(2)+thvec(5)*ta(3);
             Q2=thvec(4)*ta(1)+thvec(2)*ta(2)+thvec(6)*ta(3);
             Q3=thvec(5)*ta(1)+thvec(6)*ta(2)+thvec(3)*ta(3);
-  
+
+            IF (filno==90 .AND. fno==22 .AND. l==5 .AND. kk==4) THEN
+              PRINT '(*(F10.6))', Gmat(13,1)
+            END IF
+
+            !!IF (filno==55 .AND. fno==12 .AND. l==5 .AND. kk==2) THEN
+            !!  PRINT '(*(F10.6))', Gmat
+            !!END IF
+
             !!Will add up as we loop over fno, and over l=1..N. 
             !!Take the absolute value of each coefficient before adding. 
             !!To the row of a^k_x for fiber filno:
@@ -605,6 +613,12 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
             AMat(rowno+2,p)=gammak*(thvec(5)-Ek*ta(3)*Q1);
             AMat(rowno+2,p+1)=gammak*(thvec(6)-Ek*ta(3)*Q2);
             AMat(rowno+2,p+2)=gammak*(thvec(3)-Ek*ta(3)*Q3);
+
+            IF (filno==90 .AND. fno==22 .AND. l==5 .AND. kk==4) THEN
+              PRINT '(*(F10.6))', EK, gammak, lambdavec(kk) 
+              PRINT '(*(F10.6))', thvec(1),thvec(2),thvec(3),thvec(4),thvec(5),thvec(6), Q1
+            END IF
+  
           END DO !!for kk=2:N.
         END DO;  !!for l=1..N
       END IF;  !!if (fno~=filno)
