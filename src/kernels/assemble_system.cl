@@ -1,14 +1,406 @@
+void *compute_G_analytic(fiberfloat4 position_i,
+                         fiberfloat4 orientation_i,
+                         fiberfloat4 position_j,
+                         fiberfloat4 orientation_j,
+                         fiberuint force_index,
+                         fiberfloat4 external_force,
+                         global fiberfloat *quadrature_points,
+                         global fiberfloat *quadrature_weights,
+                         global fiberfloat *legendre_polynomials,
+                         fiberfloat *G,
+                         fiberfloat *GF,
+                         bool debug)
+{
+    const fiberuint k = force_index + 1;
+
+    for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
+    {
+        const fiberfloat4 position_on_fiber_i = position_i + quadrature_points[quadrature_index_i] * orientation_i;
+
+        // the difference vector between the current point on the fiber and the center
+        // of the other fiber
+        const fiberfloat4 R0 = position_on_fiber_i - position_j; // R_0
+        const fiberfloat b = -2.0
+                             * (R0.x * orientation_j.x
+                                + R0.y * orientation_j.y
+                                + R0.z * orientation_j.z);
+        const fiberfloat c = R0.x * R0.x
+                             + R0.y * R0.y
+                             + R0.z * R0.z;
+
+        // if fibers are too far apart we have numerical problems
+        // so in order to minimize the effect we inverse the
+        // the recursive direction
+        // @TODO How/why does this help exactly?
+        const fiberfloat climit = 10.0;
+
+        const fiberfloat d = c - 0.25 * b * b;
+
+        const fiberfloat s_upper = 1.0;
+        const fiberfloat s_lower = -1.0;
+
+        const fiberfloat u_upper = sqrt(s_upper * s_upper + b * s_upper + c);
+        const fiberfloat u_lower = sqrt(s_lower * s_lower + b * s_lower + c);
+
+        fiberfloat I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
+        fiberfloat I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
+        fiberfloat I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
+
+        I1[0] = log(fabs(2.0 * s_upper + b + 2.0 * u_upper)) - log(fabs(2.0 * s_lower + b + 2.0 * u_lower));
+        I1[1] = u_upper - u_lower + (-b / 2.0) * I1[0];
+
+        I3[0] = (d < 1e-7) ?
+                (-2.0 / pown(2.0 * s_upper + b, 2)) - (-2.0 / pown(2.0 * s_lower + b, 2)) :
+                ((2.0 * s_upper + b) / (2.0 * d * u_upper)) - ((2.0 * s_lower + b) / (2.0 * d * u_lower));
+        I3[1] = (-1.0 / u_upper) - (-1.0 / u_lower) - b / 2.0 * I3[0];
+
+        I5[0] = (d < 1e-7) ?
+                (-4.0 / pown(2.0 * s_upper + b, 4)) - (-4 / pown(2.0 * s_lower + b, 4)) :
+                ((2.0 * s_upper + b) / (6.0 * d * pown(u_upper, 3))) - ((2.0 * s_lower + b) / (6.0 * d * pown(u_lower, 3))) + (2.0 / (3.0 * d)) * I3[0];
+        I5[1] = (d < 1e-7) ?
+                (-8.0 / (3.0 * pown(2.0 * s_upper + b, 3))) - (-8.0 / (3.0 * pown(2.0 * s_lower + b, 3))) - (b / 2.0) * I5[0] :
+                (-(b * s_upper + 2.0 * c) / (6.0 * d * pown(u_upper, 3.0))) - (-(b * s_lower + 2.0 * c) / (6.0 * d * pown(u_lower, 3))) - (b / (3.0 * d)) * I3[0];
+
+        if (c < climit)
+        {
+            for (fiberint n = 2; n < k + 3; ++n)
+            {
+                I1[n] = (pown(s_upper, n - 1) * u_upper) / n - (pown(s_lower, n - 1) * u_lower) / n
+                        + ((1.0 - 2.0 * n) * b) / (2.0 * n) * I1[n - 1] - ((n - 1) * c) / n * I1[n - 2];
+
+                I3[n] = I1[n - 2] - b * I3[n - 1] - c * I3[n - 2];
+
+                I5[n] = I3[n - 2] - b * I5[n - 1] - c * I5[n - 2];
+            }
+        }
+        else
+        {
+            fiberfloat i1n2 = 0.0;
+            fiberfloat i1n1 = 0.0;
+            fiberfloat i1n0 = 0.0;
+
+            fiberfloat i3n2 = 0.0;
+            fiberfloat i3n1 = 0.0;
+            fiberfloat i3n0 = 0.0;
+
+            fiberfloat i5n2 = 0.0;
+            fiberfloat i5n1 = 0.0;
+            fiberfloat i5n0 = 0.0;
+
+            // if(debug && quadrature_index_i == 17 && k == 1) {
+            //     printf("%d,%f\n",29, i1n2);
+            //     printf("%d,%f\n",28, i1n1);
+            // }
+
+            for (fiberint n = 27; n > 1; --n)
+            {
+                i1n0 = (n + 2.0) / ((n + 1.0) * c) * (
+                           ((pown(s_upper, n + 1) * u_upper) / (n + 2.0)) - ((pown(s_lower, n + 1) * u_lower) / (n + 2.0))
+                           + ((1.0 - 2.0 * (n + 2.0)) / (2.0 * (n + 2.0))) * b * i1n1 - i1n2);
+                i3n0 = 1.0 / c * (i1n0 - b * i3n1 - i3n2);
+                i5n0 = 1.0 / c * (i3n0 - b * i5n1 - i5n2);
+
+                // if(debug && quadrature_index_i == 17 && k == 1) {
+                //     printf("%d,%f,%f,%f,%f,%f\n",n, i1n0, i1n1, i1n2, 
+                //         ((pown(s_upper, n + 1) * u_upper) / (n + 2)) - ((pown(s_lower, n + 1) * u_lower) / (n + 2)), 
+                //         ((1.0 - 2.0 * (n + 2.0)) / (2.0 * (n + 2.0))) );
+                // }
+
+                if (n < NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2)
+                {
+                    I1[n] = i1n0;
+                    I3[n] = i3n0;
+                    I5[n] = i5n0;
+                }
+
+                i1n2 = i1n1;
+                i1n1 = i1n0;
+
+                i3n2 = i3n1;
+                i3n1 = i3n0;
+
+                i5n2 = i5n1;
+                i5n1 = i5n0;
+            }
+        }
+
+        fiberfloat L01;
+        fiberfloat L03;
+        fiberfloat L05;
+        fiberfloat L13;
+        fiberfloat L15;
+        fiberfloat L23;
+        fiberfloat L25;
+
+
+        if (k == 0 || k == 1)
+        {
+            L01 = I1[k];
+            L03 = I3[k];
+            L05 = I5[k];
+            L13 = I3[k + 1];
+            L15 = I5[k + 1];
+            L23 = I3[k + 2];
+            L25 = I5[k + 2];
+        }
+        else if (k == 2)
+        {
+            L01 = 0.5 * (3.0 * I1[k] - I1[k - 2]);
+            L03 = 0.5 * (3.0 * I3[k] - I3[k - 2]);
+            L05 = 0.5 * (3.0 * I5[k] - I5[k - 2]);
+            L13 = 0.5 * (3.0 * I3[k + 1] - I3[k - 1]);
+            L15 = 0.5 * (3.0 * I5[k + 1] - I5[k - 1]);
+            L23 = 0.5 * (3.0 * I3[k + 2] - I3[k]);
+            L25 = 0.5 * (3.0 * I5[k + 2] - I5[k]);
+        }
+        else if (k == 3)
+        {
+            L01 = 0.5 * (5.0 * I1[k] - 3.0 * I1[k - 2]);
+            L03 = 0.5 * (5.0 * I3[k] - 3.0 * I3[k - 2]);
+            L05 = 0.5 * (5.0 * I5[k] - 3.0 * I5[k - 2]);
+            L13 = 0.5 * (5.0 * I3[k + 1] - 3.0 * I3[k - 1]);
+            L15 = 0.5 * (5.0 * I5[k + 1] - 3.0 * I5[k - 1]);
+            L23 = 0.5 * (5.0 * I3[k + 2] - 3.0 * I3[k]);
+            L25 = 0.5 * (5.0 * I5[k + 2] - 3.0 * I5[k]);
+        }
+        else if (k == 4)
+        {
+            L01 = 0.125 * (35.0 * I1[k] - 30.0 * I1[k - 2] + 3.0 * I1[k - 4]);
+            L03 = 0.125 * (35.0 * I3[k] - 30.0 * I3[k - 2] + 3.0 * I3[k - 4]);
+            L05 = 0.125 * (35.0 * I5[k] - 30.0 * I5[k - 2] + 3.0 * I5[k - 4]);
+            L13 = 0.125 * (35.0 * I3[k + 1] - 30.0 * I3[k - 1] + 3.0 * I3[k - 3]);
+            L15 = 0.125 * (35.0 * I5[k + 1] - 30.0 * I5[k - 1] + 3.0 * I5[k - 3]);
+            L23 = 0.125 * (35.0 * I3[k + 2] - 30.0 * I3[k] + 3.0 * I3[k - 2]);
+            L25 = 0.125 * (35.0 * I5[k + 2] - 30.0 * I5[k] + 3.0 * I5[k - 2]);
+        }
+        else if (k == 5)
+        {
+            L01 = 0.125 * (63.0 * I1[k] - 70.0 * I1[k - 2] + 15.0 * I1[k - 4]);
+            L03 = 0.125 * (63.0 * I3[k] - 70.0 * I3[k - 2] + 15.0 * I3[k - 4]);
+            L05 = 0.125 * (63.0 * I5[k] - 70.0 * I5[k - 2] + 15.0 * I5[k - 4]);
+            L13 = 0.125 * (63.0 * I3[k + 1] - 70.0 * I3[k - 1] + 15.0 * I3[k - 3]);
+            L15 = 0.125 * (63.0 * I5[k + 1] - 70.0 * I5[k - 1] + 15.0 * I5[k - 3]);
+            L23 = 0.125 * (63.0 * I3[k + 2] - 70.0 * I3[k] + 15.0 * I3[k - 2]);
+            L25 = 0.125 * (63.0 * I5[k + 2] - 70.0 * I5[k] + 15.0 * I5[k - 2]);
+        }
+        else if (k == 6)
+        {
+            L01 = 0.0625 * (231.0 * I1[k] - 315.0 * I1[k - 2] + 105.0 * I1[k - 4] - 5.0 * I1[k - 6]);
+            L03 = 0.0625 * (231.0 * I3[k] - 315.0 * I3[k - 2] + 105.0 * I3[k - 4] - 5.0 * I3[k - 6]);
+            L05 = 0.0625 * (231.0 * I5[k] - 315.0 * I5[k - 2] + 105.0 * I5[k - 4] - 5.0 * I5[k - 6]);
+            L13 = 0.0625 * (231.0 * I3[k + 1] - 315.0 * I3[k - 1] + 105.0 * I3[k - 3] - 5.0 * I3[k - 5]);
+            L15 = 0.0625 * (231.0 * I5[k + 1] - 315.0 * I5[k - 1] + 105.0 * I5[k - 3] - 5.0 * I5[k - 5]);
+            L23 = 0.0625 * (231.0 * I3[k + 2] - 315.0 * I3[k] + 105.0 * I3[k - 2] - 5.0 * I3[k - 4]);
+            L25 = 0.0625 * (231.0 * I5[k + 2] - 315.0 * I5[k] + 105.0 * I5[k - 2] - 5.0 * I5[k - 4]);
+        }
+        else if (k == 7)
+        {
+            L01 = 0.0625 * (429.0 * I1[k] - 693.0 * I1[k - 2] + 315.0 * I1[k - 4] - 35.0 * I1[k - 6]);
+            L03 = 0.0625 * (429.0 * I3[k] - 693.0 * I3[k - 2] + 315.0 * I3[k - 4] - 35.0 * I3[k - 6]);
+            L05 = 0.0625 * (429.0 * I5[k] - 693.0 * I5[k - 2] + 315.0 * I5[k - 4] - 35.0 * I5[k - 6]);
+            L13 = 0.0625 * (429.0 * I3[k + 1] - 693.0 * I3[k - 1] + 315.0 * I3[k - 3] - 35.0 * I3[k - 5]);
+            L15 = 0.0625 * (429.0 * I5[k + 1] - 693.0 * I5[k - 1] + 315.0 * I5[k - 3] - 35.0 * I5[k - 5]);
+            L23 = 0.0625 * (429.0 * I3[k + 2] - 693.0 * I3[k] + 315.0 * I3[k - 2] - 35.0 * I3[k - 4]);
+            L25 = 0.0625 * (429.0 * I5[k + 2] - 693.0 * I5[k] + 315.0 * I5[k - 2] - 35.0 * I5[k - 4]);
+        }
+        else if (k == 8)
+        {
+            L01 = 0.0078125 * (6435.0 * I1[k] - 12012.0 * I1[k - 2] + 6930.0 * I1[k - 4] - 1260.0 * I1[k - 6] + 35.0 * I1[k - 8]);
+            L03 = 0.0078125 * (6435.0 * I3[k] - 12012.0 * I3[k - 2] + 6930.0 * I3[k - 4] - 1260.0 * I3[k - 6] + 35.0 * I3[k - 8]);
+            L05 = 0.0078125 * (6435.0 * I5[k] - 12012.0 * I5[k - 2] + 6930.0 * I5[k - 4] - 1260.0 * I5[k - 6] + 35.0 * I5[k - 8]);
+            L13 = 0.0078125 * (6435.0 * I3[k + 1] - 12012.0 * I3[k - 1] + 6930.0 * I3[k - 3] - 1260.0 * I3[k - 5] + 35.0 * I3[k - 7]);
+            L15 = 0.0078125 * (6435.0 * I5[k + 1] - 12012.0 * I5[k - 1] + 6930.0 * I5[k - 3] - 1260.0 * I5[k - 5] + 35.0 * I5[k - 7]);
+            L23 = 0.0078125 * (6435.0 * I3[k + 2] - 12012.0 * I3[k] + 6930.0 * I3[k - 2] - 1260.0 * I3[k - 4] + 35.0 * I3[k - 6]);
+            L25 = 0.0078125 * (6435.0 * I5[k + 2] - 12012.0 * I5[k] + 6930.0 * I5[k - 2] - 1260.0 * I5[k - 4] + 35.0 * I5[k - 6]);
+        }
+
+        if (debug && quadrature_index_i == 17 && k == 1)
+        {
+            printf("%f,%f,%f,%f,%f,%f,%f,%f\n",
+                    c,
+                   I1[0],
+                   I1[1],
+                   I1[2],
+                   I1[3],
+                   I1[4],
+                   I1[5],
+                   I1[6]
+                  );
+        }
+        if (debug && quadrature_index_i == 17 && k == 1)
+        {
+            printf("%f,%f,%f,%f,%f,%f,%f\n",
+                   L01,
+                   L03,
+                   L05,
+                   L13,
+                   L15,
+                   L23,
+                   L25
+                  );
+        }
+
+
+        G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G11
+            L01
+            + L03 * (R0.x * R0.x)
+            - L13 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+            + L23 * (orientation_j.x * orientation_j.x)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                L03
+                - 3 * L05 * (R0.x * R0.x)
+                + 3 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+                - 3 * L25 * (orientation_j.x * orientation_j.x)
+            );
+        G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G22
+            L01
+            + L03 * (R0.y * R0.y)
+            - L13 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+            + L23 * (orientation_j.y * orientation_j.y)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                L03
+                - 3 * L05 * (R0.y * R0.y)
+                + 3 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+                - 3 * L25 * (orientation_j.y * orientation_j.y)
+            );
+        G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G33
+            L01
+            + L03 * (R0.z * R0.z)
+            - L13 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+            + L23 * (orientation_j.z * orientation_j.z)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                L03
+                - 3 * L05 * (R0.z * R0.z)
+                + 3 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+                - 3 * L25 * (orientation_j.z * orientation_j.z)
+            );
+        G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G12
+            L03 * (R0.x * R0.y)
+            - L13 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+            + L23 * (orientation_j.x * orientation_j.y)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                3 * L05 * (R0.x * R0.y)
+                + 3 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+                - 3 * L25 * (orientation_j.x * orientation_j.y)
+            );
+        G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G13
+            L03 * (R0.x * R0.z)
+            - L13 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+            + L23 * (orientation_j.x * orientation_j.z)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                3 * L05 * (R0.x * R0.z)
+                + 3 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+                - 3 * L25 * (orientation_j.x * orientation_j.z)
+            );
+        G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G23
+            L03 * (R0.y * R0.z)
+            - L13 * (orientation_j.y * R0.z + R0.x * orientation_j.z)
+            + L23 * (orientation_j.y * orientation_j.z)
+            + 2 * SLENDERNESS * SLENDERNESS * (
+                3 * L05 * (R0.y * R0.z)
+                + 3 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
+                - 3 * L25 * (orientation_j.y * orientation_j.z)
+            );
+
+        // if (debug && quadrature_index_i==0 && force_index == 5) {
+        //     printf("%f,%f,%f\n",
+        //         orientation_j.x * R0.x + R0.x * orientation_j.x,
+        //         L13,
+        //         (orientation_j.x * R0.x + R0.x * orientation_j.x)*L13);
+        // }
+
+        if (force_index == 0)
+        {
+            L01 = I1[0];
+            L03 = I3[0];
+            L05 = I5[0];
+            L13 = I3[0 + 1];
+            L15 = I5[0 + 1];
+            L23 = I3[0 + 2];
+            L25 = I5[0 + 2];
+
+            const fiberfloat G11 =
+                L01
+                + L03 * (R0.x * R0.x)
+                - L13 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+                + L23 * (orientation_j.x * orientation_j.x)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    L03
+                    - 3 * L05 * (R0.x * R0.x)
+                    + 3 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+                    - 3 * L25 * (orientation_j.x * orientation_j.x)
+                );
+            const fiberfloat G22 =
+                L01
+                + L03 * (R0.y * R0.y)
+                - L13 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+                + L23 * (orientation_j.y * orientation_j.y)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    L03
+                    - 3 * L05 * (R0.y * R0.y)
+                    + 3 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+                    - 3 * L25 * (orientation_j.y * orientation_j.y)
+                );
+            const fiberfloat G33 =
+                L01
+                + L03 * (R0.z * R0.z)
+                - L13 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+                + L23 * (orientation_j.z * orientation_j.z)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    L03
+                    - 3 * L05 * (R0.z * R0.z)
+                    + 3 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+                    - 3 * L25 * (orientation_j.z * orientation_j.z)
+                );
+            const fiberfloat G12 =
+                L03 * (R0.x * R0.y)
+                - L13 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+                + L23 * (orientation_j.x * orientation_j.y)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    3 * L05 * (R0.x * R0.y)
+                    + 3 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+                    - 3 * L25 * (orientation_j.x * orientation_j.y)
+                );
+            const fiberfloat G13 =
+                L03 * (R0.x * R0.z)
+                - L13 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+                + L23 * (orientation_j.x * orientation_j.z)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    3 * L05 * (R0.x * R0.z)
+                    + 3 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+                    - 3 * L25 * (orientation_j.x * orientation_j.z)
+                );
+            const fiberfloat G23 =
+                L03 * (R0.y * R0.z)
+                - L13 * (orientation_j.y * R0.z + R0.x * orientation_j.z)
+                + L23 * (orientation_j.y * orientation_j.z)
+                + 2 * SLENDERNESS * SLENDERNESS * (
+                    3 * L05 * (R0.y * R0.z)
+                    + 3 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
+                    - 3 * L25 * (orientation_j.y * orientation_j.z)
+                );
+
+            GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] =
+                G11 * external_force.x + G12 * external_force.y + G13 * external_force.z;
+            GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] =
+                G12 * external_force.x + G22 * external_force.y + G23 * external_force.z;
+            GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] =
+                G13 * external_force.x + G23 * external_force.y + G33 * external_force.z;
+        }
+    }
+}
+
 void *compute_G(fiberfloat4 position_i,
-                            fiberfloat4 orientation_i,
-                            fiberfloat4 position_j,
-                            fiberfloat4 orientation_j,
-                            fiberuint force_index,
-                            fiberfloat4 external_force,
-                            global fiberfloat *quadrature_points,
-                            global fiberfloat *quadrature_weights,
-                            global fiberfloat *legendre_polynomials,
-                            fiberfloat *G,
-                            fiberfloat *GF) // @TODO better names
+                fiberfloat4 orientation_i,
+                fiberfloat4 position_j,
+                fiberfloat4 orientation_j,
+                fiberuint force_index,
+                fiberfloat4 external_force,
+                global fiberfloat *quadrature_points,
+                global fiberfloat *quadrature_weights,
+                global fiberfloat *legendre_polynomials,
+                fiberfloat *G,
+                fiberfloat *GF) // @TODO better names
 {
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
@@ -60,15 +452,15 @@ void *compute_G(fiberfloat4 position_i,
                                            - (3.0 / (distance * distance * distance)) * ((difference.z / distance) * (difference.z / distance)));
             const fiberfloat K12 = (1.0 / distance) * (difference.x / distance) * (difference.y / distance)
                                    + 2.0 * SLENDERNESS * SLENDERNESS
-                                           * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.y / distance);
+                                   * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.y / distance);
 
             const fiberfloat K13 = (1.0 / distance) * (difference.x / distance) * (difference.z / distance)
                                    + 2.0 * SLENDERNESS * SLENDERNESS
-                                           * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.z / distance);
+                                   * (-3.0 / (distance * distance * distance)) * (difference.x / distance) * (difference.z / distance);
 
             const fiberfloat K23 = (1.0 / distance) * (difference.y / distance) * (difference.z / distance)
                                    + 2.0 * SLENDERNESS * SLENDERNESS
-                                           * (-3.0 / (distance * distance * distance)) * (difference.y / distance) * (difference.z / distance);
+                                   * (-3.0 / (distance * distance * distance)) * (difference.y / distance) * (difference.z / distance);
 
             const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_j];
             const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_j + force_index * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
@@ -153,16 +545,16 @@ kernel void assemble_system(const global fiberfloat4 *positions,
     fiberfloat lambda[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
     fiberfloat eigen[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
     lambda[0] = 2.0;
-    eigen[0] = ((d - e - cc * lambda[0])/2.0) / (d - cc * lambda[0]);
+    eigen[0] = ((d - e - cc * lambda[0]) / 2.0) / (d - cc * lambda[0]);
 
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0;
-    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0;    
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0;
 
     for (fiberuint force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
         lambda[force_index] = lambda[force_index - 1] + 2.0 / (force_index + 1);
-        eigen[force_index] = ((d - e - cc * lambda[force_index])/2.0) / (d - cc * lambda[force_index]);
+        eigen[force_index] = ((d - e - cc * lambda[force_index]) / 2.0) / (d - cc * lambda[force_index]);
 
         x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
         y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 1;
@@ -179,7 +571,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
     for (fiberuint j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
-        if(i == j) 
+        if (i == j)
         {
             // we only need to write the diagonals because the rest of the matrix
             // stays 0 throughout the simulation and is only initialised once
@@ -221,16 +613,19 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             fiberfloat T13 = 0.0;
             fiberfloat T23 = 0.0;
 
-            fiberfloat QF;
-
             fiberfloat TF1 = 0.0;
             fiberfloat TF2 = 0.0;
             fiberfloat TF3 = 0.0;
+            fiberfloat QF;
 
             // @TODO combine computing G with the first iteration to calulate Theta(T11,...) for kk=1
             fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
             fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+#ifdef USE_ANALYTICAL_INTEGRATION
+            compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 3 && j == 2);
+#else
             compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF);
+#endif //USE_ANALYTICAL_INTEGRATION
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
@@ -243,16 +638,17 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
 
-                TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                TF3 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                if (force_index_i == 0)
+                {
+                    TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    TF3 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                }
             }
 
             Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
             Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
             Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
-
-            QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
             //if (i == 0 && j == 1 && force_index_i == 0)
             //{
@@ -281,12 +677,14 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             a_matrix[z_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.z * Q2;
             a_matrix[z_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.z * Q3;
 
-            if(force_index_i == 0) 
+            if (force_index_i == 0)
             {
                 //if (i == 0 && j == 1)
                 //{
                 //    printf("i=%d;j=%d\nBx=%f;By=%f;Bz=%f;D1=%f;QF=%f\n", i, j, b_vector[x_row_index], b_vector[y_row_index], b_vector[z_row_index], D1, QF);
                 //}
+                QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
+
                 b_vector[x_row_index] -= D1 * orientation_i.x * QF;
                 b_vector[y_row_index] -= D1 * orientation_i.y * QF;
                 b_vector[z_row_index] -= D1 * orientation_i.z * QF;
@@ -298,7 +696,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
             {
-                fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0)/(d+e-cc*lambda[force_index_j]);
+                fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0) / (d + e - cc * lambda[force_index_j]);
 
                 fiberfloat T11 = 0.0;
                 fiberfloat T22 = 0.0;
@@ -322,9 +720,12 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                     T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
 
-                    TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    TF3 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    if (force_index_i == 0)
+                    {
+                        TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                        TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                        TF3 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
+                    }
 
                     if (i == 0 && j == 4 && force_index_i == 0 && force_index_j == 1)
                     {
@@ -335,8 +736,6 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 Q1 = T11 * orientation_i.x + T12 * orientation_i.y + T13 * orientation_i.z;
                 Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
                 Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
-
-                QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
                 // if (i == 1 && j == 0 && force_index_i == 0 && force_index_j == 1)
                 // {
@@ -350,7 +749,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
 
                 x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 0;
                 y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 1;
-                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;                    
+                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;
 
                 a_matrix[x_row_index + x_column_index * total_number_of_rows] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
                 a_matrix[x_row_index + y_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
@@ -362,13 +761,15 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
                 a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
 
-                if(force_index_i == 0) 
+                if (force_index_i == 0)
                 {
+                    QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
+
                     b_vector[x_row_index] -= gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF);
                     b_vector[y_row_index] -= gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF);
                     b_vector[z_row_index] -= gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF);
                 }
-            }            
+            }
         }
     }
 }

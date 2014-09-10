@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= configuration.parameters.num_timesteps) {
+        if(current_timestep >= 1) {
             running = false;
         }
     }

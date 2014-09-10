@@ -133,6 +133,9 @@ void Simulation::initializeProgram()
     clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
     clflags << "-DTOTAL_NUMBER_OF_QUADRATURE_POINTS="   << configuration_.parameters.num_quadrature_points_per_interval
             * configuration_.parameters.num_quadrature_intervals    << " ";
+    if(configuration_.parameters.use_analytical_integration) {
+        clflags << "-DUSE_ANALYTICAL_INTEGRATION" << " ";
+    }
 
     // TODO This is totally weird... why can't we just pass in clflags.str().c_str()?!?
     // Should be exactly the same...
@@ -410,7 +413,7 @@ void Simulation::step(unsigned long current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    //dumpLinearSystem();
+    dumpLinearSystem();
     //dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
@@ -429,9 +432,7 @@ void Simulation::assembleSystem()
 {
     cl_int err = 0;
 
-    cl_uint param = 0;
-    cl_kernel kernel = configuration_.parameters.use_analytical_integration ?
-                       kernels_["assemble_system"] : kernels_["assemble_system"];
+    cl_uint param = 0; cl_kernel kernel = kernels_["assemble_system"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &a_matrix_buffer_);
@@ -470,9 +471,7 @@ void Simulation::updateVelocities()
 {
     cl_int err = 0;
 
-    cl_uint param = 0; 
-    cl_kernel kernel = configuration_.parameters.use_analytical_integration ?
-                       kernels_["update_velocities"] : kernels_["update_velocities"];
+    cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &x_vector_buffer_);
