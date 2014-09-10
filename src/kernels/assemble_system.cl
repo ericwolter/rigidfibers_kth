@@ -42,12 +42,31 @@ void *compute_G_analytic(fiberfloat4 position_i,
         const fiberfloat u_upper = sqrt(s_upper * s_upper + b * s_upper + c);
         const fiberfloat u_lower = sqrt(s_lower * s_lower + b * s_lower + c);
 
-        fiberfloat I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
-        fiberfloat I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
-        fiberfloat I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2];
+        fiberfloat I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+        fiberfloat I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+        fiberfloat I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+
+
+        // if (debug && quadrature_index_i == 12 && k == 5)
+        // {
+        //     fiberfloat y = 0;
+        //     const fiberfloat x = fabs(2.0 * s_upper + b + 2.0 * u_upper);
+
+        //     for (int i = 0; i < 100; ++i)
+        //     {
+        //         y = y + 2 * ((x - exp(y))/(x + exp(y)));
+        //         printf("%d, %f\n",i,y);
+        //     }
+        // }
 
         I1[0] = log(fabs(2.0 * s_upper + b + 2.0 * u_upper)) - log(fabs(2.0 * s_lower + b + 2.0 * u_lower));
         I1[1] = u_upper - u_lower + (-b / 2.0) * I1[0];
+
+        // if (debug && quadrature_index_i == 12 && k == 5)
+        // {
+        //     printf("%d  %.16f\n",0,I1[0]);
+        //     printf("%d  %.16f \n",1,I1[1]);
+        // }
 
         I3[0] = (d < 1e-7) ?
                 (-2.0 / pown(2.0 * s_upper + b, 2)) - (-2.0 / pown(2.0 * s_lower + b, 2)) :
@@ -68,6 +87,14 @@ void *compute_G_analytic(fiberfloat4 position_i,
                 I1[n] = (pown(s_upper, n - 1) * u_upper) / n - (pown(s_lower, n - 1) * u_lower) / n
                         + ((1.0 - 2.0 * n) * b) / (2.0 * n) * I1[n - 1] - ((n - 1) * c) / n * I1[n - 2];
 
+                fiberfloat test = (-pown(s_upper, n - 1) * u_upper) / (1 - (n + 1)) + (pown(s_lower, n - 1) * u_lower) / (1 - (n + 1))
+                                  - (((0.5 - ((n + 1) - 1)) * b) / (1 - (n + 1))) * I1[n - 1] + ((((n + 1) - 2) * c) / (1 - (n + 1))) * I1[n - 2];
+
+                // if (debug && quadrature_index_i == 12 && k == 5)
+                // {
+                //     printf("%d  %.16f \n",n,I1[n]);
+                // }
+
                 I3[n] = I1[n - 2] - b * I3[n - 1] - c * I3[n - 2];
 
                 I5[n] = I3[n - 2] - b * I5[n - 1] - c * I5[n - 2];
@@ -87,9 +114,10 @@ void *compute_G_analytic(fiberfloat4 position_i,
             fiberfloat i5n1 = 0.0;
             fiberfloat i5n0 = 0.0;
 
-            // if(debug && quadrature_index_i == 17 && k == 1) {
-            //     printf("%d,%f\n",29, i1n2);
-            //     printf("%d,%f\n",28, i1n1);
+            // if (debug && quadrature_index_i == 0 && k == 5)
+            // {
+            //     printf("%d,%f\n", 29, i1n2);
+            //     printf("%d,%f\n", 28, i1n1);
             // }
 
             for (fiberint n = 27; n > 1; --n)
@@ -100,13 +128,14 @@ void *compute_G_analytic(fiberfloat4 position_i,
                 i3n0 = 1.0 / c * (i1n0 - b * i3n1 - i3n2);
                 i5n0 = 1.0 / c * (i3n0 - b * i5n1 - i5n2);
 
-                // if(debug && quadrature_index_i == 17 && k == 1) {
-                //     printf("%d,%f,%f,%f,%f,%f\n",n, i1n0, i1n1, i1n2, 
-                //         ((pown(s_upper, n + 1) * u_upper) / (n + 2)) - ((pown(s_lower, n + 1) * u_lower) / (n + 2)), 
-                //         ((1.0 - 2.0 * (n + 2.0)) / (2.0 * (n + 2.0))) );
+                // if (debug && quadrature_index_i == 0 && k == 5)
+                // {
+                //     printf("%d,%f,%f,%f,%f,%f\n", n, i1n0, i1n1, i1n2,
+                //            ((pown(s_upper, n + 1) * u_upper) / (n + 2)) - ((pown(s_lower, n + 1) * u_lower) / (n + 2)),
+                //            ((1.0 - 2.0 * (n + 2.0)) / (2.0 * (n + 2.0))) );
                 // }
 
-                if (n < NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 2)
+                if (n < NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3)
                 {
                     I1[n] = i1n0;
                     I3[n] = i3n0;
@@ -214,93 +243,95 @@ void *compute_G_analytic(fiberfloat4 position_i,
             L25 = 0.0078125 * (6435.0 * I5[k + 2] - 12012.0 * I5[k] + 6930.0 * I5[k - 2] - 1260.0 * I5[k - 4] + 35.0 * I5[k - 6]);
         }
 
-        if (debug && quadrature_index_i == 17 && k == 1)
-        {
-            printf("%f,%f,%f,%f,%f,%f,%f,%f\n",
-                    c,
-                   I1[0],
-                   I1[1],
-                   I1[2],
-                   I1[3],
-                   I1[4],
-                   I1[5],
-                   I1[6]
-                  );
-        }
-        if (debug && quadrature_index_i == 17 && k == 1)
-        {
-            printf("%f,%f,%f,%f,%f,%f,%f\n",
-                   L01,
-                   L03,
-                   L05,
-                   L13,
-                   L15,
-                   L23,
-                   L25
-                  );
-        }
-
-
         G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G11
             L01
             + L03 * (R0.x * R0.x)
             - L13 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
             + L23 * (orientation_j.x * orientation_j.x)
-            + 2 * SLENDERNESS * SLENDERNESS * (
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
                 L03
-                - 3 * L05 * (R0.x * R0.x)
-                + 3 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
-                - 3 * L25 * (orientation_j.x * orientation_j.x)
+                - 3.0 * L05 * (R0.x * R0.x)
+                + 3.0 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+                - 3.0 * L25 * (orientation_j.x * orientation_j.x)
             );
         G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G22
             L01
             + L03 * (R0.y * R0.y)
             - L13 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
             + L23 * (orientation_j.y * orientation_j.y)
-            + 2 * SLENDERNESS * SLENDERNESS * (
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
                 L03
-                - 3 * L05 * (R0.y * R0.y)
-                + 3 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
-                - 3 * L25 * (orientation_j.y * orientation_j.y)
+                - 3.0 * L05 * (R0.y * R0.y)
+                + 3.0 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+                - 3.0 * L25 * (orientation_j.y * orientation_j.y)
             );
         G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G33
             L01
             + L03 * (R0.z * R0.z)
             - L13 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
             + L23 * (orientation_j.z * orientation_j.z)
-            + 2 * SLENDERNESS * SLENDERNESS * (
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
                 L03
-                - 3 * L05 * (R0.z * R0.z)
-                + 3 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
-                - 3 * L25 * (orientation_j.z * orientation_j.z)
+                - 3.0 * L05 * (R0.z * R0.z)
+                + 3.0 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+                - 3.0 * L25 * (orientation_j.z * orientation_j.z)
             );
         G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G12
             L03 * (R0.x * R0.y)
             - L13 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
             + L23 * (orientation_j.x * orientation_j.y)
-            + 2 * SLENDERNESS * SLENDERNESS * (
-                3 * L05 * (R0.x * R0.y)
-                + 3 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
-                - 3 * L25 * (orientation_j.x * orientation_j.y)
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
+                - 3.0 * L05 * (R0.x * R0.y)
+                + 3.0 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+                - 3.0 * L25 * (orientation_j.x * orientation_j.y)
             );
         G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G13
             L03 * (R0.x * R0.z)
             - L13 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
             + L23 * (orientation_j.x * orientation_j.z)
-            + 2 * SLENDERNESS * SLENDERNESS * (
-                3 * L05 * (R0.x * R0.z)
-                + 3 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
-                - 3 * L25 * (orientation_j.x * orientation_j.z)
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
+                - 3.0 * L05 * (R0.x * R0.z)
+                + 3.0 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+                - 3.0 * L25 * (orientation_j.x * orientation_j.z)
             );
         G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = //G23
             L03 * (R0.y * R0.z)
-            - L13 * (orientation_j.y * R0.z + R0.x * orientation_j.z)
+            - L13 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
             + L23 * (orientation_j.y * orientation_j.z)
-            + 2 * SLENDERNESS * SLENDERNESS * (
-                3 * L05 * (R0.y * R0.z)
-                + 3 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
-                - 3 * L25 * (orientation_j.y * orientation_j.z)
+            + 2.0 * SLENDERNESS * SLENDERNESS * (
+                - 3.0 * L05 * (R0.y * R0.z)
+                + 3.0 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
+                - 3.0 * L25 * (orientation_j.y * orientation_j.z)
             );
+
+        // if (debug && quadrature_index_i == 12 && k == 5)
+        // {
+        //     printf("a:%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+        //             c,
+        //             log(fabs(2.0 * s_upper + b + 2.0 * u_upper)),
+        //            I1[0],
+        //            I1[1],
+        //            I1[2],
+        //            I1[3],
+        //            I1[4],
+        //            I1[5],
+        //            I1[6],
+        //            I1[7]
+        //           );
+        // }
+        // if (debug && quadrature_index_i == 12 && k == 5)
+        // {
+        //     printf("b:%f,%f,%f,%f,%f,%f,%f,%f\n",
+        //         G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+        //            L01,
+        //            L03,
+        //            L05,
+        //            L13,
+        //            L15,
+        //            L23,
+        //            L25
+        //           );
+        // }
 
         // if (debug && quadrature_index_i==0 && force_index == 5) {
         //     printf("%f,%f,%f\n",
@@ -324,60 +355,60 @@ void *compute_G_analytic(fiberfloat4 position_i,
                 + L03 * (R0.x * R0.x)
                 - L13 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
                 + L23 * (orientation_j.x * orientation_j.x)
-                + 2 * SLENDERNESS * SLENDERNESS * (
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
                     L03
-                    - 3 * L05 * (R0.x * R0.x)
-                    + 3 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
-                    - 3 * L25 * (orientation_j.x * orientation_j.x)
+                    - 3.0 * L05 * (R0.x * R0.x)
+                    + 3.0 * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
+                    - 3.0 * L25 * (orientation_j.x * orientation_j.x)
                 );
             const fiberfloat G22 =
                 L01
                 + L03 * (R0.y * R0.y)
                 - L13 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
                 + L23 * (orientation_j.y * orientation_j.y)
-                + 2 * SLENDERNESS * SLENDERNESS * (
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
                     L03
-                    - 3 * L05 * (R0.y * R0.y)
-                    + 3 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
-                    - 3 * L25 * (orientation_j.y * orientation_j.y)
+                    - 3.0 * L05 * (R0.y * R0.y)
+                    + 3.0 * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
+                    - 3.0 * L25 * (orientation_j.y * orientation_j.y)
                 );
             const fiberfloat G33 =
                 L01
                 + L03 * (R0.z * R0.z)
                 - L13 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
                 + L23 * (orientation_j.z * orientation_j.z)
-                + 2 * SLENDERNESS * SLENDERNESS * (
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
                     L03
-                    - 3 * L05 * (R0.z * R0.z)
-                    + 3 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
-                    - 3 * L25 * (orientation_j.z * orientation_j.z)
+                    - 3.0 * L05 * (R0.z * R0.z)
+                    + 3.0 * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
+                    - 3.0 * L25 * (orientation_j.z * orientation_j.z)
                 );
             const fiberfloat G12 =
                 L03 * (R0.x * R0.y)
                 - L13 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
                 + L23 * (orientation_j.x * orientation_j.y)
-                + 2 * SLENDERNESS * SLENDERNESS * (
-                    3 * L05 * (R0.x * R0.y)
-                    + 3 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
-                    - 3 * L25 * (orientation_j.x * orientation_j.y)
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
+                    - 3.0 * L05 * (R0.x * R0.y)
+                    + 3.0 * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
+                    - 3.0 * L25 * (orientation_j.x * orientation_j.y)
                 );
             const fiberfloat G13 =
                 L03 * (R0.x * R0.z)
                 - L13 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
                 + L23 * (orientation_j.x * orientation_j.z)
-                + 2 * SLENDERNESS * SLENDERNESS * (
-                    3 * L05 * (R0.x * R0.z)
-                    + 3 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
-                    - 3 * L25 * (orientation_j.x * orientation_j.z)
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
+                    - 3.0 * L05 * (R0.x * R0.z)
+                    + 3.0 * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
+                    - 3.0 * L25 * (orientation_j.x * orientation_j.z)
                 );
             const fiberfloat G23 =
                 L03 * (R0.y * R0.z)
-                - L13 * (orientation_j.y * R0.z + R0.x * orientation_j.z)
+                - L13 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
                 + L23 * (orientation_j.y * orientation_j.z)
-                + 2 * SLENDERNESS * SLENDERNESS * (
-                    3 * L05 * (R0.y * R0.z)
-                    + 3 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
-                    - 3 * L25 * (orientation_j.y * orientation_j.z)
+                + 2.0 * SLENDERNESS * SLENDERNESS * (
+                    - 3.0 * L05 * (R0.y * R0.z)
+                    + 3.0 * L15 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
+                    - 3.0 * L25 * (orientation_j.y * orientation_j.z)
                 );
 
             GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] =
@@ -622,7 +653,7 @@ kernel void assemble_system(const global fiberfloat4 *positions,
             fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
             fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 #ifdef USE_ANALYTICAL_INTEGRATION
-            compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 3 && j == 2);
+            compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 89 && j == 21);
 #else
             compute_G(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF);
 #endif //USE_ANALYTICAL_INTEGRATION
@@ -720,16 +751,16 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                     T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
 
+                    // if (i == 89 && j == 21 && force_index_i == 4 && force_index_j == 3 && quadrature_index_i==12)
+                    // {
+                    //     printf("%d,%d,%d,%d,%d,%f\n",i,j,force_index_i,force_index_j,quadrature_index_i,G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS]);
+                    // }
+
                     if (force_index_i == 0)
                     {
                         TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                         TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                         TF3 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
-                    }
-
-                    if (i == 0 && j == 4 && force_index_i == 0 && force_index_j == 1)
-                    {
-                        //printf("     %f\n", GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS]);
                     }
                 }
 
@@ -737,9 +768,9 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
                 Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
 
-                // if (i == 1 && j == 0 && force_index_i == 0 && force_index_j == 1)
+                // if (i == 89 && j == 21 && force_index_i == 4 && force_index_j == 3)
                 // {
-                //     printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d\nek=%f;gamma=%f;lambda=%f\n", i, j, force_index_i, force_index_j, eigen[force_index_j],gamma, lambda[force_index_j]);
+                //     printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d\nek=%f;gamma=%f;lambda=%f\n", i, j, force_index_i, force_index_j, eigen[force_index_j], gamma, lambda[force_index_j]);
                 //     printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d\nT11=%f;T22=%f;T33=%f;T12=%f;T13=%f;T23=%f\nQ1=%f\n", i, j, force_index_i, force_index_j, T11, T22, T33, T12, T13, T23, Q1);
                 // }
 
@@ -751,6 +782,24 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 1;
                 z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;
 
+                // if(x_row_index == 1344) {
+                //     if(x_column_index == 327) {
+                //         printf("xcol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //     }
+                //     if(y_column_index == 327) {
+                //         printf("ycol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //     }
+                //     if(z_column_index == 327) {
+                //         printf("zcol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //     }
+                // }
+                // if(y_row_index == 1344) {
+                //     printf("yrow,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                // }
+                // if(z_row_index == 1344) {
+                //     printf("zrow,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                // }
+
                 a_matrix[x_row_index + x_column_index * total_number_of_rows] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
                 a_matrix[x_row_index + y_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
                 a_matrix[x_row_index + z_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.x * Q3);
@@ -760,6 +809,11 @@ kernel void assemble_system(const global fiberfloat4 *positions,
                 a_matrix[z_row_index + x_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
                 a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
                 a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
+
+                // if (i == 9 && j == 88 && force_index_i == 0 && force_index_j == 3)
+                // {
+                //     printf("%d,%d,%d,%d,%d,%d,%f\n", i, j, force_index_i, force_index_j, z_row_index, y_column_index, a_matrix[z_row_index + y_column_index * total_number_of_rows]);
+                // }
 
                 if (force_index_i == 0)
                 {
