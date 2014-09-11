@@ -39,11 +39,11 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the matrix took ",CPU_p," seconds."
 
-  !!OPEN(10,file="AMat.out");
-  !!DO i=1,3*M*N
-  !!  WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
-  !!END DO
-  !!CLOSE(10)
+  OPEN(10,file="AMat.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
+  END DO
+  CLOSE(10)
 
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !! Assembly of the right hand side for solving Aa=f Eq. (20)
@@ -52,11 +52,11 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
   
-  !!OPEN(10,file="BVec.out");
-  !!DO i=1,3*M*N
-  !!  WRITE(10,'(*(F16.8))') (Brhs(i))
-  !!END DO
-  !!CLOSE(10)
+  OPEN(10,file="BVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (Brhs(i))
+  END DO
+  CLOSE(10)
 
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL dgesv(nocc,1,AMat,nocc,IPIV,Brhs,nocc,info)
@@ -65,7 +65,7 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
  
   solve_coeffs=Brhs
-  OPEN(10,file="Coeff.out");
+  OPEN(10,file="XVec.out");
   DO i=1,3*M*N
     WRITE(10,'(*(F16.8))') (solve_coeffs(i))
   END DO
@@ -136,11 +136,23 @@ FUNCTION solve_coeffs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the matrix took ",CPU_p," seconds."
 
+  OPEN(10,file="AMat.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
+  END DO
+  CLOSE(10)  
+
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_rhs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
+
+  OPEN(10,file="BVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (Brhs(i))
+  END DO
+  CLOSE(10)
   
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL dgesv(nocc,1,AMat,nocc,IPIV,Brhs,nocc,info)
@@ -149,6 +161,12 @@ FUNCTION solve_coeffs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
   
   solve_coeffs_an=Brhs
+  OPEN(10,file="XVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (solve_coeffs_an(i))
+  END DO
+  CLOSE(10)
+
   
 
 END FUNCTION solve_coeffs_an
@@ -213,13 +231,24 @@ FUNCTION solve_coeffs_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CALL SYSTEM_CLOCK(count2,count_rate,count_max);
   CPU_p=real(count2-count1)/count_rate
   PRINT *,"Assemble matrix took ",CPU_p
-  
+
+  OPEN(10,file="AMat.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
+  END DO
+  CLOSE(10)  
+
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   CALL assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   CALL SYSTEM_CLOCK(count2,count_rate,count_max);
   CPU_p=real(count2-count1)/count_rate
   PRINT *,"Assemble rhs took ",CPU_p
-  
+
+  OPEN(10,file="BVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (Brhs(i))
+  END DO
+  CLOSE(10)
 
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   !PRINT *,"restart= ",restart
@@ -309,6 +338,18 @@ FUNCTION solve_coeffs_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
      solve_coeffs_iter=ccvec
   END IF
 
+  CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+  CPU_p = real(count2-count1)/count_rate
+  PRINT *,"Solving system using GMRES took ",CPU_p," seconds."
+
+
+  OPEN(10,file="XVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (solve_coeffs_iter(i))
+  END DO
+  CLOSE(10)
+
+
   
 
  
@@ -376,12 +417,24 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the matrix took ",CPU_p," seconds."
 
+  OPEN(10,file="AMat.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
+  END DO
+  CLOSE(10)   
+
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   CALL assemble_rhs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
  
+  OPEN(10,file="BVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (Brhs(i))
+  END DO
+  CLOSE(10)
+
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !PRINT *,"restart= ",restart
   lwork=restart**2+restart*(3*M*N+5)+5*(3*M*N)+2
@@ -469,6 +522,12 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Solving system using GMRES took ",CPU_p," seconds."
+
+  OPEN(10,file="XVec.out");
+  DO i=1,3*M*N
+    WRITE(10,'(*(F16.8))') (solve_coeffs_an_iter(i))
+  END DO
+  CLOSE(10)
 
 END FUNCTION solve_coeffs_an_iter
 
@@ -571,6 +630,16 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Updating velocities took ",CPU_p," seconds."
 
+  OPEN(10,file="TRANSVel.out");
+  DO i=1,3*M
+    WRITE(10,'(*(F16.8))') (VelVecs(i))
+  END DO
+  CLOSE(10)
+  OPEN(10,file="ROTVel.out");
+  DO i=1,3*M
+    WRITE(10,'(*(F16.8))') (RotVecs(i))
+  END DO
+  CLOSE(10)
   
 END SUBROUTINE compute_velocities
 
@@ -598,6 +667,7 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
   REAL*8,DIMENSION(3):: xc,ta,xcb,tb,IF_a0,IF_a1
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
+  INTEGER i
 
 
   
@@ -662,6 +732,16 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Updating velocities took ",CPU_p," seconds."
 
+  OPEN(10,file="TRANSVel.out");
+  DO i=1,3*M
+    WRITE(10,'(*(F16.8))') (VelVecs(i))
+  END DO
+  CLOSE(10)
+  OPEN(10,file="ROTVel.out");
+  DO i=1,3*M
+    WRITE(10,'(*(F16.8))') (RotVecs(i))
+  END DO
+  CLOSE(10)
 
 END SUBROUTINE compute_velocities_an
 

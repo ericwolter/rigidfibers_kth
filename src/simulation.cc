@@ -87,7 +87,6 @@ void Simulation::initializeProgram()
     const std::string kernel_filenames[] =
     {
         "common.h",
-        "vadd.cl",
         "assemble_system.cl",
         "update_velocities.cl",
         "update_fibers_firststep.cl",
@@ -134,6 +133,9 @@ void Simulation::initializeProgram()
     clflags << "-DNUMBER_OF_TERMS_IN_FORCE_EXPANSION="  << configuration_.parameters.num_terms_in_force_expansion   << " ";
     clflags << "-DTOTAL_NUMBER_OF_QUADRATURE_POINTS="   << configuration_.parameters.num_quadrature_points_per_interval
             * configuration_.parameters.num_quadrature_intervals    << " ";
+    if(configuration_.parameters.use_analytical_integration) {
+        clflags << "-DUSE_ANALYTICAL_INTEGRATION" << " ";
+    }
 
     // TODO This is totally weird... why can't we just pass in clflags.str().c_str()?!?
     // Should be exactly the same...
@@ -330,12 +332,12 @@ void Simulation::precomputeLegendrePolynomials()
     // subintervals as in the formula below
     for (fiberuint interval_index = 0; interval_index < configuration_.parameters.num_quadrature_intervals; ++interval_index)
     {
-        // TODO potential micro optimizations as p*, w*, interval_size
+        // @TODO potential micro optimizations as p*, w*, interval_size
         //      number_of_quadrature_intervals are constant they could be
         //      calculated outside the loop, however for clarity we leave and
         //      here right now and precomputing polynomials is not performance
         //      critcal anyway
-        // TODO potential memory savings because weights are the same for each
+        // @TODO potential memory savings because weights are the same for each
         //      interval
         fiberuint interval_start_index = interval_index * configuration_.parameters.num_quadrature_points_per_interval;
         quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
@@ -411,7 +413,7 @@ void Simulation::step(unsigned long current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    //dumpLinearSystem();
+    dumpLinearSystem();
     //dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
@@ -441,7 +443,6 @@ void Simulation::assembleSystem()
     clCheckError(err, "Could not set kernel arguments for assembling system");
 
     performance_->start("assemble_system", false);
-    // let the opencl runtime determine optimal local work size
     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("assemble_system"));
     clCheckError(err, "Could not enqueue kernel");
 
@@ -482,7 +483,6 @@ void Simulation::updateVelocities()
     clCheckError(err, "Could not set kernel arguments for updating velocities");
 
     performance_->start("update_velocities", false);
-    // let the opencl runtime determine optimal local work size
     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_velocities"));
     clCheckError(err, "Could not enqueue kernel");
 
@@ -492,7 +492,12 @@ void Simulation::updateVelocities()
 
 void Simulation::updateFibers(bool first_timestep)
 {
-    if(first_timestep) {
+    // A second order multi-step method
+    // @TODO Why? Which one?
+    // The first time step is a simple forward euler
+
+    if (first_timestep)
+    {
         cl_int err = 0;
 
         cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
@@ -505,13 +510,14 @@ void Simulation::updateFibers(bool first_timestep)
         clCheckError(err, "Could not set kernel arguments for updating fibers");
 
         performance_->start("update_fibers_firststep", false);
-        // let the opencl runtime determine optimal local work size
         err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers_firststep"));
         clCheckError(err, "Could not enqueue kernel");
 
         performance_->stop("update_fibers_firststep");
         performance_->print("update_fibers_firststep");
-    } else {
+    }
+    else
+    {
         cl_int err = 0;
 
         cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers"];
@@ -528,7 +534,6 @@ void Simulation::updateFibers(bool first_timestep)
         clCheckError(err, "Could not set kernel arguments for updating fibers");
 
         performance_->start("update_fibers", false);
-        // let the opencl runtime determine optimal local work size
         err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers"));
         clCheckError(err, "Could not enqueue kernel");
 
@@ -537,7 +542,7 @@ void Simulation::updateFibers(bool first_timestep)
     }
 }
 
-void Simulation::dumpFibers() 
+void Simulation::dumpFibers()
 {
     fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
 
@@ -603,7 +608,7 @@ void Simulation::dumpFibers()
     o_output_file.close();
 
     delete[] p;
-    delete[] o;    
+    delete[] o;
 }
 
 void Simulation::dumpLinearSystem()

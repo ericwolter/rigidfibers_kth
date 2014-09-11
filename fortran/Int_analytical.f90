@@ -2,7 +2,7 @@ MODULE Int_analytical
 IMPLICIT NONE
 CONTAINS
 
-SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
+SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
   IMPLICIT NONE
 
   !me:  @todo What does this function really do?
@@ -27,7 +27,9 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   !       so the length of R is:
   !         |R| = sqrt(c + s'^2 + b * s')
 
-  !me:  The current quadrature point index
+  INTEGER,INTENT(IN)::DEBUG
+
+  !me:  The current force expansion index
   INTEGER,INTENT(IN)::N
   !me:  The position of the other fiber which influence we are currently
   !     calculating
@@ -99,9 +101,25 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
   
   d=c-0.25d0*b*b;
   
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F32.16))', xb(1)
+    PRINT '(*(F32.16))', c
+    PRINT '(*(F32.16))', ue
+    PRINT '(*(F32.16))', 2.0d0*se+b+2.0d0*ue
+    PRINT '(*(F32.16))', ABS(2.0d0*se+b+2.0d0*ue)
+    PRINT '(*(F32.16))', LOG(ABS(2.0d0*se+b+2.0d0*ue))
+ END IF
   
   I(1) = LOG(ABS(2.0d0*se+b+2.0d0*ue))-LOG(ABS(2.0d0*sb + b + 2.0d0*ub));
   I(2) = ue-ub-1/2.0d0*b*I(1);
+
+ 
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F32.16))', REAL(0), I(1)
+    PRINT '(*(F32.16))', REAL(1), I(2)
+ END IF
+
+
   IF (c<clim) THEN
      nn=2.0d0; 
      DO ii=3,N+3
@@ -110,15 +128,31 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
         I(ii) = -se**(ii-2)*ue/(1.0d0-nn) + sb**(ii-2)*ub/(1.0d0-nn) &
              - (0.5d0-(nn-1.0d0))*b/(1.0d0-nn)*I(ii-1) &
              + (nn-2.0d0)*c/(1.0d0-nn)*I(ii-2);
+
+     IF (DEBUG == 1) THEN
+        PRINT '(*(F32.16))', REAL(ii-1.0), I(ii)
+     END IF
+
      END DO
   ELSE
      I(30)=0.0d0;
      I(29)=0.0d0;
      nn=27.0d0;
+
+      !!IF (DEBUG == 1) THEN
+      !!  PRINT '(*(F10.6))', REAL(29), I(30)
+      !!  PRINT '(*(F10.6))', REAL(28), I(30)
+      !!END IF
+
+
      DO ii=28,3,-1
         
         I(ii) =(nn+2)/((nn+1)*c)*(se**(nn+1)*ue/(nn+2) - sb**(nn+1)*ub/(nn+2) + &
              (1-2*(nn+2))/(2*(nn+2))*b*I(ii+1)- I(ii+2));
+        !!IF (DEBUG == 1) THEN
+        !!  PRINT '(*(F10.6))', REAL(ii-1.0), I(ii), I(ii+1), I(ii+2), &
+        !!    se**(nn+1)*ue/(nn+2) - sb**(nn+1)*ub/(nn+2), (nn+2)
+        !!END IF
         nn=nn-1.0d0;
      END DO
   END IF
@@ -171,10 +205,11 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24)
      S(ii)=1/c*(J(ii)-b*S(ii+1)-S(ii+2));
   END DO
 END IF
- 
- 
-!me:  @todo Why is this a loop? N is constant for each call to this subroutine
-!     and L vector is always completely overwritten in each loop?
+
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F16.6))', c,LOG(ABS(2.0d0*se+b+2.0d0*ue)),I(1),I(2),I(3),I(4),I(5),I(6),I(7),I(8)
+ END IF
+
 DO ii=1,N+1
   IF (ii==1 .OR. ii==2) THEN
      L11(ii) = I(ii);
@@ -184,7 +219,6 @@ DO ii=1,N+1
      L22(ii) = S(ii);
      L23(ii) = S(ii+1);
      L24(ii) = S(ii+2);
-    
   ELSEIF (ii==3) THEN
      L11(ii) = 0.5*(3.0d0*I(ii)-I(ii-2));
      L12(ii) = 0.5*(3.0d0*J(ii)-J(ii-2));
@@ -194,6 +228,7 @@ DO ii=1,N+1
      L23(ii) = 0.5*(3.0d0*S(ii+1)-S(ii-1));
      L24(ii) = 0.5*(3.0d0*S(ii+2)-S(ii));
      
+
   ELSEIF (ii==4) THEN
      L11(ii) = 0.5d0*(5.0d0*I(ii)-3.0d0*I(ii-2));
      L12(ii) = 0.5d0*(5.0d0*J(ii)-3.0d0*J(ii-2));
@@ -202,7 +237,6 @@ DO ii=1,N+1
      L22(ii) = 0.5d0*(5.0d0*S(ii)-3.0d0*S(ii-2));
      L23(ii) = 0.5d0*(5.0d0*S(ii+1)-3.0d0*S(ii-1));
      L24(ii) = 0.5d0*(5.0d0*S(ii+2)-3.0d0*S(ii));
-     
   ELSEIF (ii==5) THEN
      L11(ii) = 0.125d0*(35.0d0*I(ii)-30.0d0*I(ii-2)+3.0d0*I(ii-4));
      L12(ii) = 0.125d0*(35.0d0*J(ii)-30.0d0*J(ii-2)+3.0d0*J(ii-4));
@@ -219,6 +253,9 @@ DO ii=1,N+1
      L22(ii) = 0.125d0*(63.0d0*S(ii)-70.0d0*S(ii-2)+15.0d0*S(ii-4));
      L23(ii) = 0.125d0*(63.0d0*S(ii+1)-70.0d0*S(ii-1)+15.0d0*S(ii-3));
      L24(ii) = 0.125d0*(63.0d0*S(ii+2)-70.0d0*S(ii)+15.0d0*S(ii-2));
+     IF (DEBUG == 1) THEN
+        PRINT '(*(F16.6))', L11(ii), L12(ii), L22(ii), L13(ii), L23(ii), L14(ii), L24(ii)
+     END IF
   ELSEIF (ii==7) THEN
      L11(ii) = 0.0625d0*(231.0d0*I(ii)-315.0d0*I(ii-2)+105.0d0*I(ii-4)-5.0d0*I(ii-6));
      L12(ii) = 0.0625d0*(231.0d0*J(ii)-315.0d0*J(ii-2)+105.0d0*J(ii-4)-5.0d0*J(ii-6));
@@ -387,6 +424,8 @@ DO ii=1,N+1
     L22(ii) = 0.125d0*(35.0d0*S(ii)-30.0d0*S(ii-2)+3.0d0*S(ii-4));
     L23(ii) = 0.125d0*(35.0d0*S(ii+1)-30.0d0*S(ii-1)+3.0d0*S(ii-3));
     L24(ii) = 0.125d0*(35.0d0*S(ii+2)-30.0d0*S(ii)+3.0d0*S(ii-2));
+
+
   ELSEIF (ii==6) THEN
      L11(ii) = 0.125d0*(63.0d0*I(ii)-70.0d0*I(ii-2)+15.0d0*I(ii-4));
      L12(ii) = 0.125d0*(63.0d0*J(ii)-70.0d0*J(ii-2)+15.0d0*J(ii-4));
@@ -621,13 +660,15 @@ END SUBROUTINE Analytical_intIII
 
 
 
-FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
+FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N, DEBUG);
 
   !!Contr. from filament b to point xbar. 
   !!G is integral over filament b, with kernel 
   !!multiplied by L_m(s).
   !!Result are 6 values stored in Gvec:
   !!G11,G22,G33,G12,G13,G23.
+
+  INTEGER,INTENT(IN)::DEBUG
 
   !me:  The positon of the other fiber which influence we want to calculate
   REAL*8,DIMENSION(3),INTENT(IN)::xb
@@ -643,7 +684,7 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
 
   REAL*8,DIMENSION(3)::R_0
 
-  !me:  The current quadrature point index
+  !me:  The current force expansion index
   INTEGER, INTENT(IN):: N
   REAL*8,DIMENSION(N+1)::L11,L12,L13,L14,L22,L23,L24
   !!REAL*8,DIMENSION(N+1)::L11n,L12n,L13n,L14n,L22n,L23n,L24n
@@ -689,14 +730,13 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
 
   
-  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24);
-  
-  
+  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24, DEBUG);
+
   Gvec_tmp =L11(N+1)*Identity + R_00*L12(N+1) - (pb_R_0+R_0_pb)*L13(N+1)+pb_pb*L14(N+1) &
   +2.0d0*eeps**2*(Identity*L12(N+1)-3.0d0*R_00*L22(N+1)+3.0d0*(pb_R_0+R_0_pb)*L23(N+1)-3.0d0*pb_pb*L24(N+1));
   
- 
-  
+  !!Gvec_tmp = 2.0d0*eeps**2*(Identity*L12(N+1)-3.0d0*R_00*L22(N+1)+3.0d0*(pb_R_0+R_0_pb)*L23(N+1)-3.0d0*pb_pb*L24(N+1))
+    
  
   G_compute_GQ_kg(1)=Gvec_tmp(1,1);
   G_compute_GQ_kg(2)=Gvec_tmp(2,2);
@@ -705,6 +745,23 @@ FUNCTION G_compute_GQ_kg(xb,pb,xbar,eeps,N);
   G_compute_GQ_kg(5)=Gvec_tmp(1,3);
   G_compute_GQ_kg(6)=Gvec_tmp(2,3);
 
+  IF(DEBUG==1) THEN
+    PRINT '(*(F16.6))', L11(N+1),L12(N+1),L22(N+1),L13(N+1),L23(N+1),L14(N+1),L24(N+1)
+!!    PRINT '(*(F16.6))', L11
+  !!  PRINT '(*(F16.6))', L12
+    !!PRINT '(*(F16.6))', L22
+    !!PRINT '(*(F16.6))', L13
+    !!PRINT '(*(F16.6))', L23
+    !!PRINT '(*(F16.6))', L14
+    !!PRINT '(*(F16.6))', L24
+    !!PRINT '(*(F16.6))', Gvec_tmp(2,3)
+  ENDIF
+
+  !!IF(DEBUG==1) THEN
+  !!  PRINT '(*(F10.6))', (pb_R_0+R_0_pb)
+  !!  PRINT '(*(F10.6))', L13(N+1)
+  !!  PRINT '(*(F10.6))', (pb_R_0+R_0_pb)*L13(N+1)
+  !!ENDIF
   
 
 END FUNCTION G_compute_GQ_kg
@@ -742,7 +799,7 @@ FUNCTION G_compute_GQ_f_kg(M,N,xb,pb,xbar,eeps,ExtForce, coeffvec,fno);
   END DO
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
   
-  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24);
+  CALL Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,0);
   
   
 
@@ -829,9 +886,7 @@ FUNCTION G_f_GQ_kg(N,xb,pb,xbar,fvec_x,fvec_y,fvec_z,eeps);
   END DO
   Identity=RESHAPE((/ 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0, 0.0d0, 0.0d0, 0.0d0, 1.0d0/), (/3, 3/))
   
-  CALL Analytical_int(xb,pb,xbar,0,L11,L12,L13,L14,L22,L23,L24);
-  
-  
+  CALL Analytical_int(xb,pb,xbar,0,L11,L12,L13,L14,L22,L23,L24,0);
  
    Gvec_tmp =L11(1)*Identity + R_00*L12(1) - (pb_R_0+R_0_pb)*L13(1)+pb_pb*L14(1) &
  + 2.0d0*eeps**2*(Identity*L12(1)-3.0d0*R_00*L22(1)+3.0d0*(pb_R_0+ R_0_pb)*L23(1)-3.0d0*pb_pb*L24(1));

@@ -130,11 +130,14 @@ void Performance::exportMeasurements(std::string filename)
     performance_output_file.open (outputPath.c_str());
     performance_output_file << std::fixed << std::setprecision(8);
     std::map<std::string, PerformanceTracker>::iterator iter;
+
+    performance_output_file << "name" << "," << "time" << std::endl;
     for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
     {
         PerformanceTracker *tracker = &iter->second;
-
-        performance_output_file << tracker->name << ";" << tracker->host_average_time << std::endl;
+        if (tracker->host_count > 1) {
+            performance_output_file << tracker->name << "," << tracker->host_average_time << std::endl;
+        }
     }
     performance_output_file.close();
 }

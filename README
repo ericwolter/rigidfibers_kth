@@ -6,11 +6,18 @@
 - Periodicity
 - Brownian motion
 
+# Optimizations
+
+- Reusing Gmat in velocity update
+- Matrix symmetry?
+
+
 ## Open questions?
 
 - OpenCL vs CUDA? -> OpenCL
 - Library for solver? -> ViennaCL, clMAGMA
 - Eq 24,25 missing 1/2 and 3/2?
+
 
 ## Closed question
 
