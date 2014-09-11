@@ -434,7 +434,7 @@ PROGRAM ADVECT_FIBERS
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,2 !!no_ts
+  DO tt=1,1 !!no_ts
      IF (mod(tt,5)==0) THEN
         PRINT *,"time step no ",tt
      END IF

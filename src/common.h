@@ -97,7 +97,8 @@
                                                         //   (e.g. 8)
         fiberuint num_quadrature_points_per_interval;   // the number of points per
                                                         //   quadrature points (e.g. 3)
-        fiberint use_analytical_integration;            // NOT YET USED
+        fiberint use_analytical_integration;            // option which determines how the
+                                                        // the inner integral is evaluated
         fiberint use_direct_solver;                     // NOT YET USED
     } FiberParams;
     
