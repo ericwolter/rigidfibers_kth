@@ -101,6 +101,14 @@ SUBROUTINE Analytical_int(xb,pb,xbar,N,L11,L12,L13,L14,L22,L23,L24,DEBUG)
   
   d=c-0.25d0*b*b;
   
+ IF (DEBUG == 1) THEN
+    PRINT '(*(F32.16))', xb(1)
+    PRINT '(*(F32.16))', c
+    PRINT '(*(F32.16))', ue
+    PRINT '(*(F32.16))', 2.0d0*se+b+2.0d0*ue
+    PRINT '(*(F32.16))', ABS(2.0d0*se+b+2.0d0*ue)
+    PRINT '(*(F32.16))', LOG(ABS(2.0d0*se+b+2.0d0*ue))
+ END IF
   
   I(1) = LOG(ABS(2.0d0*se+b+2.0d0*ue))-LOG(ABS(2.0d0*sb + b + 2.0d0*ub));
   I(2) = ue-ub-1/2.0d0*b*I(1);

@@ -27,6 +27,7 @@ void *compute_G_analytic(fiberfloat4 position_i,
         const fiberfloat c = R0.x * R0.x
                              + R0.y * R0.y
                              + R0.z * R0.z;
+        const fiberfloat c_test = ((R0.x * R0.y * R0.z) * (R0.x * R0.y * R0.z)) - 2 * R0.x * R0.y - 2 * R0.x * R0.z - 2 * R0.y * R0.z;
 
         // if fibers are too far apart we have numerical problems
         // so in order to minimize the effect we inverse the
@@ -59,13 +60,24 @@ void *compute_G_analytic(fiberfloat4 position_i,
         //     }
         // }
 
+        // if (debug && quadrature_index_i == 12 && k == 5)
+        // {
+        //     printf(" %.16f\n", 0, position_j.x);
+        //     printf(" %.16f\n", 0, c);
+        //     printf(" %.16f\n", 0, c_test);
+        //     printf(" %.16f\n", 0, u_upper);
+        //     printf(" %.16f\n", 0, 2.0 * s_upper + b + 2.0 * u_upper);
+        //     printf(" %.16f\n", 0, fabs(2.0 * s_upper + b + 2.0 * u_upper));
+        //     printf(" %.16f\n", 0, log(fabs(2.0 * s_upper + b + 2.0 * u_upper)));
+        // }
+
         I1[0] = log(fabs(2.0 * s_upper + b + 2.0 * u_upper)) - log(fabs(2.0 * s_lower + b + 2.0 * u_lower));
         I1[1] = u_upper - u_lower + (-b / 2.0) * I1[0];
 
         // if (debug && quadrature_index_i == 12 && k == 5)
         // {
-        //     printf("%d  %.16f\n",0,I1[0]);
-        //     printf("%d  %.16f \n",1,I1[1]);
+        //     printf("%d  %.16f\n", 0, I1[0]);
+        //     printf("%d  %.16f \n", 1, I1[1]);
         // }
 
         I3[0] = (d < 1e-7) ?
@@ -92,7 +104,7 @@ void *compute_G_analytic(fiberfloat4 position_i,
 
                 // if (debug && quadrature_index_i == 12 && k == 5)
                 // {
-                //     printf("%d  %.16f \n",n,I1[n]);
+                //     printf("%d  %.16f \n", n, I1[n]);
                 // }
 
                 I3[n] = I1[n - 2] - b * I3[n - 1] - c * I3[n - 2];
