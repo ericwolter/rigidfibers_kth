@@ -29,7 +29,7 @@
 
 int main(int argc, char *argv[])
 {
-    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.1.0");
+    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.2.0");
 
     Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
 
