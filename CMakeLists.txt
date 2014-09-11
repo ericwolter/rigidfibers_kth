@@ -8,14 +8,9 @@ cmake_minimum_required(VERSION 2.8)
 # correctly link it into other programs
 project(fibers)
 
-# WARN: Currently NOT used
-# use built-in cmake module finder to locate OpenGL includes/libraries
-#find_package(OpenGL)
+find_package(CUDA REQUIRED)
 
-# extend cmake's module path to directory containing the custom OpenCL module
-# finder script
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/lib/opencl-cmake")
-find_package(OpenCL)
+include(FindCUDA)
 
 # add the source directory to allow cmake to compile/link the actual code
 add_subdirectory(src)

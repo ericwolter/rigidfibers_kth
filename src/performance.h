@@ -23,46 +23,30 @@
 #include <string>
 #include "common.h"
 
-// @TODO read up on padding again
-// For now simply ignore padding warning because this isn't really
-// critical here anyway
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpadded"
 typedef struct {
     std::string name;
     
-    cl_event event;
-
-    std::chrono::high_resolution_clock::time_point host_start;
-
-    unsigned long host_count;
-    double host_last_time;
-    double host_average_time;
+    cudaEvent_t start;
+    cudaEvent_t stop;
 
     unsigned long device_count;
-    double device_last_time;
-    double device_average_time;
-
-    bool host_only;
+    float device_last_time;
+    float device_average_time;
 } PerformanceTracker;
-#pragma GCC diagnostic pop
 
 class Performance
 {
 public:
-    Performance(cl_command_queue queue);
+    Performance();
     ~Performance();
 
-    cl_event* getDeviceEvent(std::string name);
-    void start(std::string name, bool host_only);
+    void start(std::string name);
     void stop(std::string name);
     void print(std::string name);
     void dump();
     void exportMeasurements(std::string name);
 private:
     DISALLOW_COPY_AND_ASSIGN(Performance);
-
-    cl_command_queue queue_;
 
     std::map<std::string, PerformanceTracker> trackers_;
 };

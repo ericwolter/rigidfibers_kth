@@ -20,12 +20,10 @@
 #include <iostream>
 
 #include "fiberopt.h"
-
-#include "common.h"
 #include "parameters.h"
 #include "simulation.h"
 
-#include "ocl/clutils.h"
+#include "kernels/saxpy.cu"
 
 int main(int argc, char *argv[])
 {
@@ -35,13 +33,11 @@ int main(int argc, char *argv[])
 
     Parameters::dump(configuration.parameters);
 
-    const CLPlatform *selected_platform = CLUtils::selectPlatform();
-    const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
-    std::cout << std::endl;
+    // cleanup
+    delete[] configuration.initial_positions;
+    delete[] configuration.initial_orientations;
 
-    cl_context context = CLUtils::createContext(selected_platform, selected_device);
-
-    Simulation simulation(context, selected_device, configuration);
+    Simulation simulation(configuration);
 
     bool running = true;
     unsigned long current_timestep = 0;
@@ -52,18 +48,36 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= 1) {
+        if(current_timestep >= configuration.parameters.num_timesteps) {
             running = false;
         }
     }
     while (running);
 
-    simulation.exportPerformanceMeasurments();
+    int N = 1 << 20;
+    float *x, *y, *d_x, *d_y;
+    x = (float *)malloc(N * sizeof(float));
+    y = (float *)malloc(N * sizeof(float));
 
-    // cleanup
-    delete[] configuration.initial_positions;
-    delete[] configuration.initial_orientations;
-    clReleaseContext(context);
+    cudaMalloc(&d_x, N * sizeof(float));
+    cudaMalloc(&d_y, N * sizeof(float));
 
-    return 0;
+    for (int i = 0; i < N; i++)
+    {
+        x[i] = 1.0f;
+        y[i] = 2.0f;
+    }
+
+    cudaMemcpy(d_x, x, N * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_y, y, N * sizeof(float), cudaMemcpyHostToDevice);
+
+    // Perform SAXPY on 1M elements
+    saxpy <<< (N + 255) / 256, 256 >>> (N, 2.0, d_x, d_y);
+
+    cudaMemcpy(y, d_y, N * sizeof(float), cudaMemcpyDeviceToHost);
+
+    float maxError = 0.0f;
+    for (int i = 0; i < N; i++)
+        maxError = max(maxError, abs(y[i] - 4.0f));
+    std::cout << "Max error: " << maxError << std::endl;
 }

@@ -22,92 +22,55 @@
 #include <string>
 #include <map>
 
-// Don't bother with warnings in external dependencies
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wdeprecated"
-#pragma GCC diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma GCC diagnostic ignored "-Wswitch-enum"
-#pragma GCC diagnostic ignored "-Wexit-time-destructors"
-#pragma GCC diagnostic ignored "-Wglobal-constructors"
-#pragma GCC diagnostic ignored "-Wpadded"
-#pragma GCC diagnostic ignored "-Wweak-vtables"
-#pragma GCC diagnostic ignored "-Wcovered-switch-default"
-#pragma GCC diagnostic ignored "-Wextra-semi"
-#pragma GCC diagnostic ignored "-Wdocumentation"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wfloat-equal"
-#define VIENNACL_WITH_OPENCL
-#include "viennacl/ocl/backend.hpp"
-#include "viennacl/matrix.hpp"
-#include "viennacl/vector.hpp"
-#include "viennacl/linalg/gmres.hpp"
-#include "viennacl/linalg/cg.hpp"
-#include "viennacl/linalg/bicgstab.hpp"
-#include "viennacl/linalg/lu.hpp"
-#pragma GCC diagnostic pop
-
 #include "common.h"
 #include "parameters.h"
 #include "performance.h"
-#include "ocl/cldevice.h"
 
 class Simulation
 {
 public:
-    Simulation(cl_context context, const CLDevice *device, Configuration configuration);
+    Simulation(Configuration configuration);
     ~Simulation();
 
-    void step(unsigned long current_timestep);
+    void step(size_t current_timestep);
 
     void exportPerformanceMeasurments();
 private:
     DISALLOW_COPY_AND_ASSIGN(Simulation);
-
-    cl_context context_;
-    const CLDevice* device_;
 
     Performance* performance_;
 
     Configuration configuration_;
     size_t global_work_size_;
 
-    cl_command_queue queue_;
-    cl_program program_;
+    fiberfloat4 *gpu_previous_positions_;
+    fiberfloat4 *gpu_current_positions_;
+    fiberfloat4 *gpu_next_positions_;
 
-    cl_mem previous_position_buffer_;
-    cl_mem current_position_buffer_;
-    cl_mem next_position_buffer_;
-    cl_mem previous_orientation_buffer_;
-    cl_mem current_orientation_buffer_;
-    cl_mem next_orientation_buffer_;
+    fiberfloat4 *gpu_previous_orientations_;
+    fiberfloat4 *gpu_current_orientations_;
+    fiberfloat4 *gpu_next_orientations_;
 
-    cl_mem previous_translational_velocity_buffer_;
-    cl_mem current_translational_velocity_buffer_;
-    cl_mem previous_rotational_velocity_buffer_;
-    cl_mem current_rotational_velocity_buffer_;
+    fiberfloat4 *gpu_previous_translational_velocities_;
+    fiberfloat4 *gpu_current_translational_velocities_;
 
-    cl_mem a_matrix_buffer_;
-    cl_mem b_vector_buffer_;
-    cl_mem x_vector_buffer_;
+    fiberfloat4 *gpu_previous_rotational_velocities_;
+    fiberfloat4 *gpu_current_rotational_velocities_;
 
-    cl_mem quadrature_points_buffer_;
-    cl_mem quadrature_weights_buffer_;
-    cl_mem legendre_polynomials_buffer_;
+    fiberfloat *gpu_a_matrix_;
+    fiberfloat *gpu_b_vector_;
+    fiberfloat *gpu_x_vector_;
 
-    std::map<std::string,cl_kernel> kernels_;
+    fiberfloat *gpu_quadrature_points_;
+    fiberfloat *gpu_quadrature_weights_;
+    fiberfloat *gpu_legendre_polynomials_;
 
-    void initializeQueue();
-    void initializeKernels();
-    void initializeProgram();
-    void initializeBuffers();
-    void initializeViennaCL();
+    void initializeGPUMemory();
 
     void writeFiberStateToDevice();
     void readFiberStateFromDevice();
 
-    fiberfloat calculateLegendrePolynomial(fiberfloat x, fiberuint n);
+    double calculateLegendrePolynomial(double x, unsigned int n);
     void precomputeLegendrePolynomials();
 
     void assembleSystem();
