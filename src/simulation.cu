@@ -197,8 +197,8 @@ void Simulation::precomputeLegendrePolynomials()
     }
 
     // write quadrature points and weights to device
-    checkCuda(cudaMalloc(&gpu_quadrature_points_, total_number_of_points * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_quadrature_weights_, total_number_of_points * sizeof(fiberfloat4)));
+    checkCuda(cudaMalloc(&gpu_quadrature_points_, total_number_of_points * sizeof(fiberfloat)));
+    checkCuda(cudaMalloc(&gpu_quadrature_weights_, total_number_of_points * sizeof(fiberfloat)));
 
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature points..." << std::endl;
     checkCuda(cudaMemcpy(gpu_quadrature_points_, quadrature_points, total_number_of_points * sizeof(fiberfloat), cudaMemcpyHostToDevice));
@@ -261,7 +261,7 @@ void Simulation::step(size_t current_timestep)
 void Simulation::assembleSystem()
 {
     performance_->start("assemble_system");
-    assemble_system <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+    assemble_system <<< (configuration_.parameters.num_fibers + 7) / 8, 8 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_a_matrix_,
