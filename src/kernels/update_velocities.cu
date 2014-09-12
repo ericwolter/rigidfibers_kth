@@ -144,10 +144,6 @@ __global__ void update_velocities(
     rotational_velocities[i].y = 0.0;
     rotational_velocities[i].z = 0.0;
 
-    if(i==0) {
-        printf("%d:%.8f,%.8f,%.8f\n",i,translational_velocities[i].x,translational_velocities[i].y,translational_velocities[i].z);
-    }
-    
     for (fiberuint j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
         if (i == j) continue;

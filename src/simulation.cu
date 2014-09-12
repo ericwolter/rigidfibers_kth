@@ -243,7 +243,7 @@ void Simulation::step(size_t current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    // dumpLinearSystem();
+    dumpLinearSystem();
     // dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
@@ -255,7 +255,7 @@ void Simulation::step(size_t current_timestep)
     TripleSwap(fiberfloat4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
     TripleSwap(fiberfloat4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
-    dumpFibers();
+    //dumpFibers();
 }
 
 void Simulation::assembleSystem()
