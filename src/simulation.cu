@@ -27,9 +27,14 @@
 #include <sstream>
 #include <iomanip>  // used for standard output manipulation (e.g setprecision)
 
+// #include "magma.h"
+
 #include "resources.h"
 
 #include "kernels/assemble_system.cu"
+#include "kernels/update_velocities.cu"
+#include "kernels/update_fibers_firststep.cu"
+#include "kernels/update_fibers.cu"
 
 Simulation::Simulation(Configuration configuration)
 {
@@ -40,12 +45,15 @@ Simulation::Simulation(Configuration configuration)
 
     initializeGPUMemory();
 
+    //magma_init();
+    
     writeFiberStateToDevice();
     precomputeLegendrePolynomials();
 }
 
 Simulation::~Simulation()
 {
+    //magma_finalize();
 }
 
 void Simulation::initializeGPUMemory()
@@ -73,6 +81,10 @@ void Simulation::initializeGPUMemory()
     checkCuda(cudaMalloc(&gpu_b_vector_, num_matrix_rows * sizeof(fiberfloat)));
     // @TODO might be able to just use B vector for the solution
     checkCuda(cudaMalloc(&gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat)));
+
+    checkCuda(cudaMemset(gpu_a_matrix_, 0, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat)));
+    checkCuda(cudaMemset(gpu_b_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
+    checkCuda(cudaMemset(gpu_x_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -226,30 +238,30 @@ void Simulation::step(size_t current_timestep)
 {
     std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
-    // std::cout << "     [GPU]      : Solving system..." << std::endl;
-    // solveSystem();
-    // std::cout << "     [GPU]      : Updating velocities..." << std::endl;
-    // updateVelocities();
+    std::cout << "     [GPU]      : Solving system..." << std::endl;
+    solveSystem();
+    std::cout << "     [GPU]      : Updating velocities..." << std::endl;
+    updateVelocities();
 
-    // //dumpLinearSystem();
-    // //dumpVelocities();
+    // dumpLinearSystem();
+    // dumpVelocities();
 
-    // std::cout << "     [GPU]      : Updating fibers..." << std::endl;
-    // updateFibers(current_timestep == 0);
+    std::cout << "     [GPU]      : Updating fibers..." << std::endl;
+    updateFibers(current_timestep == 0);
 
-    // DoubleSwap(cl_mem, previous_translational_velocity_buffer_, current_translational_velocity_buffer_);
-    // DoubleSwap(cl_mem, previous_rotational_velocity_buffer_, current_rotational_velocity_buffer_);
+    DoubleSwap(fiberfloat4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
+    DoubleSwap(fiberfloat4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
 
-    // TripleSwap(cl_mem, previous_position_buffer_, current_position_buffer_, next_position_buffer_);
-    // TripleSwap(cl_mem, previous_orientation_buffer_, current_orientation_buffer_, next_orientation_buffer_);
+    TripleSwap(fiberfloat4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
+    TripleSwap(fiberfloat4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
-    //dumpFibers();
+    dumpFibers();
 }
 
 void Simulation::assembleSystem()
 {
     performance_->start("assemble_system");
-    assemble_system <<< (configuration_.parameters.num_fibers + 255) / 256, 256 >>> (
+    assemble_system <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_a_matrix_,
@@ -257,7 +269,11 @@ void Simulation::assembleSystem()
         gpu_quadrature_points_,
         gpu_quadrature_weights_,
         gpu_legendre_polynomials_,
-        configuration_.parameters.num_fibers
+        configuration_.parameters.num_fibers,
+        configuration_.parameters.slenderness,
+        configuration_.parameters.num_terms_in_force_expansion,
+        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals,
+        configuration_.parameters.use_analytical_integration
     );
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
@@ -265,23 +281,52 @@ void Simulation::assembleSystem()
 
 void Simulation::solveSystem()
 {
-    // fiberuint num_matrix_rows =
-    //     3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
-    // fiberuint num_matrix_columns = num_matrix_rows;
+    fiberuint num_matrix_rows =
+        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
+    fiberuint num_matrix_columns = num_matrix_rows;
 
-    // viennacl::matrix<fiberfloat, viennacl::column_major> a_matrix_vienna(a_matrix_buffer_, num_matrix_rows, num_matrix_columns);
-    // viennacl::vector<fiberfloat> b_vector_vienna(b_vector_buffer_, num_matrix_rows);
-    // viennacl::vector<fiberfloat> x_vector_vienna(x_vector_buffer_, num_matrix_rows);
 
-    // viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
-    // performance_->start("solve_system", true);
-    // x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
-    // performance_->stop("solve_system");
-    // performance_->print("solve_system");
+    viennacl::matrix_base<fiberfloat, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
+                                    num_matrix_rows, 0, 1, num_matrix_rows,
+                                    num_matrix_columns, 0, 1, num_matrix_columns);
+    viennacl::vector<fiberfloat> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, num_matrix_rows);
+    viennacl::vector<fiberfloat> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, num_matrix_rows);
+
+    viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
+    performance_->start("solve_system");
+
+    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
+
+    performance_->stop("solve_system");
+    performance_->print("solve_system");
+
+    // magma_int_t *ipiv=NULL;
+    // magma_int_t ldda = ((num_matrix_rows+31)/32)*32;  // round up to multiple of 32 for best GPU performance
+    // magma_int_t lddx = ldda;
+    // magma_int_t info = 0;
+
+    // magma_imalloc_cpu( &ipiv, num_matrix_rows );  // ipiv always on CPU
 }
 
 void Simulation::updateVelocities()
 {
+    performance_->start("update_velocities");
+    update_velocities <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+        gpu_current_positions_,
+        gpu_current_orientations_,
+        gpu_x_vector_,
+        gpu_current_translational_velocities_,
+        gpu_current_rotational_velocities_,
+        gpu_quadrature_points_,
+        gpu_quadrature_weights_,
+        gpu_legendre_polynomials_,
+        configuration_.parameters.num_fibers,
+        configuration_.parameters.slenderness,
+        configuration_.parameters.num_terms_in_force_expansion,
+        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals
+    );
+    performance_->stop("update_velocities");
+    performance_->print("update_velocities");    
     // cl_int err = 0;
 
     // cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
@@ -305,276 +350,210 @@ void Simulation::updateVelocities()
 
 void Simulation::updateFibers(bool first_timestep)
 {
-    // // A second order multi-step method
-    // // @TODO Why? Which one?
-    // // The first time step is a simple forward euler
+    // A second order multi-step method
+    // @TODO Why? Which one?
+    // The first time step is a simple forward euler
 
-    // if (first_timestep)
-    // {
-    //     cl_int err = 0;
-
-    //     cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers_firststep"];
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_position_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_orientation_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
-    //     clCheckError(err, "Could not set kernel arguments for updating fibers");
-
-    //     performance_->start("update_fibers_firststep", false);
-    //     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers_firststep"));
-    //     clCheckError(err, "Could not enqueue kernel");
-
-    //     performance_->stop("update_fibers_firststep");
-    //     performance_->print("update_fibers_firststep");
-    // }
-    // else
-    // {
-    //     cl_int err = 0;
-
-    //     cl_uint param = 0; cl_kernel kernel = kernels_["update_fibers"];
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_position_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_position_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_orientation_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &next_orientation_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_translational_velocity_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &previous_rotational_velocity_buffer_);
-    //     err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
-    //     clCheckError(err, "Could not set kernel arguments for updating fibers");
-
-    //     performance_->start("update_fibers", false);
-    //     err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_fibers"));
-    //     clCheckError(err, "Could not enqueue kernel");
-
-    //     performance_->stop("update_fibers");
-    //     performance_->print("update_fibers");
-    // }
+    if (first_timestep)
+    {
+        performance_->start("update_fibers_firststep");
+        update_fibers_firststep <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+            gpu_current_positions_,
+            gpu_next_positions_,
+            gpu_current_orientations_,
+            gpu_next_orientations_,
+            gpu_current_translational_velocities_,
+            gpu_current_rotational_velocities_,
+            configuration_.parameters.num_fibers,
+            configuration_.parameters.timestep
+        );
+        performance_->stop("update_fibers_firststep");
+        performance_->print("update_fibers_firststep");
+    }
+    else
+    {
+        performance_->start("update_fibers");
+        update_fibers <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+            gpu_previous_positions_,
+            gpu_current_positions_,
+            gpu_next_positions_,
+            gpu_previous_orientations_,
+            gpu_current_orientations_,
+            gpu_next_orientations_,
+            gpu_previous_translational_velocities_,
+            gpu_current_translational_velocities_,
+            gpu_previous_rotational_velocities_,
+            gpu_current_rotational_velocities_,
+            configuration_.parameters.num_fibers,
+            configuration_.parameters.timestep
+        );
+        performance_->stop("update_fibers");
+        performance_->print("update_fibers");
+    }
 }
 
 void Simulation::dumpFibers()
 {
-    // fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
+    fiberfloat4 *p = new fiberfloat4[configuration_.parameters.num_fibers];
+    fiberfloat4 *o = new fiberfloat4[configuration_.parameters.num_fibers];
 
-    // fiberfloat *p = new fiberfloat[num_rows];
-    // fiberfloat *o = new fiberfloat[num_rows];
+    checkCuda(cudaMemcpy(p, gpu_current_positions_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(o, gpu_current_orientations_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
 
-    // cl_int err;
-    // err = clEnqueueReadBuffer(queue_, current_position_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, p, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from p");
-    // err = clEnqueueReadBuffer(queue_, current_orientation_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, o, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from o");
+    std::string executablePath = Resources::getExecutablePath();
 
-    // std::string executablePath = Resources::getExecutablePath();
+    std::string p_output_path = executablePath + "/positions.out";
+    std::string o_output_path = executablePath + "/orientations.out";
 
-    // std::string p_output_path = executablePath + "/positions.out";
-    // std::string o_output_path = executablePath + "/orientations.out";
+    std::ofstream p_output_file;
+    std::ofstream o_output_file;
 
-    // std::ofstream p_output_file;
-    // std::ofstream o_output_file;
+    p_output_file.open (p_output_path.c_str());
+    o_output_file.open (o_output_path.c_str());
 
-    // p_output_file.open (p_output_path.c_str());
-    // o_output_file.open (o_output_path.c_str());
+    p_output_file << std::fixed << std::setprecision(8);
+    o_output_file << std::fixed << std::setprecision(8);
 
-    // p_output_file << std::fixed << std::setprecision(8);
-    // o_output_file << std::fixed << std::setprecision(8);
+    for (size_t row_index = 0; row_index < configuration_.parameters.num_fibers; ++row_index)
+    {
+        fiberfloat4 p_value = p[row_index];
+        fiberfloat4 o_value = o[row_index];
 
-    // int coordinate = 0;
-    // for (fiberuint row_index = 0; row_index < num_rows; ++row_index)
-    // {
-    //     if (coordinate == 3)
-    //     {
-    //         coordinate = 0;
-    //         continue;
-    //     }
-    //     else
-    //     {
-    //         coordinate++;
-    //     }
+        p_output_file << (p_value.x < 0 ? "     " : "      ") << p_value.x << std::endl;
+        p_output_file << (p_value.y < 0 ? "     " : "      ") << p_value.y << std::endl;
+        p_output_file << (p_value.z < 0 ? "     " : "      ") << p_value.z << std::endl;
 
-    //     fiberfloat p_value = p[row_index];
-    //     fiberfloat o_value = o[row_index];
-    //     if (p_value < 0)
-    //     {
-    //         p_output_file << "     " << p_value;
-    //     }
-    //     else
-    //     {
-    //         p_output_file << "      " << p_value;
-    //     }
-    //     if (o_value < 0)
-    //     {
-    //         o_output_file << "     " << o_value;
-    //     }
-    //     else
-    //     {
-    //         o_output_file << "      " << o_value;
-    //     }
+        o_output_file << (o_value.x < 0 ? "     " : "      ") << o_value.x << std::endl;
+        o_output_file << (o_value.y < 0 ? "     " : "      ") << o_value.y << std::endl;
+        o_output_file << (o_value.z < 0 ? "     " : "      ") << o_value.z << std::endl;
+    }
+    p_output_file.close();
+    o_output_file.close();
 
-    //     p_output_file << std::endl;
-    //     o_output_file << std::endl;
-    // }
-    // p_output_file.close();
-    // o_output_file.close();
-
-    // delete[] p;
-    // delete[] o;
+    delete[] p;
+    delete[] o;
 }
 
 void Simulation::dumpLinearSystem()
 {
-    // fiberuint num_matrix_rows =
-    //     3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
-    // fiberuint num_matrix_columns = num_matrix_rows;
+    fiberuint num_matrix_rows =
+        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
+    fiberuint num_matrix_columns = num_matrix_rows;
 
-    // fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
-    // fiberfloat *b_vector = new fiberfloat[num_matrix_rows];
-    // fiberfloat *x_vector = new fiberfloat[num_matrix_rows];
+    fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
+    fiberfloat *b_vector = new fiberfloat[num_matrix_rows];
+    fiberfloat *x_vector = new fiberfloat[num_matrix_rows];
 
-    // cl_int err;
-    // err = clEnqueueReadBuffer(queue_, a_matrix_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows * num_matrix_columns, a_matrix, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from a_matrix");
-    // err = clEnqueueReadBuffer(queue_, b_vector_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows, b_vector, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from b_vector");
-    // err = clEnqueueReadBuffer(queue_, x_vector_buffer_, CL_TRUE, 0, sizeof(fiberfloat) * num_matrix_rows, x_vector, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from x_vector");
+    checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, num_matrix_rows * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
 
-    // std::string executablePath = Resources::getExecutablePath();
+    std::string executablePath = Resources::getExecutablePath();
 
-    // std::string a_matrix_output_path = executablePath + "/a_matrix.out";
-    // std::string b_vector_output_path = executablePath + "/b_vector.out";
-    // std::string x_vector_output_path = executablePath + "/x_vector.out";
+    std::string a_matrix_output_path = executablePath + "/a_matrix.out";
+    std::string b_vector_output_path = executablePath + "/b_vector.out";
+    std::string x_vector_output_path = executablePath + "/x_vector.out";
 
-    // std::ofstream a_matrix_output_file;
-    // std::ofstream b_vector_output_file;
-    // std::ofstream x_vector_output_file;
+    std::ofstream a_matrix_output_file;
+    std::ofstream b_vector_output_file;
+    std::ofstream x_vector_output_file;
 
-    // a_matrix_output_file.open (a_matrix_output_path.c_str());
-    // b_vector_output_file.open (b_vector_output_path.c_str());
-    // x_vector_output_file.open (x_vector_output_path.c_str());
+    a_matrix_output_file.open (a_matrix_output_path.c_str());
+    b_vector_output_file.open (b_vector_output_path.c_str());
+    x_vector_output_file.open (x_vector_output_path.c_str());
 
-    // a_matrix_output_file << std::fixed << std::setprecision(8);
-    // b_vector_output_file << std::fixed << std::setprecision(8);
-    // x_vector_output_file << std::fixed << std::setprecision(8);
+    a_matrix_output_file << std::fixed << std::setprecision(8);
+    b_vector_output_file << std::fixed << std::setprecision(8);
+    x_vector_output_file << std::fixed << std::setprecision(8);
 
-    // for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
-    // {
-    //     for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
-    //     {
-    //         fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
-    //         if (value < 0)
-    //         {
-    //             a_matrix_output_file << "     " << value;
-    //         }
-    //         else
-    //         {
-    //             a_matrix_output_file << "      " << value;
-    //         }
-    //     }
+    for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
+    {
+        for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
+        {
+            fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
+            if (value < 0)
+            {
+                a_matrix_output_file << "     " << value;
+            }
+            else
+            {
+                a_matrix_output_file << "      " << value;
+            }
+        }
 
-    //     fiberfloat value;
-    //     value = b_vector[row_index];
-    //     if (value < 0)
-    //     {
-    //         b_vector_output_file << "     " << value;
-    //     }
-    //     else
-    //     {
-    //         b_vector_output_file << "      " << value;
-    //     }
-    //     value = x_vector[row_index];
-    //     if (value < 0)
-    //     {
-    //         x_vector_output_file << "     " << value;
-    //     }
-    //     else
-    //     {
-    //         x_vector_output_file << "      " << value;
-    //     }
+        fiberfloat value;
+        value = b_vector[row_index];
+        if (value < 0)
+        {
+            b_vector_output_file << "     " << value;
+        }
+        else
+        {
+            b_vector_output_file << "      " << value;
+        }
+        value = x_vector[row_index];
+        if (value < 0)
+        {
+            x_vector_output_file << "     " << value;
+        }
+        else
+        {
+            x_vector_output_file << "      " << value;
+        }
 
-    //     a_matrix_output_file << std::endl;
-    //     b_vector_output_file << std::endl;
-    //     x_vector_output_file << std::endl;
-    // }
-    // a_matrix_output_file.close();
-    // b_vector_output_file.close();
-    // x_vector_output_file.close();
+        a_matrix_output_file << std::endl;
+        b_vector_output_file << std::endl;
+        x_vector_output_file << std::endl;
+    }
+    a_matrix_output_file.close();
+    b_vector_output_file.close();
+    x_vector_output_file.close();
 
-    // delete[] a_matrix;
-    // delete[] b_vector;
-    // delete[] x_vector;
+    delete[] a_matrix;
+    delete[] b_vector;
+    delete[] x_vector;
 }
 
 void Simulation::dumpVelocities()
 {
-    // fiberuint num_rows = 4 * configuration_.parameters.num_fibers;
+    fiberfloat4 *t_vel = new fiberfloat4[configuration_.parameters.num_fibers];
+    fiberfloat4 *r_vel = new fiberfloat4[configuration_.parameters.num_fibers];
 
-    // fiberfloat *t_vel = new fiberfloat[num_rows];
-    // fiberfloat *r_vel = new fiberfloat[num_rows];
+    checkCuda(cudaMemcpy(t_vel, gpu_current_translational_velocities_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(r_vel, gpu_current_rotational_velocities_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
 
-    // cl_int err;
-    // err = clEnqueueReadBuffer(queue_, current_translational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, t_vel, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from t_vel");
-    // err = clEnqueueReadBuffer(queue_, current_rotational_velocity_buffer_, CL_TRUE, 0, sizeof(fiberfloat4) * configuration_.parameters.num_fibers, r_vel, 0, NULL, NULL);
-    // clCheckError(err, "Could not read from r_vel");
+    std::string executablePath = Resources::getExecutablePath();
 
-    // std::string executablePath = Resources::getExecutablePath();
+    std::string t_vel_output_path = executablePath + "/t_vel.out";
+    std::string r_vel_output_path = executablePath + "/r_vel.out";
 
-    // std::string t_vel_output_path = executablePath + "/t_vel.out";
-    // std::string r_vel_output_path = executablePath + "/r_vel.out";
+    std::ofstream t_vel_output_file;
+    std::ofstream r_vel_output_file;
 
-    // std::ofstream t_vel_output_file;
-    // std::ofstream r_vel_output_file;
+    t_vel_output_file.open (t_vel_output_path.c_str());
+    r_vel_output_file.open (r_vel_output_path.c_str());
 
-    // t_vel_output_file.open (t_vel_output_path.c_str());
-    // r_vel_output_file.open (r_vel_output_path.c_str());
+    t_vel_output_file << std::fixed << std::setprecision(8);
+    r_vel_output_file << std::fixed << std::setprecision(8);
 
-    // t_vel_output_file << std::fixed << std::setprecision(8);
-    // r_vel_output_file << std::fixed << std::setprecision(8);
+    for (size_t row_index = 0; row_index < configuration_.parameters.num_fibers; ++row_index)
+    {
+        fiberfloat4 t_value = t_vel[row_index];
+        fiberfloat4 r_value = r_vel[row_index];
 
-    // int coordinate = 0;
-    // for (fiberuint row_index = 0; row_index < num_rows; ++row_index)
-    // {
-    //     if (coordinate == 3)
-    //     {
-    //         coordinate = 0;
-    //         continue;
-    //     }
-    //     else
-    //     {
-    //         coordinate++;
-    //     }
+        t_vel_output_file << (t_value.x < 0 ? "     " : "      ") << t_value.x << std::endl;
+        t_vel_output_file << (t_value.y < 0 ? "     " : "      ") << t_value.y << std::endl;
+        t_vel_output_file << (t_value.z < 0 ? "     " : "      ") << t_value.z << std::endl;
 
-    //     fiberfloat t_value = t_vel[row_index];
-    //     fiberfloat r_value = r_vel[row_index];
-    //     if (t_value < 0)
-    //     {
-    //         t_vel_output_file << "     " << t_value;
-    //     }
-    //     else
-    //     {
-    //         t_vel_output_file << "      " << t_value;
-    //     }
-    //     if (r_value < 0)
-    //     {
-    //         r_vel_output_file << "     " << r_value;
-    //     }
-    //     else
-    //     {
-    //         r_vel_output_file << "      " << r_value;
-    //     }
+        r_vel_output_file << (r_value.x < 0 ? "     " : "      ") << r_value.x << std::endl;
+        r_vel_output_file << (r_value.y < 0 ? "     " : "      ") << r_value.y << std::endl;
+        r_vel_output_file << (r_value.z < 0 ? "     " : "      ") << r_value.z << std::endl;
+    }
+    t_vel_output_file.close();
+    r_vel_output_file.close();
 
-    //     t_vel_output_file << std::endl;
-    //     r_vel_output_file << std::endl;
-    // }
-    // t_vel_output_file.close();
-    // r_vel_output_file.close();
-
-    // delete[] t_vel;
-    // delete[] r_vel;
+    delete[] t_vel;
+    delete[] r_vel;
 }
 
 void Simulation::exportPerformanceMeasurments()

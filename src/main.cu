@@ -33,10 +33,6 @@ int main(int argc, char *argv[])
 
     Parameters::dump(configuration.parameters);
 
-    // cleanup
-    delete[] configuration.initial_positions;
-    delete[] configuration.initial_orientations;
-
     Simulation simulation(configuration);
 
     bool running = true;
@@ -48,36 +44,13 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= configuration.parameters.num_timesteps) {
+        if(current_timestep >= 1) {
             running = false;
         }
     }
     while (running);
 
-    int N = 1 << 20;
-    float *x, *y, *d_x, *d_y;
-    x = (float *)malloc(N * sizeof(float));
-    y = (float *)malloc(N * sizeof(float));
-
-    cudaMalloc(&d_x, N * sizeof(float));
-    cudaMalloc(&d_y, N * sizeof(float));
-
-    for (int i = 0; i < N; i++)
-    {
-        x[i] = 1.0f;
-        y[i] = 2.0f;
-    }
-
-    cudaMemcpy(d_x, x, N * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_y, y, N * sizeof(float), cudaMemcpyHostToDevice);
-
-    // Perform SAXPY on 1M elements
-    saxpy <<< (N + 255) / 256, 256 >>> (N, 2.0, d_x, d_y);
-
-    cudaMemcpy(y, d_y, N * sizeof(float), cudaMemcpyDeviceToHost);
-
-    float maxError = 0.0f;
-    for (int i = 0; i < N; i++)
-        maxError = max(maxError, abs(y[i] - 4.0f));
-    std::cout << "Max error: " << maxError << std::endl;
+    // cleanup
+    delete[] configuration.initial_positions;
+    delete[] configuration.initial_orientations;
 }

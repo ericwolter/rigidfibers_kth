@@ -9,8 +9,10 @@ cmake_minimum_required(VERSION 2.8)
 project(fibers)
 
 find_package(CUDA REQUIRED)
+find_package(OpenMP REQUIRED)
 
 include(FindCUDA)
+include(FindOpenMP)
 
 # add the source directory to allow cmake to compile/link the actual code
 add_subdirectory(src)

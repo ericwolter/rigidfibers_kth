@@ -60,6 +60,7 @@ void Performance::stop(std::string name)
 
     cudaEventSynchronize(tracker->stop);
     cudaEventElapsedTime(&tracker->device_last_time, tracker->start, tracker->stop);
+    tracker->device_last_time *= 1e-3; 
     tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / tracker->device_count);
 }
 
@@ -68,7 +69,7 @@ void Performance::print(std::string name)
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
     std::cout << "  [BENCHMARK]   : " << std::left << std::setw(17) << std::setfill(' ') 
                                       << performance_tracker->second.name
-                                      << std::setprecision(2)
+                                      << std::setprecision(5) << std::fixed
                                       << " : " << performance_tracker->second.device_last_time << "(" << performance_tracker->second.device_average_time << ")" << " sec" << std::endl;
 }
 

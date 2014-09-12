@@ -22,6 +22,13 @@
 #include <string>
 #include <map>
 
+#define VIENNACL_WITH_CUDA
+#include "viennacl/matrix.hpp"
+#include "viennacl/vector.hpp"
+#include "viennacl/linalg/cg.hpp"
+#include "viennacl/linalg/gmres.hpp"
+#include "viennacl/linalg/bicgstab.hpp"
+
 #include "common.h"
 #include "parameters.h"
 #include "performance.h"
