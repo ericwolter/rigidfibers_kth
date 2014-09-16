@@ -8,9 +8,7 @@ void update_fibers_firststep(
     const fiberfloat4 *current_orientations,
     fiberfloat4 *next_orientations,
     const fiberfloat4 *translational_velocities,
-    const fiberfloat4 *rotational_velocities,
-    const fiberuint NUMBER_OF_FIBERS,
-    const fiberfloat TIMESTEP
+    const fiberfloat4 *rotational_velocities
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;

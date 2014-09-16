@@ -14,9 +14,6 @@ void compute_G_analytic(
      const fiberfloat *legendre_polynomials,
      fiberfloat *G,
      fiberfloat *GF,
-     const fiberfloat SLENDERNESS,
-     const fiberuint NUMBER_OF_TERMS_IN_FORCE_EXPANSION,
-     const fiberuint TOTAL_NUMBER_OF_QUADRATURE_POINTS,
      const bool debug)
 {
     const fiberuint k = force_index + 1;

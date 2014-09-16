@@ -12,9 +12,7 @@ void update_fibers(
     const fiberfloat4 *previous_translational_velocities,
     const fiberfloat4 *current_translational_velocities,
     const fiberfloat4 *previous_rotational_velocities,
-    const fiberfloat4 *current_rotational_velocities,
-    const fiberuint NUMBER_OF_FIBERS,
-    const fiberfloat TIMESTEP
+    const fiberfloat4 *current_rotational_velocities
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;

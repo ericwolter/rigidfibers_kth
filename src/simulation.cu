@@ -268,12 +268,7 @@ void Simulation::assembleSystem()
         gpu_b_vector_,
         gpu_quadrature_points_,
         gpu_quadrature_weights_,
-        gpu_legendre_polynomials_,
-        configuration_.parameters.num_fibers,
-        configuration_.parameters.slenderness,
-        configuration_.parameters.num_terms_in_force_expansion,
-        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals,
-        configuration_.parameters.use_analytical_integration
+        gpu_legendre_polynomials_
     );
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
@@ -319,11 +314,7 @@ void Simulation::updateVelocities()
         gpu_current_rotational_velocities_,
         gpu_quadrature_points_,
         gpu_quadrature_weights_,
-        gpu_legendre_polynomials_,
-        configuration_.parameters.num_fibers,
-        configuration_.parameters.slenderness,
-        configuration_.parameters.num_terms_in_force_expansion,
-        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals
+        gpu_legendre_polynomials_
     );
     performance_->stop("update_velocities");
     performance_->print("update_velocities");    
@@ -363,9 +354,7 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_current_orientations_,
             gpu_next_orientations_,
             gpu_current_translational_velocities_,
-            gpu_current_rotational_velocities_,
-            configuration_.parameters.num_fibers,
-            configuration_.parameters.timestep
+            gpu_current_rotational_velocities_
         );
         performance_->stop("update_fibers_firststep");
         performance_->print("update_fibers_firststep");
@@ -383,9 +372,7 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_previous_translational_velocities_,
             gpu_current_translational_velocities_,
             gpu_previous_rotational_velocities_,
-            gpu_current_rotational_velocities_,
-            configuration_.parameters.num_fibers,
-            configuration_.parameters.timestep
+            gpu_current_rotational_velocities_
         );
         performance_->stop("update_fibers");
         performance_->print("update_fibers");

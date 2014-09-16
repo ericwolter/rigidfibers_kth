@@ -2,10 +2,9 @@
 #define FIBERS_ASSEMBLE_SYSTEM_KERNEL_
 
 #include "../common.h"
+#include "constants.cu"
 #include "compute_inner_integral_analytically.cu"
 #include "compute_inner_integral_numerically.cu"
-
-#define DIMENSIONS 3
 
 __global__ void assemble_system(
     const fiberfloat4 *positions,
@@ -14,12 +13,7 @@ __global__ void assemble_system(
     fiberfloat *b_vector,
     const fiberfloat *quadrature_points,
     const fiberfloat *quadrature_weights,
-    const fiberfloat *legendre_polynomials,
-    const fiberuint NUMBER_OF_FIBERS,
-    const fiberfloat SLENDERNESS,
-    const fiberuint NUMBER_OF_TERMS_IN_FORCE_EXPANSION,
-    const fiberuint TOTAL_NUMBER_OF_QUADRATURE_POINTS,
-    const fiberint USE_ANALYTICAL_INTEGRATION
+    const fiberfloat *legendre_polynomials
     )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -126,9 +120,9 @@ __global__ void assemble_system(
             fiberfloat GF[24 * 3];
 
             if(USE_ANALYTICAL_INTEGRATION) {
-                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, SLENDERNESS, NUMBER_OF_TERMS_IN_FORCE_EXPANSION, TOTAL_NUMBER_OF_QUADRATURE_POINTS, i == 89 && j == 21);
+                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 89 && j == 21);
             } else {
-                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, SLENDERNESS, NUMBER_OF_TERMS_IN_FORCE_EXPANSION, TOTAL_NUMBER_OF_QUADRATURE_POINTS, i == 89 && j == 21);
+                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 89 && j == 21);
             }
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)

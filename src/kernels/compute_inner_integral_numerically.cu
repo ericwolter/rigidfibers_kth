@@ -14,9 +14,6 @@ void compute_G_numeric(
      const fiberfloat *legendre_polynomials,
      fiberfloat *G,
      fiberfloat *GF,
-     const fiberfloat SLENDERNESS,
-     const fiberuint NUMBER_OF_TERMS_IN_FORCE_EXPANSION,
-     const fiberuint TOTAL_NUMBER_OF_QUADRATURE_POINTS,
      const bool debug)
 {
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)

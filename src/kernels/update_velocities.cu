@@ -1,7 +1,7 @@
 #ifndef FIBERS_UPDATE_VELOCITIES_KERNEL_
 #define FIBERS_UPDATE_VELOCITIES_KERNEL_
 
-#define DIMENSIONS 3
+#include "constants.cu"
 
 __device__
     void compute_GV(const fiberuint j,
@@ -14,10 +14,7 @@ __device__
                 const fiberfloat *quadrature_points,
                 const fiberfloat *quadrature_weights,
                 const fiberfloat *legendre_polynomials,
-                fiberfloat *GF,
-    const fiberfloat SLENDERNESS,
-    const fiberuint NUMBER_OF_TERMS_IN_FORCE_EXPANSION,
-    const fiberuint TOTAL_NUMBER_OF_QUADRATURE_POINTS
+                fiberfloat *GF
                 ) // @TODO better names
 {
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
@@ -108,11 +105,7 @@ __global__ void update_velocities(
     fiberfloat4 *rotational_velocities,
     const fiberfloat *quadrature_points,
     const fiberfloat *quadrature_weights,
-    const fiberfloat *legendre_polynomials,
-    const fiberuint NUMBER_OF_FIBERS,
-    const fiberfloat SLENDERNESS,
-    const fiberuint NUMBER_OF_TERMS_IN_FORCE_EXPANSION,
-    const fiberuint TOTAL_NUMBER_OF_QUADRATURE_POINTS
+    const fiberfloat *legendre_polynomials
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -152,7 +145,7 @@ __global__ void update_velocities(
         const fiberfloat4 orientation_j = orientations[j];
 
         fiberfloat GF[24 * 3];
-        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, quadrature_points, quadrature_weights, legendre_polynomials, GF, SLENDERNESS, NUMBER_OF_TERMS_IN_FORCE_EXPANSION, TOTAL_NUMBER_OF_QUADRATURE_POINTS);
+        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, quadrature_points, quadrature_weights, legendre_polynomials, GF);
 
         fiberfloat TF1A0 = 0.0f;
         fiberfloat TF2A0 = 0.0f;
