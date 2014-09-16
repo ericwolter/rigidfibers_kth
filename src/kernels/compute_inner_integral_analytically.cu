@@ -15,9 +15,9 @@ void compute_G_analytic(
 {
     const fiberuint k = force_index + 1;
 
-    fiberfloat *I1 = new fiberfloat[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
-    fiberfloat *I3 = new fiberfloat[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
-    fiberfloat *I5 = new fiberfloat[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    fiberfloat I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    fiberfloat I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    fiberfloat I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
 
     for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
@@ -438,10 +438,6 @@ void compute_G_analytic(
                 G13 * external_force.x + G23 * external_force.y + G33 * external_force.z;
         }
     }
-
-    delete[] I1;
-    delete[] I3;
-    delete[] I5;
 }
 
 #endif //FIBERS_COMPUTE_INNER_INTEGRAL_ANALYTICALLY_KERNEL_

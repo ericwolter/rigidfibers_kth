@@ -113,8 +113,8 @@ __global__ void assemble_system(
             fiberfloat TF3 = 0.0f;
             fiberfloat QF;
 
-            fiberfloat G[24 * 6];
-            fiberfloat GF[24 * 3];
+            fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+            fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 
 #ifdef USE_ANALYTICAL_INTEGRATION
                 compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
@@ -290,9 +290,6 @@ __global__ void assemble_system(
             }
         }
     }
-
-    // delete[] G;
-    // delete[] GF;
 }
 
 #endif // FIBERS_ASSEMBLE_SYSTEM_KERNEL_

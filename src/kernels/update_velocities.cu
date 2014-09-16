@@ -138,7 +138,7 @@ __global__ void update_velocities(
         const fiberfloat4 position_j = positions[j];
         const fiberfloat4 orientation_j = orientations[j];
 
-        fiberfloat GF[24 * 3];
+        fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
         compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, GF);
 
         fiberfloat TF1A0 = 0.0f;
