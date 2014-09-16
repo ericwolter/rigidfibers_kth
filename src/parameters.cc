@@ -198,15 +198,8 @@ void Parameters::parseVersion1LayoutFile(std::ifstream &layout_file_stream, fibe
 
     parse_number_of_fibers >> *number_of_fibers;
 
-    // TODO Do not understand the full implication of this error, however its
-    // only in included in -Weverything which is not strictly recommended anyway
-    // and is only caused if using double precision. Also the C++ is not the
-    // prime focus and it works regardless.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wover-aligned"
     *initialPositions = new fiberfloat4[*number_of_fibers];
     *initialOrientations = new fiberfloat4[*number_of_fibers];
-#pragma GCC diagnostic pop
 
     for (fiberuint fiber_index = 0; fiber_index < *number_of_fibers; ++fiber_index)
     {
@@ -214,19 +207,19 @@ void Parameters::parseVersion1LayoutFile(std::ifstream &layout_file_stream, fibe
         fiberfloat4 position;
 
         std::istringstream positionValues(line);
-        positionValues >> position.s[0];
-        positionValues >> position.s[1];
-        positionValues >> position.s[2];
-        position.s[3] = 0;
+        positionValues >> position.x;
+        positionValues >> position.y;
+        positionValues >> position.z;
+        position.w = 0;
 
         std::getline(layout_file_stream, line);
         fiberfloat4 orientation;
 
         std::istringstream orientationValues(line);
-        orientationValues >> orientation.s[0];
-        orientationValues >> orientation.s[1];
-        orientationValues >> orientation.s[2];
-        orientation.s[3] = 0;
+        orientationValues >> orientation.x;
+        orientationValues >> orientation.y;
+        orientationValues >> orientation.z;
+        orientation.w = 0;
 
         (*initialPositions)[fiber_index] = position;
         (*initialOrientations)[fiber_index] = orientation;

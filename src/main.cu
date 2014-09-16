@@ -20,28 +20,18 @@
 #include <iostream>
 
 #include "fiberopt.h"
-
-#include "common.h"
 #include "parameters.h"
 #include "simulation.h"
 
-#include "ocl/clutils.h"
-
 int main(int argc, char *argv[])
 {
-    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.2.0");
+    FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.3.0");
 
     Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
 
     Parameters::dump(configuration.parameters);
 
-    const CLPlatform *selected_platform = CLUtils::selectPlatform();
-    const CLDevice *selected_device = CLUtils::selectDevice(selected_platform);
-    std::cout << std::endl;
-
-    cl_context context = CLUtils::createContext(selected_platform, selected_device);
-
-    Simulation simulation(context, selected_device, configuration);
+    Simulation simulation(configuration);
 
     bool running = true;
     unsigned long current_timestep = 0;
@@ -58,12 +48,7 @@ int main(int argc, char *argv[])
     }
     while (running);
 
-    simulation.exportPerformanceMeasurments();
-
     // cleanup
     delete[] configuration.initial_positions;
     delete[] configuration.initial_orientations;
-    clReleaseContext(context);
-
-    return 0;
 }

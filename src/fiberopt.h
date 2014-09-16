@@ -23,11 +23,6 @@
 #include <cstdlib>
 #include <cstring>
 
-
-// this struct potentially changes often so accept the potentially memory
-// overhead for convenience
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpadded"
 typedef struct
 {
     /* special */
@@ -44,7 +39,6 @@ typedef struct
     int version;
     /* options with arguments */
 } FiberArgs;
-#pragma GCC diagnostic pop
 
 const char help_message[] =
     "Rigid Fibers.\n"

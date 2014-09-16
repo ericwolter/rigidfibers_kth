@@ -1,4 +1,17 @@
-## RigidFibersGPU v0.1.0 Release Notes
+## RigidFibersGPU v0.3.0 Release Notes
+September 16, 2014
+
+### Additions
+
+### Removals
+
+### Changes
+
+- Complete port of existing code base from OpenCL to CUDA
+
+### Fixes
+
+## RigidFibersGPU v0.2.0 Release Notes
 September 11, 2014
 
 ### Additions
