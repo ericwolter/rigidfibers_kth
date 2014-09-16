@@ -23,8 +23,6 @@
 #include "parameters.h"
 #include "simulation.h"
 
-#include "kernels/saxpy.cu"
-
 int main(int argc, char *argv[])
 {
     FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.2.0");
