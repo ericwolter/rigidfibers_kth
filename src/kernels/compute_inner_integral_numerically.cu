@@ -9,9 +9,6 @@ void compute_G_numeric(
      const fiberfloat4 orientation_j,
      const fiberuint force_index,
      const fiberfloat4 external_force,
-     const fiberfloat *quadrature_points,
-     const fiberfloat *quadrature_weights,
-     const fiberfloat *legendre_polynomials,
      fiberfloat *G,
      fiberfloat *GF,
      const bool debug)

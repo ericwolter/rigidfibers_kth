@@ -11,9 +11,6 @@ __device__
                 const fiberfloat4 orientation_j,
                 const fiberfloat *coefficients,
                 const fiberfloat4 external_force,
-                const fiberfloat *quadrature_points,
-                const fiberfloat *quadrature_weights,
-                const fiberfloat *legendre_polynomials,
                 fiberfloat *GF
                 ) // @TODO better names
 {
@@ -102,10 +99,7 @@ __global__ void update_velocities(
     const fiberfloat4 *orientations,
     const fiberfloat *coefficients,
     fiberfloat4 *translational_velocities,
-    fiberfloat4 *rotational_velocities,
-    const fiberfloat *quadrature_points,
-    const fiberfloat *quadrature_weights,
-    const fiberfloat *legendre_polynomials
+    fiberfloat4 *rotational_velocities
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -145,7 +139,7 @@ __global__ void update_velocities(
         const fiberfloat4 orientation_j = orientations[j];
 
         fiberfloat GF[24 * 3];
-        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, quadrature_points, quadrature_weights, legendre_polynomials, GF);
+        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, GF);
 
         fiberfloat TF1A0 = 0.0f;
         fiberfloat TF2A0 = 0.0f;

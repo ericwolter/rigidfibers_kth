@@ -10,10 +10,7 @@ __global__ void assemble_system(
     const fiberfloat4 *positions,
     const fiberfloat4 *orientations,
     fiberfloat *a_matrix,
-    fiberfloat *b_vector,
-    const fiberfloat *quadrature_points,
-    const fiberfloat *quadrature_weights,
-    const fiberfloat *legendre_polynomials
+    fiberfloat *b_vector
     )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -119,11 +116,11 @@ __global__ void assemble_system(
             fiberfloat G[24 * 6];
             fiberfloat GF[24 * 3];
 
-            if(USE_ANALYTICAL_INTEGRATION) {
-                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 89 && j == 21);
-            } else {
-                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, quadrature_points, quadrature_weights, legendre_polynomials, G, GF, i == 89 && j == 21);
-            }
+#ifdef USE_ANALYTICAL_INTEGRATION
+                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
+#else
+                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
+#endif
 
             for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
