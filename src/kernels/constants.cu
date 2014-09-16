@@ -14,5 +14,7 @@
 __constant__ fiberfloat quadrature_points[TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 __constant__ fiberfloat quadrature_weights[TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 __constant__ fiberfloat legendre_polynomials[TOTAL_NUMBER_OF_QUADRATURE_POINTS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
+__constant__ fiberfloat lambda[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
+__constant__ fiberfloat eigen[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
 
 #endif //FIBERS_CONSTANTS_KERNEL_

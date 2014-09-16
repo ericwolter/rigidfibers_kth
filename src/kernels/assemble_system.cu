@@ -41,20 +41,12 @@ __global__ void assemble_system(
     fiberuint y_column_index;
     fiberuint z_column_index;
 
-    fiberfloat lambda[5];
-    fiberfloat eigen[5];
-    lambda[0] = 2.0f;
-    eigen[0] = ((d - e - cc * lambda[0]) / 2.0f) / (d - cc * lambda[0]);
-
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0f;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0f;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0f;
 
     for (fiberuint force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
-        lambda[force_index] = lambda[force_index - 1] + 2.0f / (force_index + 1);
-        eigen[force_index] = ((d - e - cc * lambda[force_index]) / 2.0f) / (d - cc * lambda[force_index]);
-
         x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
         y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 1;
         z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 2;

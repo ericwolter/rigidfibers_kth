@@ -225,6 +225,44 @@ void Simulation::precomputeLegendrePolynomials()
     delete[] host_quadrature_points;
     delete[] host_quadrature_weights;
     delete[] host_legendre_polynomials;
+
+    double *host_double_lambda = new double[configuration_.parameters.num_terms_in_force_expansion];
+    double *host_double_eigen = new double[configuration_.parameters.num_terms_in_force_expansion];
+    fiberfloat *host_lambda = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
+    fiberfloat *host_eigen = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
+
+    double c  = log(SLENDERNESS * SLENDERNESS * M_E);
+    double d  = -c;
+    double e  = 2.0;
+    double cc = 1.0;
+
+    host_double_lambda[0] = 2.0;
+    host_double_eigen[0] = ((d - e - cc * host_double_lambda[0]) / 2.0) / (d - cc * host_double_lambda[0]);
+
+    host_lambda[0] = host_double_lambda[0];
+    host_eigen[0] = host_double_eigen[0];
+
+    for (size_t force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
+    {
+        host_double_lambda[force_index] = host_double_lambda[force_index - 1] + 2.0 / (force_index + 1);
+        host_double_eigen[force_index] = ((d - e - cc * host_double_lambda[force_index]) / 2.0) / (d - cc * host_double_lambda[force_index]);
+
+        // do all calulcations in double precision but cast to the correct GPU precision
+        host_lambda[force_index] = host_double_lambda[force_index];
+        host_eigen[force_index] = host_double_eigen[force_index];
+    }
+
+    std::cout << "[CPU] --> [GPU] : Writing precomputed lambda values..." << std::endl;
+    checkCuda(cudaMemcpyToSymbol(lambda, host_lambda, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+
+    std::cout << "[CPU] --> [GPU] : Writing precomputed eigen values..." << std::endl;
+    checkCuda(cudaMemcpyToSymbol(eigen, host_eigen, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+
+    delete[] host_double_lambda;
+    delete[] host_double_eigen;
+
+    delete[] host_lambda;
+    delete[] host_eigen;
 }
 
 void Simulation::step(size_t current_timestep)
