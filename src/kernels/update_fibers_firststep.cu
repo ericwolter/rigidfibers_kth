@@ -25,7 +25,7 @@ void update_fibers_firststep(
     next_orientations[i].y = current_orientations[i].y + TIMESTEP * rotational_velocities[i].y;
     next_orientations[i].z = current_orientations[i].z + TIMESTEP * rotational_velocities[i].z;
 
-    fiberfloat invLen = 1.0 / sqrt(next_orientations[i].x * next_orientations[i].x 
+    fiberfloat invLen = 1.0f / sqrtf(next_orientations[i].x * next_orientations[i].x 
         + next_orientations[i].y * next_orientations[i].y 
         + next_orientations[i].z * next_orientations[i].z);
 

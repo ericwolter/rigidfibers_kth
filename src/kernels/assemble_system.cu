@@ -26,19 +26,19 @@ __global__ void assemble_system(
 
     if (i >= NUMBER_OF_FIBERS) return;
 
-    const fiberfloat c  = log(SLENDERNESS * SLENDERNESS * M_E);
+    const fiberfloat c  = logf(SLENDERNESS * SLENDERNESS * M_E);
     const fiberfloat d  = -c;
-    const fiberfloat e  = 2.0;
-    const fiberfloat cc = 1.0;
-    const fiberfloat D1 = 0.75 / (d - 2.0 * cc);
+    const fiberfloat e  = 2.0f;
+    const fiberfloat cc = 1.0f;
+    const fiberfloat D1 = 0.75f / (d - 2.0f * cc);
 
     const fiberfloat4 position_i = positions[i];
     const fiberfloat4 orientation_i = orientations[i];
 
     fiberfloat4 external_force;
-    external_force.x = 0.5 * 0.0;
-    external_force.y = 0.5 * 0.0;
-    external_force.z = 0.5 * -1.0;
+    external_force.x = 0.5f * 0.0f;
+    external_force.y = 0.5f * 0.0f;
+    external_force.z = 0.5f * -1.0f;
 
     const fiberuint total_number_of_rows = NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS;
 
@@ -52,25 +52,25 @@ __global__ void assemble_system(
 
     fiberfloat lambda[5];
     fiberfloat eigen[5];
-    lambda[0] = 2.0;
-    eigen[0] = ((d - e - cc * lambda[0]) / 2.0) / (d - cc * lambda[0]);
+    lambda[0] = 2.0f;
+    eigen[0] = ((d - e - cc * lambda[0]) / 2.0f) / (d - cc * lambda[0]);
 
-    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0;
-    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0;
-    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0;
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0f;
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0f;
+    b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0f;
 
     for (fiberuint force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
-        lambda[force_index] = lambda[force_index - 1] + 2.0 / (force_index + 1);
-        eigen[force_index] = ((d - e - cc * lambda[force_index]) / 2.0) / (d - cc * lambda[force_index]);
+        lambda[force_index] = lambda[force_index - 1] + 2.0f / (force_index + 1);
+        eigen[force_index] = ((d - e - cc * lambda[force_index]) / 2.0f) / (d - cc * lambda[force_index]);
 
         x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
         y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 1;
         z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 2;
 
-        b_vector[x_row_index] = 0.0;
-        b_vector[y_row_index] = 0.0;
-        b_vector[z_row_index] = 0.0;
+        b_vector[x_row_index] = 0.0f;
+        b_vector[y_row_index] = 0.0f;
+        b_vector[z_row_index] = 0.0f;
     }
 
     for (fiberuint j = 0; j < NUMBER_OF_FIBERS; ++j)
@@ -110,16 +110,16 @@ __global__ void assemble_system(
             fiberuint force_index_j = 0;
 
             // theta in equation 23
-            fiberfloat T11 = 0.0;
-            fiberfloat T22 = 0.0;
-            fiberfloat T33 = 0.0;
-            fiberfloat T12 = 0.0;
-            fiberfloat T13 = 0.0;
-            fiberfloat T23 = 0.0;
+            fiberfloat T11 = 0.0f;
+            fiberfloat T22 = 0.0f;
+            fiberfloat T33 = 0.0f;
+            fiberfloat T12 = 0.0f;
+            fiberfloat T13 = 0.0f;
+            fiberfloat T23 = 0.0f;
 
-            fiberfloat TF1 = 0.0;
-            fiberfloat TF2 = 0.0;
-            fiberfloat TF3 = 0.0;
+            fiberfloat TF1 = 0.0f;
+            fiberfloat TF2 = 0.0f;
+            fiberfloat TF3 = 0.0f;
             fiberfloat QF;
 
             fiberfloat G[24 * 6];
@@ -200,18 +200,18 @@ __global__ void assemble_system(
 
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
             {
-                fiberfloat gamma = 0.5 * (2.0 * (force_index_j + 1) + 1.0) / (d + e - cc * lambda[force_index_j]);
+                fiberfloat gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
 
-                fiberfloat T11 = 0.0;
-                fiberfloat T22 = 0.0;
-                fiberfloat T33 = 0.0;
-                fiberfloat T12 = 0.0;
-                fiberfloat T13 = 0.0;
-                fiberfloat T23 = 0.0;
+                fiberfloat T11 = 0.0f;
+                fiberfloat T22 = 0.0f;
+                fiberfloat T33 = 0.0f;
+                fiberfloat T12 = 0.0f;
+                fiberfloat T13 = 0.0f;
+                fiberfloat T23 = 0.0f;
 
-                fiberfloat TF1 = 0.0;
-                fiberfloat TF2 = 0.0;
-                fiberfloat TF3 = 0.0;
+                fiberfloat TF1 = 0.0f;
+                fiberfloat TF2 = 0.0f;
+                fiberfloat TF3 = 0.0f;
 
                 for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
                 {
