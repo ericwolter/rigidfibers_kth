@@ -13,7 +13,7 @@ __global__ void assemble_system(
     fiberfloat *b_vector
     )
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i >= NUMBER_OF_FIBERS) return;
 
@@ -31,8 +31,6 @@ __global__ void assemble_system(
     external_force.y = 0.5f * 0.0f;
     external_force.z = 0.5f * -1.0f;
 
-    const fiberuint total_number_of_rows = NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS;
-
     fiberuint x_row_index;
     fiberuint y_row_index;
     fiberuint z_row_index;
@@ -45,7 +43,10 @@ __global__ void assemble_system(
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0f;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0f;
 
-    for (fiberuint force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
+    fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+    fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+
+    for (int force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
         x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
         y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 1;
@@ -56,7 +57,7 @@ __global__ void assemble_system(
         b_vector[z_row_index] = 0.0f;
     }
 
-    for (fiberuint j = 0; j < NUMBER_OF_FIBERS; ++j)
+    for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
         if (i == j)
         {
@@ -73,9 +74,9 @@ __global__ void assemble_system(
                 y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index * DIMENSIONS + 1;
                 z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index * DIMENSIONS + 2;
 
-                a_matrix[x_row_index + x_column_index * total_number_of_rows] = 1;
-                a_matrix[y_row_index + y_column_index * total_number_of_rows] = 1;
-                a_matrix[z_row_index + z_column_index * total_number_of_rows] = 1;
+                a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
+                a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
+                a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
             }
 
             continue;
@@ -104,9 +105,6 @@ __global__ void assemble_system(
             fiberfloat TF2 = 0.0f;
             fiberfloat TF3 = 0.0f;
             fiberfloat QF;
-
-            fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
-            fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 
 #ifdef USE_ANALYTICAL_INTEGRATION
                 compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
@@ -154,15 +152,15 @@ __global__ void assemble_system(
             //     printf("%d,%d,%d:\t\t(%d,%d,%d)\t\t(%d,%d,%d)\n",i,j,force_index_i,x_row_index,y_row_index,z_row_index,x_column_index,y_column_index,z_column_index);
             // }
 
-            a_matrix[x_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.x * Q1;
-            a_matrix[x_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.x * Q2;
-            a_matrix[x_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.x * Q3;
-            a_matrix[y_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.y * Q1;
-            a_matrix[y_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.y * Q2;
-            a_matrix[y_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.y * Q3;
-            a_matrix[z_row_index + x_column_index * total_number_of_rows] = D1 * orientation_i.z * Q1;
-            a_matrix[z_row_index + y_column_index * total_number_of_rows] = D1 * orientation_i.z * Q2;
-            a_matrix[z_row_index + z_column_index * total_number_of_rows] = D1 * orientation_i.z * Q3;
+            a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.x * Q1;
+            a_matrix[x_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.x * Q2;
+            a_matrix[x_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.x * Q3;
+            a_matrix[y_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.y * Q1;
+            a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.y * Q2;
+            a_matrix[y_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.y * Q3;
+            a_matrix[z_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.z * Q1;
+            a_matrix[z_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.z * Q2;
+            a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.z * Q3;
 
             if (force_index_i == 0)
             {
@@ -183,18 +181,18 @@ __global__ void assemble_system(
 
             for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
             {
-                fiberfloat gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
+                const fiberfloat gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
 
-                fiberfloat T11 = 0.0f;
-                fiberfloat T22 = 0.0f;
-                fiberfloat T33 = 0.0f;
-                fiberfloat T12 = 0.0f;
-                fiberfloat T13 = 0.0f;
-                fiberfloat T23 = 0.0f;
+                T11 = 0.0f;
+                T22 = 0.0f;
+                T33 = 0.0f;
+                T12 = 0.0f;
+                T13 = 0.0f;
+                T23 = 0.0f;
 
-                fiberfloat TF1 = 0.0f;
-                fiberfloat TF2 = 0.0f;
-                fiberfloat TF3 = 0.0f;
+                TF1 = 0.0f;
+                TF2 = 0.0f;
+                TF3 = 0.0f;
 
                 for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
                 {
@@ -256,15 +254,15 @@ __global__ void assemble_system(
                 //     printf("zrow,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
                 // }
 
-                a_matrix[x_row_index + x_column_index * total_number_of_rows] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
-                a_matrix[x_row_index + y_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
-                a_matrix[x_row_index + z_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.x * Q3);
-                a_matrix[y_row_index + x_column_index * total_number_of_rows] = gamma * (T12 - eigen[force_index_j] * orientation_i.y * Q1);
-                a_matrix[y_row_index + y_column_index * total_number_of_rows] = gamma * (T22 - eigen[force_index_j] * orientation_i.y * Q2);
-                a_matrix[y_row_index + z_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.y * Q3);
-                a_matrix[z_row_index + x_column_index * total_number_of_rows] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
-                a_matrix[z_row_index + y_column_index * total_number_of_rows] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
-                a_matrix[z_row_index + z_column_index * total_number_of_rows] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
+                a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
+                a_matrix[x_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
+                a_matrix[x_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_j] * orientation_i.x * Q3);
+                a_matrix[y_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_j] * orientation_i.y * Q1);
+                a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T22 - eigen[force_index_j] * orientation_i.y * Q2);
+                a_matrix[y_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_j] * orientation_i.y * Q3);
+                a_matrix[z_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
+                a_matrix[z_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
+                a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
 
                 // if (i == 9 && j == 88 && force_index_i == 0 && force_index_j == 3)
                 // {

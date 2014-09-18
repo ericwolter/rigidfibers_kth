@@ -4,7 +4,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 list(APPEND CMAKE_CXX_FLAGS "-O3 -Wall -Wextra -Wfatal-errors ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-list(APPEND CUDA_NVCC_FLAGS "-O3 -gencode arch=compute_20,code=sm_20")
+list(APPEND CUDA_NVCC_FLAGS -O3 -gencode arch=compute_20,code=sm_20)
 
 INCLUDE_DIRECTORIES(
     # ${CMAKE_SOURCE_DIR}/lib/local/openblas/include

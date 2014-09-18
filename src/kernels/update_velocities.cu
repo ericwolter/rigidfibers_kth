@@ -39,8 +39,8 @@ __device__
             difference.z = position_on_fiber_i.z - position_on_fiber_j.z;
 
             const fiberfloat d1 = difference.x * difference.x;
-            const fiberfloat d2 = difference.x * difference.x;
-            const fiberfloat d3 = difference.x * difference.x;
+            const fiberfloat d2 = difference.y * difference.y;
+            const fiberfloat d3 = difference.z * difference.z;
 
             const fiberfloat invDistance = rsqrtf(d1 + d2 + d3);
             const fiberfloat invDistance3 = invDistance * invDistance * invDistance;
@@ -53,15 +53,15 @@ __device__
             const fiberfloat K11 = invDistance
                                    + invDistance3 * d1
                                    + 2.0f * SLENDERNESS * SLENDERNESS * (invDistance3
-                                           - 3.0f * invDistance5 * difference.x * difference.x);
+                                           - 3.0f * invDistance5 * d1);
             const fiberfloat K22 = invDistance
                                    + invDistance3 * d2
                                    + 2.0f * SLENDERNESS * SLENDERNESS * (invDistance3
-                                           - 3.0f * invDistance5 * difference.y * difference.y);
+                                           - 3.0f * invDistance5 * d2);
             const fiberfloat K33 = invDistance
                                    + invDistance3 * d3
                                    + 2.0f * SLENDERNESS * SLENDERNESS * (invDistance3
-                                           - 3.0f * invDistance5 * difference.z * difference.z);
+                                           - 3.0f * invDistance5 * d3);
             const fiberfloat K12 = invDistance3 * difference.x * difference.y
                                    + 2.0f * SLENDERNESS * SLENDERNESS
                                    * -3.0f * invDistance5 * difference.x * difference.y;

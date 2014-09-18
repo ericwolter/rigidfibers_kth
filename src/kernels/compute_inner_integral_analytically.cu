@@ -1,6 +1,10 @@
 #ifndef FIBERS_COMPUTE_INNER_INTEGRAL_ANALYTICALLY_KERNEL_
 #define FIBERS_COMPUTE_INNER_INTEGRAL_ANALYTICALLY_KERNEL_
 
+#define pown2(x) (x*x)
+#define pown3(x) (x*x*x)
+#define pown4(x) (x*x*x*x)
+
 __device__
 void compute_G_analytic(
      const fiberfloat4 position_i,
@@ -39,6 +43,7 @@ void compute_G_analytic(
         const fiberfloat c = R0.x * R0.x
                              + R0.y * R0.y
                              + R0.z * R0.z;
+        const fiberfloat invC = 1.0f / c;
         //const fiberfloat c_test = ((R0.x * R0.y * R0.z) * (R0.x * R0.y * R0.z)) - 2 * R0.x * R0.y - 2 * R0.x * R0.z - 2 * R0.y * R0.z;
 
         // if fibers are too far apart we have numerical problems
@@ -52,8 +57,8 @@ void compute_G_analytic(
         const fiberfloat s_upper = 1.0f;
         const fiberfloat s_lower = -1.0f;
 
-        const fiberfloat u_upper = sqrt(s_upper * s_upper + b * s_upper + c);
-        const fiberfloat u_lower = sqrt(s_lower * s_lower + b * s_lower + c);
+        const fiberfloat u_upper = sqrtf(s_upper * s_upper + b * s_upper + c);
+        const fiberfloat u_lower = sqrtf(s_lower * s_lower + b * s_lower + c);
 
         // if (debug && quadrature_index_i == 12 && k == 5)
         // {
@@ -87,27 +92,27 @@ void compute_G_analytic(
         //     printf("%d  %.16f \n", 1, I1[1]);
         // }
 
-        I3[0] = (d < 1e-7) ?
-                (-2.0f / powf(2.0f * s_upper + b, 2)) - (-2.0f / powf(2.0f * s_lower + b, 2)) :
+        I3[0] = (d < 1e-7f) ?
+                (-2.0f / pown2(2.0f * s_upper + b)) - (-2.0f / pown2(2.0f * s_lower + b)) :
                 ((2.0f * s_upper + b) / (2.0f * d * u_upper)) - ((2.0f * s_lower + b) / (2.0f * d * u_lower));
         I3[1] = (-1.0f / u_upper) - (-1.0f / u_lower) - b / 2.0f * I3[0];
 
-        I5[0] = (d < 1e-7) ?
-                (-4.0f / powf(2.0f * s_upper + b, 4)) - (-4 / powf(2.0f * s_lower + b, 4)) :
-                ((2.0f * s_upper + b) / (6.0f * d * powf(u_upper, 3))) - ((2.0f * s_lower + b) / (6.0f * d * powf(u_lower, 3))) + (2.0f / (3.0f * d)) * I3[0];
-        I5[1] = (d < 1e-7) ?
-                (-8.0f / (3.0f * powf(2.0f * s_upper + b, 3))) - (-8.0f / (3.0f * powf(2.0f * s_lower + b, 3))) - (b / 2.0f) * I5[0] :
-                (-(b * s_upper + 2.0f * c) / (6.0f * d * powf(u_upper, 3))) - (-(b * s_lower + 2.0f * c) / (6.0f * d * powf(u_lower, 3))) - (b / (3.0f * d)) * I3[0];
+        I5[0] = (d < 1e-7f) ?
+                (-4.0f / pown4(2.0f * s_upper + b)) - (-4 / pown4(2.0f * s_lower + b)) :
+                ((2.0f * s_upper + b) / (6.0f * d * pown3(u_upper))) - ((2.0f * s_lower + b) / (6.0f * d * pown3(u_lower))) + (2.0f / (3.0f * d)) * I3[0];
+        I5[1] = (d < 1e-7f) ?
+                (-8.0f / (3.0f * pown3(2.0f * s_upper + b))) - (-8.0f / (3.0f * pown3(2.0f * s_lower + b))) - (b / 2.0f) * I5[0] :
+                (-(b * s_upper + 2.0f * c) / (6.0f * d * pown3(u_upper))) - (-(b * s_lower + 2.0f * c) / (6.0f * d * pown3(u_lower))) - (b / (3.0f * d)) * I3[0];
 
         if (c < climit)
         {
+            fiberfloat pow_s_upper = s_upper;
+            fiberfloat pow_s_lower = s_lower;
+
             for (fiberint n = 2; n < k + 3; ++n)
             {
-                I1[n] = (powf(s_upper, n - 1) * u_upper) / n - (powf(s_lower, n - 1) * u_lower) / n
+                I1[n] = (pow_s_upper * u_upper) / n - (pow_s_lower * u_lower) / n
                         + ((1.0f - 2.0f * n) * b) / (2.0f * n) * I1[n - 1] - ((n - 1) * c) / n * I1[n - 2];
-
-                fiberfloat test = (-powf(s_upper, n - 1) * u_upper) / (1 - (n + 1)) + (powf(s_lower, n - 1) * u_lower) / (1 - (n + 1))
-                                  - (((0.5f - ((n + 1) - 1)) * b) / (1 - (n + 1))) * I1[n - 1] + ((((n + 1) - 2) * c) / (1 - (n + 1))) * I1[n - 2];
 
                 // if (debug && quadrature_index_i == 12 && k == 5)
                 // {
@@ -117,6 +122,8 @@ void compute_G_analytic(
                 I3[n] = I1[n - 2] - b * I3[n - 1] - c * I3[n - 2];
 
                 I5[n] = I3[n - 2] - b * I5[n - 1] - c * I5[n - 2];
+                pow_s_upper *= s_upper;
+                pow_s_lower *= s_lower;
             }
         }
         else
@@ -138,14 +145,27 @@ void compute_G_analytic(
             //     printf("%d,%f\n", 29, i1n2);
             //     printf("%d,%f\n", 28, i1n1);
             // }
-
             for (fiberint n = 27; n > 1; --n)
-            {
+            {   
                 i1n0 = (n + 2.0f) / ((n + 1.0f) * c) * (
                            ((powf(s_upper, n + 1) * u_upper) / (n + 2.0f)) - ((powf(s_lower, n + 1) * u_lower) / (n + 2.0f))
                            + ((1.0f - 2.0f * (n + 2.0f)) / (2.0f * (n + 2.0f))) * b * i1n1 - i1n2);
-                i3n0 = 1.0f / c * (i1n0 - b * i3n1 - i3n2);
-                i5n0 = 1.0f / c * (i3n0 - b * i5n1 - i5n2);
+                // i1n0 = ((n + 2.0f) / (n + 1.0f)) * invC * (
+                //             (__powf(s_upper, n+1) * u_upper - __powf(s_lower, n+1) * u_lower) / (n+2.0f)
+                //             + (1.0f/(2.0f*(n+2)) - 1.0f) * b * i1n1 - i1n2
+                //         );
+                // i1n0 =
+                //     (1.0f/(n+1)) * invC * (
+                //             (__powf(s_upper, n+1) * u_upper - __powf(s_lower, n+1) * u_lower)
+                //             + (-1.5f-n) * b *i1n1 - i1n2 * (n+2)
+                //         );
+
+                // if(fabs(test - i1n0) > 1e-7) {
+                //     printf("asdfasdf\n");
+                // }
+
+                i3n0 = invC * (i1n0 - b * i3n1 - i3n2);
+                i5n0 = invC * (i3n0 - b * i5n1 - i5n2);
 
                 // if (debug && quadrature_index_i == 0 && k == 5)
                 // {
@@ -179,7 +199,6 @@ void compute_G_analytic(
         fiberfloat L15;
         fiberfloat L23;
         fiberfloat L25;
-
 
         if (k == 0 || k == 1)
         {
