@@ -35,6 +35,7 @@
 #include "kernels/update_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
 #include "kernels/update_fibers.cu"
+#include "kernels/eye_matrix.cu"
 
 Simulation::Simulation(Configuration configuration)
 {
@@ -82,7 +83,17 @@ void Simulation::initializeGPUMemory()
     // @TODO might be able to just use B vector for the solution
     checkCuda(cudaMalloc(&gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat)));
 
+    std::cout << "     [GPU]      : Resetting system..." << std::endl;
     checkCuda(cudaMemset(gpu_a_matrix_, 0, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat)));
+
+    performance_->start("eye_matrix");
+    eye_matrix <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+        gpu_a_matrix_
+    );
+    
+    performance_->stop("eye_matrix");
+    performance_->print("eye_matrix");    
+
     checkCuda(cudaMemset(gpu_b_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
     checkCuda(cudaMemset(gpu_x_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
 }
@@ -291,8 +302,16 @@ void Simulation::step(size_t current_timestep)
 
 void Simulation::assembleSystem()
 {
+    dim3 block_size;
+    block_size.x = 8;
+    block_size.y = 8;
+
+    dim3 grid_size;
+    grid_size.x = (configuration_.parameters.num_fibers + block_size.x-1) / block_size.x;
+    grid_size.y = (configuration_.parameters.num_fibers + block_size.y-1) / block_size.y;
+
     performance_->start("assemble_system");
-    assemble_system <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+    assemble_system <<<grid_size,block_size>>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_a_matrix_,
