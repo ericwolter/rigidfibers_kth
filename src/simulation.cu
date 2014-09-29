@@ -35,6 +35,7 @@
 #include "kernels/update_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
 #include "kernels/update_fibers.cu"
+#include "kernels/eye_matrix.cu"
 
 Simulation::Simulation(Configuration configuration)
 {
@@ -82,7 +83,17 @@ void Simulation::initializeGPUMemory()
     // @TODO might be able to just use B vector for the solution
     checkCuda(cudaMalloc(&gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat)));
 
+    std::cout << "     [GPU]      : Resetting system..." << std::endl;
     checkCuda(cudaMemset(gpu_a_matrix_, 0, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat)));
+
+    performance_->start("eye_matrix");
+    eye_matrix <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+        gpu_a_matrix_
+    );
+    
+    performance_->stop("eye_matrix");
+    performance_->print("eye_matrix");    
+
     checkCuda(cudaMemset(gpu_b_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
     checkCuda(cudaMemset(gpu_x_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
 }
@@ -154,8 +165,8 @@ void Simulation::precomputeLegendrePolynomials()
     // of subintervals.
     double interval_size = 2.0 / configuration_.parameters.num_quadrature_intervals;
 
-    fiberfloat *quadrature_points = new fiberfloat[total_number_of_points];
-    fiberfloat *quadrature_weights = new fiberfloat[total_number_of_points];
+    fiberfloat *host_quadrature_points = new fiberfloat[total_number_of_points];
+    fiberfloat *host_quadrature_weights = new fiberfloat[total_number_of_points];
     //  On wikipedia the mapping from [a, b] to [-1, 1] is done with a factor of
     // (b - a) / 2. However in our case b = a + iv, so the factor would simply
     // be iv / 2.
@@ -176,13 +187,13 @@ void Simulation::precomputeLegendrePolynomials()
         // @TODO potential memory savings because weights are the same for each
         //      interval
         size_t interval_start_index = interval_index * configuration_.parameters.num_quadrature_points_per_interval;
-        quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
-        quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
-        quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
+        host_quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
+        host_quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
+        host_quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
 
-        quadrature_weights[interval_start_index + 0] = w0 / configuration_.parameters.num_quadrature_intervals;
-        quadrature_weights[interval_start_index + 1] = w1 / configuration_.parameters.num_quadrature_intervals;
-        quadrature_weights[interval_start_index + 2] = w2 / configuration_.parameters.num_quadrature_intervals;
+        host_quadrature_weights[interval_start_index + 0] = w0 / configuration_.parameters.num_quadrature_intervals;
+        host_quadrature_weights[interval_start_index + 1] = w1 / configuration_.parameters.num_quadrature_intervals;
+        host_quadrature_weights[interval_start_index + 2] = w2 / configuration_.parameters.num_quadrature_intervals;
 
         // std::cout << quadrature_points[interval_start_index + 0] << std::endl;
         // std::cout << quadrature_points[interval_start_index + 1] << std::endl;
@@ -196,14 +207,10 @@ void Simulation::precomputeLegendrePolynomials()
         lower_bound += interval_size;
     }
 
-    // write quadrature points and weights to device
-    checkCuda(cudaMalloc(&gpu_quadrature_points_, total_number_of_points * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_quadrature_weights_, total_number_of_points * sizeof(fiberfloat4)));
-
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature points..." << std::endl;
-    checkCuda(cudaMemcpy(gpu_quadrature_points_, quadrature_points, total_number_of_points * sizeof(fiberfloat), cudaMemcpyHostToDevice));
+    checkCuda(cudaMemcpyToSymbol(quadrature_points, host_quadrature_points, total_number_of_points * sizeof(fiberfloat)));
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature weights..." << std::endl;
-    checkCuda(cudaMemcpy(gpu_quadrature_weights_, quadrature_weights, total_number_of_points * sizeof(fiberfloat), cudaMemcpyHostToDevice));
+    checkCuda(cudaMemcpyToSymbol(quadrature_weights, host_quadrature_weights, total_number_of_points * sizeof(fiberfloat)));
 
     // The output matrix contains the legendre polynomials evaluated at each
     // quadrature point. So for each quadrature point we calculate each
@@ -211,27 +218,62 @@ void Simulation::precomputeLegendrePolynomials()
     // The results is a matrix where each row represents a point and each column
     // entry represents a legendre polynomial evaluated at that point.
     // The matrix is in column major order as is the default for GLM and GLSL.
-    fiberfloat *legendre_polynomials = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion * total_number_of_points];
+    fiberfloat *host_legendre_polynomials = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion * total_number_of_points];
     for (size_t column_index = 0; column_index < configuration_.parameters.num_terms_in_force_expansion; ++column_index)
     {
         for (size_t point_index = 0; point_index < total_number_of_points; ++point_index)
         {
-            legendre_polynomials[point_index + column_index * total_number_of_points] = calculateLegendrePolynomial(quadrature_points[point_index], column_index + 1);
+            host_legendre_polynomials[point_index + column_index * total_number_of_points] = calculateLegendrePolynomial(host_quadrature_points[point_index], column_index + 1);
             // std::cout << legendre_polynomials[point_index + column_index * total_number_of_points] << std::endl;
         }
         // std::cout << std::endl;
     }
 
-    // write legendre polynomials to device
-    checkCuda(cudaMalloc(&gpu_legendre_polynomials_, sizeof(fiberfloat) * configuration_.parameters.num_terms_in_force_expansion * total_number_of_points));
-
     std::cout << "[CPU] --> [GPU] : Writing precomputed legendre polynomials..." << std::endl;
-    checkCuda(cudaMemcpy(gpu_legendre_polynomials_, legendre_polynomials, sizeof(fiberfloat) * configuration_.parameters.num_terms_in_force_expansion * total_number_of_points, cudaMemcpyHostToDevice));
+    checkCuda(cudaMemcpyToSymbol(legendre_polynomials, host_legendre_polynomials, configuration_.parameters.num_terms_in_force_expansion * total_number_of_points * sizeof(fiberfloat)));
 
     // cleanup
-    delete[] quadrature_points;
-    delete[] quadrature_weights;
-    delete[] legendre_polynomials;
+    delete[] host_quadrature_points;
+    delete[] host_quadrature_weights;
+    delete[] host_legendre_polynomials;
+
+    double *host_double_lambda = new double[configuration_.parameters.num_terms_in_force_expansion];
+    double *host_double_eigen = new double[configuration_.parameters.num_terms_in_force_expansion];
+    fiberfloat *host_lambda = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
+    fiberfloat *host_eigen = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
+
+    double c  = log(SLENDERNESS * SLENDERNESS * M_E);
+    double d  = -c;
+    double e  = 2.0;
+    double cc = 1.0;
+
+    host_double_lambda[0] = 2.0;
+    host_double_eigen[0] = ((d - e - cc * host_double_lambda[0]) / 2.0) / (d - cc * host_double_lambda[0]);
+
+    host_lambda[0] = host_double_lambda[0];
+    host_eigen[0] = host_double_eigen[0];
+
+    for (size_t force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
+    {
+        host_double_lambda[force_index] = host_double_lambda[force_index - 1] + 2.0 / (force_index + 1);
+        host_double_eigen[force_index] = ((d - e - cc * host_double_lambda[force_index]) / 2.0) / (d - cc * host_double_lambda[force_index]);
+
+        // do all calulcations in double precision but cast to the correct GPU precision
+        host_lambda[force_index] = host_double_lambda[force_index];
+        host_eigen[force_index] = host_double_eigen[force_index];
+    }
+
+    std::cout << "[CPU] --> [GPU] : Writing precomputed lambda values..." << std::endl;
+    checkCuda(cudaMemcpyToSymbol(lambda, host_lambda, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+
+    std::cout << "[CPU] --> [GPU] : Writing precomputed eigen values..." << std::endl;
+    checkCuda(cudaMemcpyToSymbol(eigen, host_eigen, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+
+    delete[] host_double_lambda;
+    delete[] host_double_eigen;
+
+    delete[] host_lambda;
+    delete[] host_eigen;
 }
 
 void Simulation::step(size_t current_timestep)
@@ -260,20 +302,20 @@ void Simulation::step(size_t current_timestep)
 
 void Simulation::assembleSystem()
 {
+    dim3 block_size;
+    block_size.x = 8;
+    block_size.y = 8;
+
+    dim3 grid_size;
+    grid_size.x = (configuration_.parameters.num_fibers + block_size.x-1) / block_size.x;
+    grid_size.y = (configuration_.parameters.num_fibers + block_size.y-1) / block_size.y;
+
     performance_->start("assemble_system");
-    assemble_system <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+    assemble_system <<<grid_size,block_size>>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_a_matrix_,
-        gpu_b_vector_,
-        gpu_quadrature_points_,
-        gpu_quadrature_weights_,
-        gpu_legendre_polynomials_,
-        configuration_.parameters.num_fibers,
-        configuration_.parameters.slenderness,
-        configuration_.parameters.num_terms_in_force_expansion,
-        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals,
-        configuration_.parameters.use_analytical_integration
+        gpu_b_vector_
     );
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
@@ -316,14 +358,7 @@ void Simulation::updateVelocities()
         gpu_current_orientations_,
         gpu_x_vector_,
         gpu_current_translational_velocities_,
-        gpu_current_rotational_velocities_,
-        gpu_quadrature_points_,
-        gpu_quadrature_weights_,
-        gpu_legendre_polynomials_,
-        configuration_.parameters.num_fibers,
-        configuration_.parameters.slenderness,
-        configuration_.parameters.num_terms_in_force_expansion,
-        configuration_.parameters.num_quadrature_points_per_interval * configuration_.parameters.num_quadrature_intervals
+        gpu_current_rotational_velocities_
     );
     performance_->stop("update_velocities");
     performance_->print("update_velocities");    
@@ -363,9 +398,7 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_current_orientations_,
             gpu_next_orientations_,
             gpu_current_translational_velocities_,
-            gpu_current_rotational_velocities_,
-            configuration_.parameters.num_fibers,
-            configuration_.parameters.timestep
+            gpu_current_rotational_velocities_
         );
         performance_->stop("update_fibers_firststep");
         performance_->print("update_fibers_firststep");
@@ -383,9 +416,7 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_previous_translational_velocities_,
             gpu_current_translational_velocities_,
             gpu_previous_rotational_velocities_,
-            gpu_current_rotational_velocities_,
-            configuration_.parameters.num_fibers,
-            configuration_.parameters.timestep
+            gpu_current_rotational_velocities_
         );
         performance_->stop("update_fibers");
         performance_->print("update_fibers");

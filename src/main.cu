@@ -27,6 +27,23 @@ int main(int argc, char *argv[])
 {
     FiberArgs args = fiberopt(argc, argv,/* help */  1, /* version */ "v0.3.0");
 
+    int nDevices;
+
+    cudaGetDeviceCount(&nDevices);
+    for (int i = 0; i < nDevices; ++i)
+    {
+        cudaDeviceProp prop;
+        cudaGetDeviceProperties(&prop, i);
+        printf("Device Number: %d\n", i);
+        printf("  Device name: %s\n", prop.name);
+        printf("  Memory Clock Rate (KHz): %d\n",
+               prop.memoryClockRate);
+        printf("  Memory Bus Width (bits): %d\n",
+               prop.memoryBusWidth);
+        printf("  Peak Memory Bandwidth (GB/s): %f\n\n",
+               2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6);
+    }
+
     Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
 
     Parameters::dump(configuration.parameters);
@@ -42,7 +59,8 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if(current_timestep >= 1) {
+        if (current_timestep >= 1)
+        {
             running = false;
         }
     }

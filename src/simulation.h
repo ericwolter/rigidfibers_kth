@@ -68,10 +68,6 @@ private:
     fiberfloat *gpu_b_vector_;
     fiberfloat *gpu_x_vector_;
 
-    fiberfloat *gpu_quadrature_points_;
-    fiberfloat *gpu_quadrature_weights_;
-    fiberfloat *gpu_legendre_polynomials_;
-
     void initializeGPUMemory();
 
     void writeFiberStateToDevice();
