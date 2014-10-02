@@ -1,8 +1,6 @@
 #ifndef FIBERS_COMPUTE_INNER_INTEGRAL_ANALYTICALLY_KERNEL_
 #define FIBERS_COMPUTE_INNER_INTEGRAL_ANALYTICALLY_KERNEL_
 
-#include "constants.cu"
-
 #define pown2(x) (x*x)
 #define pown3(x) (x*x*x)
 #define pown4(x) (x*x*x*x)

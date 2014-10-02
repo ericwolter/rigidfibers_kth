@@ -22,7 +22,6 @@ ADVECT_FIBERS
 
 # build output
 build/
-qtcreator-build/
 
 # random layouts
 tools/*.in

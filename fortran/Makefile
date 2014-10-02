@@ -1,5 +1,5 @@
 TARGET = ADVECT_FIBERS
-HOME =/home/e/w/ewolter/code/rigidfibers/fortran/
+HOME =/Users/eric/Developer/kth/rigidfibers/fortran
 
 #  -------------- PUT IN DIRECTORIES HERE THAT YOU WANT ------
 BINDIR = $(HOME)

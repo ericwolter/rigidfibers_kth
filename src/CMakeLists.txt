@@ -4,7 +4,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 list(APPEND CMAKE_CXX_FLAGS "-O3 -Wall -Wextra -Wfatal-errors ${OpenMP_C_FLAGS} ${OpenMP_CXX_FLAGS}")
 
-list(APPEND CUDA_NVCC_FLAGS -O3 -gencode arch=compute_30,code=sm_30)
+list(APPEND CUDA_NVCC_FLAGS -O3 -gencode arch=compute_20,code=sm_20)
 
 INCLUDE_DIRECTORIES(
     # ${CMAKE_SOURCE_DIR}/lib/local/openblas/include
@@ -29,24 +29,11 @@ set(HEADERS
     resources.h
 )
 
-set(KERNELS
-    kernels/assemble_system.cu
-    kernels/compute_inner_integral_analytically.cu
-    kernels/compute_inner_integral_numerically.cu
-    kernels/constants.cu
-    kernels/eye_matrix.cu
-    kernels/update_fibers.cu
-    kernels/update_fibers_firststep.cu
-    kernels/update_velocities.cu
-)
-
 
 # add an executable/binary to the project
-CUDA_ADD_EXECUTABLE(fibers ${SOURCES})
-
 # it is not necessary to include the headers here for cmake, however this way
 # they also appear in the file browser of different IDEs like Xcode/VisualStudio
-add_custom_target(fibers_files DEPENDS ${SOURCES} SOURCES ${HEADERS} ${KERNELS})
+CUDA_ADD_EXECUTABLE(fibers ${SOURCES} ${HEADERS})
 # CUDA_ADD_CUBLAS_TO_TARGET(fibers)
 
 # TARGET_LINK_LIBRARIES(fibers ${CMAKE_SOURCE_DIR}/lib/local/magma/lib/libmagma.a ${CMAKE_SOURCE_DIR}/lib/local/openblas/lib/libopenblas.a)

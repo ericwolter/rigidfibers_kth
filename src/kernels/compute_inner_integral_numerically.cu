@@ -1,8 +1,6 @@
 #ifndef FIBERS_COMPUTE_INNER_INTEGRAL_NUMERICALLY_KERNEL_
 #define FIBERS_COMPUTE_INNER_INTEGRAL_NUMERICALLY_KERNEL_
 
-#include "constants.cu"
-
 __device__
 void compute_G_numeric(
      const fiberfloat4 position_i,

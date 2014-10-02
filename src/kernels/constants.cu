@@ -1,8 +1,6 @@
 #ifndef FIBERS_CONSTANTS_KERNEL_
 #define FIBERS_CONSTANTS_KERNEL_
 
-#include "../common.h"
-
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (100)
 #define TIMESTEP (0.1f)

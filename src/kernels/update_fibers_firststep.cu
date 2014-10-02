@@ -1,8 +1,6 @@
 #ifndef FIBERS_UPDATE_FIBERS_FIRSTSTEP_KERNEL_
 #define FIBERS_UPDATE_FIBERS_FIRSTSTEP_KERNEL_
 
-#include "constants.cu"
-
 __global__
 void update_fibers_firststep(
     const fiberfloat4 *current_positions,
