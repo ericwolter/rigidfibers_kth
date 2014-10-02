@@ -1,7 +1,6 @@
 #ifndef FIBERS_ASSEMBLE_SYSTEM_KERNEL_
 #define FIBERS_ASSEMBLE_SYSTEM_KERNEL_
 
-#include "../common.h"
 #include "constants.cu"
 #include "compute_inner_integral_analytically.cu"
 #include "compute_inner_integral_numerically.cu"
