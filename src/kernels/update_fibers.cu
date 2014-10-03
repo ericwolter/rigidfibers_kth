@@ -5,16 +5,16 @@
 
 __global__
 void update_fibers(
-    const fiberfloat4 *previous_positions,
-    const fiberfloat4 *current_positions,
-    fiberfloat4 *next_positions,
-    const fiberfloat4 *previous_orientations,
-    const fiberfloat4 *current_orientations,
-    fiberfloat4 *next_orientations,
-    const fiberfloat4 *previous_translational_velocities,
-    const fiberfloat4 *current_translational_velocities,
-    const fiberfloat4 *previous_rotational_velocities,
-    const fiberfloat4 *current_rotational_velocities
+    const float4 *previous_positions,
+    const float4 *current_positions,
+    float4 *next_positions,
+    const float4 *previous_orientations,
+    const float4 *current_orientations,
+    float4 *next_orientations,
+    const float4 *previous_translational_velocities,
+    const float4 *current_translational_velocities,
+    const float4 *previous_rotational_velocities,
+    const float4 *current_rotational_velocities
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -41,7 +41,7 @@ void update_fibers(
                         - 1.0f / 3.0f * previous_orientations[i].z
                         + 2.0f / 3.0f * TIMESTEP * (2.0f * current_rotational_velocities[i].z - previous_rotational_velocities[i].z);
 
-    fiberfloat invLen = 1.0f / sqrtf(next_orientations[i].x * next_orientations[i].x 
+    float invLen = 1.0f / sqrtf(next_orientations[i].x * next_orientations[i].x
         + next_orientations[i].y * next_orientations[i].y 
         + next_orientations[i].z * next_orientations[i].z);
 

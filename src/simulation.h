@@ -50,23 +50,23 @@ private:
     Configuration configuration_;
     size_t global_work_size_;
 
-    fiberfloat4 *gpu_previous_positions_;
-    fiberfloat4 *gpu_current_positions_;
-    fiberfloat4 *gpu_next_positions_;
+    float4 *gpu_previous_positions_;
+    float4 *gpu_current_positions_;
+    float4 *gpu_next_positions_;
 
-    fiberfloat4 *gpu_previous_orientations_;
-    fiberfloat4 *gpu_current_orientations_;
-    fiberfloat4 *gpu_next_orientations_;
+    float4 *gpu_previous_orientations_;
+    float4 *gpu_current_orientations_;
+    float4 *gpu_next_orientations_;
 
-    fiberfloat4 *gpu_previous_translational_velocities_;
-    fiberfloat4 *gpu_current_translational_velocities_;
+    float4 *gpu_previous_translational_velocities_;
+    float4 *gpu_current_translational_velocities_;
 
-    fiberfloat4 *gpu_previous_rotational_velocities_;
-    fiberfloat4 *gpu_current_rotational_velocities_;
+    float4 *gpu_previous_rotational_velocities_;
+    float4 *gpu_current_rotational_velocities_;
 
-    fiberfloat *gpu_a_matrix_;
-    fiberfloat *gpu_b_vector_;
-    fiberfloat *gpu_x_vector_;
+    float *gpu_a_matrix_;
+    float *gpu_b_vector_;
+    float *gpu_x_vector_;
 
     void initializeGPUMemory();
 

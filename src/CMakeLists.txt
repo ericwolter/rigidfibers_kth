@@ -27,6 +27,7 @@ set(HEADERS
     fiberopt.h
     parameters.h
     resources.h
+    simulation.h
 )
 
 set(KERNELS

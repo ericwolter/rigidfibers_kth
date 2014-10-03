@@ -20,6 +20,7 @@
 #include <iostream>
 
 #include "fiberopt.h"
+#include "kernels/constants.cu"
 #include "parameters.h"
 #include "simulation.h"
 
@@ -30,6 +31,8 @@ int main(int argc, char *argv[])
     int nDevices;
 
     cudaGetDeviceCount(&nDevices);
+    std::cout << "**************************************************" << std::endl;
+    std::cout << "Devices:" << std::endl;
     for (int i = 0; i < nDevices; ++i)
     {
         cudaDeviceProp prop;
@@ -40,13 +43,20 @@ int main(int argc, char *argv[])
                prop.memoryClockRate);
         printf("  Memory Bus Width (bits): %d\n",
                prop.memoryBusWidth);
-        printf("  Peak Memory Bandwidth (GB/s): %f\n\n",
+        printf("  Peak Memory Bandwidth (GB/s): %f\n",
                2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6);
     }
+    std::cout << "**************************************************" << std::endl;
+    std::cout << "Parameters:" << std::endl;
+    std::cout << "Number of fibers                   : " << NUMBER_OF_FIBERS << std::endl;
+    std::cout << "Number of timesteps                : " << NUMBER_OF_TIMESTEPS << std::endl;
+    std::cout << "Size of timesteps                  : " << TIMESTEP << std::endl;
+    std::cout << "Slenderness                        : " << SLENDERNESS << std::endl;
+    std::cout << "Number of terms in force expansion : " << NUMBER_OF_TERMS_IN_FORCE_EXPANSION << std::endl;
+    std::cout << "Number of quadrature intervals     : " << NUMBER_OF_QUADRATURE_INTERVALS << std::endl;
+    std::cout << "**************************************************" << std::endl;
 
-    Configuration configuration = Parameters::parseConfigurationFiles(args.parameters, args.layout);
-
-    Parameters::dump(configuration.parameters);
+    Configuration configuration = Parameters::parseConfigurationFiles(args.layout);
 
     Simulation simulation(configuration);
 
@@ -54,7 +64,7 @@ int main(int argc, char *argv[])
     unsigned long current_timestep = 0;
     do
     {
-        std::cout << "     [CPU]      : Timestep " << current_timestep + 1 << " of " << configuration.parameters.num_timesteps << std::endl;
+        std::cout << "     [CPU]      : Timestep " << current_timestep + 1 << " of " << NUMBER_OF_TIMESTEPS << std::endl;
         simulation.step(current_timestep);
 
         current_timestep++;

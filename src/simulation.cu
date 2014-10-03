@@ -42,7 +42,7 @@ Simulation::Simulation(Configuration configuration)
     configuration_ = configuration;
     performance_ = new Performance();
 
-    global_work_size_ = IntCeil(configuration_.parameters.num_fibers, 256);
+    global_work_size_ = IntCeil(NUMBER_OF_FIBERS, 256);
 
     initializeGPUMemory();
 
@@ -59,51 +59,44 @@ Simulation::~Simulation()
 
 void Simulation::initializeGPUMemory()
 {
-    const size_t N = configuration_.parameters.num_fibers;
-    checkCuda(cudaMalloc(&gpu_previous_positions_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_current_positions_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_next_positions_, N * sizeof(fiberfloat4)));
+    checkCuda(cudaMalloc(&gpu_previous_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_current_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_next_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
 
-    checkCuda(cudaMalloc(&gpu_previous_orientations_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_current_orientations_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_next_orientations_, N * sizeof(fiberfloat4)));
+    checkCuda(cudaMalloc(&gpu_previous_orientations_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_current_orientations_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_next_orientations_, NUMBER_OF_FIBERS * sizeof(float4)));
 
-    checkCuda(cudaMalloc(&gpu_previous_translational_velocities_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_current_translational_velocities_, N * sizeof(fiberfloat4)));
+    checkCuda(cudaMalloc(&gpu_previous_translational_velocities_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_current_translational_velocities_, NUMBER_OF_FIBERS * sizeof(float4)));
 
-    checkCuda(cudaMalloc(&gpu_previous_rotational_velocities_, N * sizeof(fiberfloat4)));
-    checkCuda(cudaMalloc(&gpu_current_rotational_velocities_, N * sizeof(fiberfloat4)));
+    checkCuda(cudaMalloc(&gpu_previous_rotational_velocities_, NUMBER_OF_FIBERS * sizeof(float4)));
+    checkCuda(cudaMalloc(&gpu_current_rotational_velocities_, NUMBER_OF_FIBERS * sizeof(float4)));
 
-    fiberuint num_matrix_rows =
-        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
-    fiberuint num_matrix_columns = num_matrix_rows;
-
-    checkCuda(cudaMalloc(&gpu_a_matrix_, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat)));
-    checkCuda(cudaMalloc(&gpu_b_vector_, num_matrix_rows * sizeof(fiberfloat)));
+    checkCuda(cudaMalloc(&gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+    checkCuda(cudaMalloc(&gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     // @TODO might be able to just use B vector for the solution
-    checkCuda(cudaMalloc(&gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat)));
+    checkCuda(cudaMalloc(&gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
     std::cout << "     [GPU]      : Resetting system..." << std::endl;
-    checkCuda(cudaMemset(gpu_a_matrix_, 0, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat)));
+    checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
     performance_->start("eye_matrix");
-    eye_matrix <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
-        gpu_a_matrix_
-    );
+    eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
     
     performance_->stop("eye_matrix");
     performance_->print("eye_matrix");    
 
-    checkCuda(cudaMemset(gpu_b_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
-    checkCuda(cudaMemset(gpu_x_vector_, 0, num_matrix_rows * sizeof(fiberfloat)));
+    checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+    checkCuda(cudaMemset(gpu_x_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 }
 
 void Simulation::writeFiberStateToDevice()
 {
     std::cout << "[CPU] --> [GPU] : Writing initial fiber positions..." << std::endl;
-    checkCuda(cudaMemcpy(gpu_current_positions_, configuration_.initial_positions, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyHostToDevice));
+    checkCuda(cudaMemcpy(gpu_current_positions_, configuration_.initial_positions, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyHostToDevice));
     std::cout << "[CPU] --> [GPU] : Writing initial fiber orientations..." << std::endl;
-    checkCuda(cudaMemcpy(gpu_current_orientations_, configuration_.initial_orientations, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyHostToDevice));
+    checkCuda(cudaMemcpy(gpu_current_orientations_, configuration_.initial_orientations, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyHostToDevice));
 }
 
 void Simulation::readFiberStateFromDevice()
@@ -141,10 +134,6 @@ double Simulation::calculateLegendrePolynomial(double x, unsigned int n)
 
 void Simulation::precomputeLegendrePolynomials()
 {
-    const size_t total_number_of_points =
-        configuration_.parameters.num_quadrature_points_per_interval
-        * configuration_.parameters.num_quadrature_intervals;
-
     // These are the precalculated points for a 3rd order gaussian quadrature
     // These can be looked up in the literature
     double p0 = -sqrt(15.0) / 5.0;
@@ -163,10 +152,10 @@ void Simulation::precomputeLegendrePolynomials()
     // Calculate the size of a single subinterval. The overall integral bounds
     // are [-1, 1] so the range is 2, which can simply be divided by the number
     // of subintervals.
-    double interval_size = 2.0 / configuration_.parameters.num_quadrature_intervals;
+    double interval_size = 2.0 / NUMBER_OF_QUADRATURE_INTERVALS;
 
-    fiberfloat *host_quadrature_points = new fiberfloat[total_number_of_points];
-    fiberfloat *host_quadrature_weights = new fiberfloat[total_number_of_points];
+    float *host_quadrature_points = new float[TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+    float *host_quadrature_weights = new float[TOTAL_NUMBER_OF_QUADRATURE_POINTS];
     //  On wikipedia the mapping from [a, b] to [-1, 1] is done with a factor of
     // (b - a) / 2. However in our case b = a + iv, so the factor would simply
     // be iv / 2.
@@ -177,7 +166,7 @@ void Simulation::precomputeLegendrePolynomials()
     // for us. If we now plug in iv = 2 / NoQI the factor simply becomes
     // 1 / NoQI. So the weights can simply be divided by the number of
     // subintervals as in the formula below
-    for (size_t interval_index = 0; interval_index < configuration_.parameters.num_quadrature_intervals; ++interval_index)
+    for (size_t interval_index = 0; interval_index < NUMBER_OF_QUADRATURE_INTERVALS; ++interval_index)
     {
         // @TODO potential micro optimizations as p*, w*, interval_size
         //      number_of_quadrature_intervals are constant they could be
@@ -186,14 +175,14 @@ void Simulation::precomputeLegendrePolynomials()
         //      critcal anyway
         // @TODO potential memory savings because weights are the same for each
         //      interval
-        size_t interval_start_index = interval_index * configuration_.parameters.num_quadrature_points_per_interval;
+        size_t interval_start_index = interval_index * NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
         host_quadrature_points[interval_start_index + 0] = (2.0 * lower_bound + interval_size + p0 * interval_size) / 2.0;
         host_quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
         host_quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
 
-        host_quadrature_weights[interval_start_index + 0] = w0 / configuration_.parameters.num_quadrature_intervals;
-        host_quadrature_weights[interval_start_index + 1] = w1 / configuration_.parameters.num_quadrature_intervals;
-        host_quadrature_weights[interval_start_index + 2] = w2 / configuration_.parameters.num_quadrature_intervals;
+        host_quadrature_weights[interval_start_index + 0] = w0 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
+        host_quadrature_weights[interval_start_index + 1] = w1 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
+        host_quadrature_weights[interval_start_index + 2] = w2 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
 
         // std::cout << quadrature_points[interval_start_index + 0] << std::endl;
         // std::cout << quadrature_points[interval_start_index + 1] << std::endl;
@@ -208,9 +197,9 @@ void Simulation::precomputeLegendrePolynomials()
     }
 
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature points..." << std::endl;
-    checkCuda(cudaMemcpyToSymbol(quadrature_points, host_quadrature_points, total_number_of_points * sizeof(fiberfloat)));
+    checkCuda(cudaMemcpyToSymbol(quadrature_points, host_quadrature_points, TOTAL_NUMBER_OF_QUADRATURE_POINTS * sizeof(float)));
     std::cout << "[CPU] --> [GPU] : Writing precomputed quadrature weights..." << std::endl;
-    checkCuda(cudaMemcpyToSymbol(quadrature_weights, host_quadrature_weights, total_number_of_points * sizeof(fiberfloat)));
+    checkCuda(cudaMemcpyToSymbol(quadrature_weights, host_quadrature_weights, TOTAL_NUMBER_OF_QUADRATURE_POINTS * sizeof(float)));
 
     // The output matrix contains the legendre polynomials evaluated at each
     // quadrature point. So for each quadrature point we calculate each
@@ -218,29 +207,29 @@ void Simulation::precomputeLegendrePolynomials()
     // The results is a matrix where each row represents a point and each column
     // entry represents a legendre polynomial evaluated at that point.
     // The matrix is in column major order as is the default for GLM and GLSL.
-    fiberfloat *host_legendre_polynomials = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion * total_number_of_points];
-    for (size_t column_index = 0; column_index < configuration_.parameters.num_terms_in_force_expansion; ++column_index)
+    float *host_legendre_polynomials = new float[NUMBER_OF_TERMS_IN_FORCE_EXPANSION * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+    for (size_t column_index = 0; column_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++column_index)
     {
-        for (size_t point_index = 0; point_index < total_number_of_points; ++point_index)
+        for (size_t point_index = 0; point_index < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++point_index)
         {
-            host_legendre_polynomials[point_index + column_index * total_number_of_points] = calculateLegendrePolynomial(host_quadrature_points[point_index], column_index + 1);
+            host_legendre_polynomials[point_index + column_index * TOTAL_NUMBER_OF_QUADRATURE_POINTS] = calculateLegendrePolynomial(host_quadrature_points[point_index], column_index + 1);
             // std::cout << legendre_polynomials[point_index + column_index * total_number_of_points] << std::endl;
         }
         // std::cout << std::endl;
     }
 
     std::cout << "[CPU] --> [GPU] : Writing precomputed legendre polynomials..." << std::endl;
-    checkCuda(cudaMemcpyToSymbol(legendre_polynomials, host_legendre_polynomials, configuration_.parameters.num_terms_in_force_expansion * total_number_of_points * sizeof(fiberfloat)));
+    checkCuda(cudaMemcpyToSymbol(legendre_polynomials, host_legendre_polynomials, NUMBER_OF_TERMS_IN_FORCE_EXPANSION * TOTAL_NUMBER_OF_QUADRATURE_POINTS * sizeof(float)));
 
     // cleanup
     delete[] host_quadrature_points;
     delete[] host_quadrature_weights;
     delete[] host_legendre_polynomials;
 
-    double *host_double_lambda = new double[configuration_.parameters.num_terms_in_force_expansion];
-    double *host_double_eigen = new double[configuration_.parameters.num_terms_in_force_expansion];
-    fiberfloat *host_lambda = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
-    fiberfloat *host_eigen = new fiberfloat[configuration_.parameters.num_terms_in_force_expansion];
+    double *host_double_lambda = new double[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
+    double *host_double_eigen = new double[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
+    float *host_lambda = new float[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
+    float *host_eigen = new float[NUMBER_OF_TERMS_IN_FORCE_EXPANSION];
 
     double c  = log(SLENDERNESS * SLENDERNESS * M_E);
     double d  = -c;
@@ -264,10 +253,10 @@ void Simulation::precomputeLegendrePolynomials()
     }
 
     std::cout << "[CPU] --> [GPU] : Writing precomputed lambda values..." << std::endl;
-    checkCuda(cudaMemcpyToSymbol(lambda, host_lambda, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+    checkCuda(cudaMemcpyToSymbol(lambda, host_lambda, NUMBER_OF_TERMS_IN_FORCE_EXPANSION * sizeof(float)));
 
     std::cout << "[CPU] --> [GPU] : Writing precomputed eigen values..." << std::endl;
-    checkCuda(cudaMemcpyToSymbol(eigen, host_eigen, configuration_.parameters.num_terms_in_force_expansion * sizeof(fiberfloat)));
+    checkCuda(cudaMemcpyToSymbol(eigen, host_eigen, NUMBER_OF_TERMS_IN_FORCE_EXPANSION * sizeof(float)));
 
     delete[] host_double_lambda;
     delete[] host_double_eigen;
@@ -285,17 +274,17 @@ void Simulation::step(size_t current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    dumpLinearSystem();
+    //dumpLinearSystem();
     // dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
     updateFibers(current_timestep == 0);
 
-    DoubleSwap(fiberfloat4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
-    DoubleSwap(fiberfloat4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
+    DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
+    DoubleSwap(float4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
 
-    TripleSwap(fiberfloat4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
-    TripleSwap(fiberfloat4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
+    TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
+    TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
     //dumpFibers();
 }
@@ -307,8 +296,8 @@ void Simulation::assembleSystem()
     block_size.y = 8;
 
     dim3 grid_size;
-    grid_size.x = (configuration_.parameters.num_fibers + block_size.x-1) / block_size.x;
-    grid_size.y = (configuration_.parameters.num_fibers + block_size.y-1) / block_size.y;
+    grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
+    grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
 
     performance_->start("assemble_system");
     assemble_system <<<grid_size,block_size>>> (
@@ -323,16 +312,11 @@ void Simulation::assembleSystem()
 
 void Simulation::solveSystem()
 {
-    fiberuint num_matrix_rows =
-        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
-    fiberuint num_matrix_columns = num_matrix_rows;
-
-
-    viennacl::matrix_base<fiberfloat, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
-                                    num_matrix_rows, 0, 1, num_matrix_rows,
-                                    num_matrix_columns, 0, 1, num_matrix_columns);
-    viennacl::vector<fiberfloat> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, num_matrix_rows);
-    viennacl::vector<fiberfloat> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, num_matrix_rows);
+    viennacl::matrix_base<float, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
+                                    TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
+                                    TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS);
+    viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
+    viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
     viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
     performance_->start("solve_system");
@@ -353,7 +337,7 @@ void Simulation::solveSystem()
 void Simulation::updateVelocities()
 {
     performance_->start("update_velocities");
-    update_velocities <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+    update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_x_vector_,
@@ -392,7 +376,7 @@ void Simulation::updateFibers(bool first_timestep)
     if (first_timestep)
     {
         performance_->start("update_fibers_firststep");
-        update_fibers_firststep <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+        update_fibers_firststep <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_current_positions_,
             gpu_next_positions_,
             gpu_current_orientations_,
@@ -406,7 +390,7 @@ void Simulation::updateFibers(bool first_timestep)
     else
     {
         performance_->start("update_fibers");
-        update_fibers <<< (configuration_.parameters.num_fibers + 31) / 32, 32 >>> (
+        update_fibers <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_previous_positions_,
             gpu_current_positions_,
             gpu_next_positions_,
@@ -425,11 +409,11 @@ void Simulation::updateFibers(bool first_timestep)
 
 void Simulation::dumpFibers()
 {
-    fiberfloat4 *p = new fiberfloat4[configuration_.parameters.num_fibers];
-    fiberfloat4 *o = new fiberfloat4[configuration_.parameters.num_fibers];
+    float4 *p = new float4[NUMBER_OF_FIBERS];
+    float4 *o = new float4[NUMBER_OF_FIBERS];
 
-    checkCuda(cudaMemcpy(p, gpu_current_positions_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
-    checkCuda(cudaMemcpy(o, gpu_current_orientations_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(p, gpu_current_positions_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(o, gpu_current_orientations_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
@@ -445,10 +429,10 @@ void Simulation::dumpFibers()
     p_output_file << std::fixed << std::setprecision(8);
     o_output_file << std::fixed << std::setprecision(8);
 
-    for (size_t row_index = 0; row_index < configuration_.parameters.num_fibers; ++row_index)
+    for (size_t row_index = 0; row_index < NUMBER_OF_FIBERS; ++row_index)
     {
-        fiberfloat4 p_value = p[row_index];
-        fiberfloat4 o_value = o[row_index];
+        float4 p_value = p[row_index];
+        float4 o_value = o[row_index];
 
         p_output_file << (p_value.x < 0 ? "     " : "      ") << p_value.x << std::endl;
         p_output_file << (p_value.y < 0 ? "     " : "      ") << p_value.y << std::endl;
@@ -467,17 +451,13 @@ void Simulation::dumpFibers()
 
 void Simulation::dumpLinearSystem()
 {
-    fiberuint num_matrix_rows =
-        3 * configuration_.parameters.num_fibers * configuration_.parameters.num_terms_in_force_expansion;
-    fiberuint num_matrix_columns = num_matrix_rows;
+    float *a_matrix = new float[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS];
+    float *b_vector = new float[TOTAL_NUMBER_OF_ROWS];
+    float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
-    fiberfloat *a_matrix = new fiberfloat[num_matrix_rows * num_matrix_columns];
-    fiberfloat *b_vector = new fiberfloat[num_matrix_rows];
-    fiberfloat *x_vector = new fiberfloat[num_matrix_rows];
-
-    checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, num_matrix_rows * num_matrix_columns * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
-    checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, num_matrix_rows * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
-    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, num_matrix_rows * sizeof(fiberfloat), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
@@ -497,11 +477,11 @@ void Simulation::dumpLinearSystem()
     b_vector_output_file << std::fixed << std::setprecision(8);
     x_vector_output_file << std::fixed << std::setprecision(8);
 
-    for (fiberuint row_index = 0; row_index < num_matrix_rows; ++row_index)
+    for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
     {
-        for (fiberuint column_index = 0; column_index < num_matrix_columns; ++column_index)
+        for (int column_index = 0; column_index < TOTAL_NUMBER_OF_ROWS; ++column_index)
         {
-            fiberfloat value = a_matrix[row_index + column_index * num_matrix_rows];
+            float value = a_matrix[row_index + column_index * TOTAL_NUMBER_OF_ROWS];
             if (value < 0)
             {
                 a_matrix_output_file << "     " << value;
@@ -512,7 +492,7 @@ void Simulation::dumpLinearSystem()
             }
         }
 
-        fiberfloat value;
+        float value;
         value = b_vector[row_index];
         if (value < 0)
         {
@@ -547,11 +527,11 @@ void Simulation::dumpLinearSystem()
 
 void Simulation::dumpVelocities()
 {
-    fiberfloat4 *t_vel = new fiberfloat4[configuration_.parameters.num_fibers];
-    fiberfloat4 *r_vel = new fiberfloat4[configuration_.parameters.num_fibers];
+    float4 *t_vel = new float4[NUMBER_OF_FIBERS];
+    float4 *r_vel = new float4[NUMBER_OF_FIBERS];
 
-    checkCuda(cudaMemcpy(t_vel, gpu_current_translational_velocities_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
-    checkCuda(cudaMemcpy(r_vel, gpu_current_rotational_velocities_, configuration_.parameters.num_fibers * sizeof(fiberfloat4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(t_vel, gpu_current_translational_velocities_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(r_vel, gpu_current_rotational_velocities_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
@@ -567,10 +547,10 @@ void Simulation::dumpVelocities()
     t_vel_output_file << std::fixed << std::setprecision(8);
     r_vel_output_file << std::fixed << std::setprecision(8);
 
-    for (size_t row_index = 0; row_index < configuration_.parameters.num_fibers; ++row_index)
+    for (size_t row_index = 0; row_index < NUMBER_OF_FIBERS; ++row_index)
     {
-        fiberfloat4 t_value = t_vel[row_index];
-        fiberfloat4 r_value = r_vel[row_index];
+        float4 t_value = t_vel[row_index];
+        float4 r_value = r_vel[row_index];
 
         t_vel_output_file << (t_value.x < 0 ? "     " : "      ") << t_value.x << std::endl;
         t_vel_output_file << (t_value.y < 0 ? "     " : "      ") << t_value.y << std::endl;

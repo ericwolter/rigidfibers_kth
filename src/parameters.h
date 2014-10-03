@@ -25,23 +25,18 @@
 // Simple container for the setup configuration which allows the simulation to
 // set itself up correctly
 typedef struct {
-    FiberParams parameters;
-    fiberfloat4 *initial_positions;
-    fiberfloat4 *initial_orientations;
+    float4 *initial_positions;
+    float4 *initial_orientations;
 } Configuration;
 
 class Parameters
 {
 public:
-    static const Configuration parseConfigurationFiles(const std::string parameters_filename, const std::string layout_filename);
-    static const FiberParams parseParameterFile(const std::string parameters_filename);
-    static void parseInitialLayoutFile(const std::string layout_filename, fiberfloat4** initialPositions, fiberfloat4** initialOrientations, fiberuint *number_of_fibers);
+    static const Configuration parseConfigurationFiles(const std::string layout_filename);
+    static void parseInitialLayoutFile(const std::string layout_filename, float4** initialPositions, float4** initialOrientations, int *number_of_fibers);
 
-    static void dump(const FiberParams params);
 private:
-    static const FiberParams parseVersion1ParameterFile(std::ifstream &parameters_file_stream);
-    static const FiberParams parseVersion2ParameterFile(std::ifstream &parameters_file_stream);
-    static void parseVersion1LayoutFile(std::ifstream &layout_file_stream, fiberfloat4** initialPositions, fiberfloat4** initialOrientations, fiberuint *number_of_fibers);
+    static void parseVersion1LayoutFile(std::ifstream &layout_file_stream, float4** initialPositions, float4** initialOrientations, int *number_of_fibers);
 };
 
 #endif // FIBERS_PARAMETERS_H_

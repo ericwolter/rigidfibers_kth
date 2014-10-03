@@ -9,63 +9,63 @@
 
 __device__
 void compute_G_analytic(
-     const fiberfloat4 position_i,
-     const fiberfloat4 orientation_i,
-     const fiberfloat4 position_j,
-     const fiberfloat4 orientation_j,
-     const fiberuint force_index,
-     const fiberfloat4 external_force,
-     fiberfloat *G,
-     fiberfloat *GF,
+     const float4 position_i,
+     const float4 orientation_i,
+     const float4 position_j,
+     const float4 orientation_j,
+     const int force_index,
+     const float4 external_force,
+     float *G,
+     float *GF,
      const bool debug)
 {
-    const fiberuint k = force_index + 1;
+    const int k = force_index + 1;
 
-    fiberfloat I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
-    fiberfloat I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
-    fiberfloat I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    float I1[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    float I3[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
+    float I5[NUMBER_OF_TERMS_IN_FORCE_EXPANSION + 3];
 
-    for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
+    for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
-        fiberfloat4 position_on_fiber_i;
+        float4 position_on_fiber_i;
         position_on_fiber_i.x = position_i.x + quadrature_points[quadrature_index_i] * orientation_i.x;
         position_on_fiber_i.y = position_i.y + quadrature_points[quadrature_index_i] * orientation_i.y;
         position_on_fiber_i.z = position_i.z + quadrature_points[quadrature_index_i] * orientation_i.z;
 
         // the difference vector between the current point on the fiber and the center
         // of the other fiber
-        fiberfloat4 R0;
+        float4 R0;
         R0.x = position_on_fiber_i.x - position_j.x;
         R0.y = position_on_fiber_i.y - position_j.y;
         R0.z = position_on_fiber_i.z - position_j.z;
-        const fiberfloat b = -2.0f
+        const float b = -2.0f
                              * (R0.x * orientation_j.x
                                 + R0.y * orientation_j.y
                                 + R0.z * orientation_j.z);
-        const fiberfloat c = R0.x * R0.x
+        const float c = R0.x * R0.x
                              + R0.y * R0.y
                              + R0.z * R0.z;
-        const fiberfloat invC = 1.0f / c;
-        //const fiberfloat c_test = ((R0.x * R0.y * R0.z) * (R0.x * R0.y * R0.z)) - 2 * R0.x * R0.y - 2 * R0.x * R0.z - 2 * R0.y * R0.z;
+        const float invC = 1.0f / c;
+        //const float c_test = ((R0.x * R0.y * R0.z) * (R0.x * R0.y * R0.z)) - 2 * R0.x * R0.y - 2 * R0.x * R0.z - 2 * R0.y * R0.z;
 
         // if fibers are too far apart we have numerical problems
         // so in order to minimize the effect we inverse the
         // the recursive direction
         // @TODO How/why does this help exactly?
-        const fiberfloat climit = 10.0f;
+        const float climit = 10.0f;
 
-        const fiberfloat d = c - 0.25f * b * b;
+        const float d = c - 0.25f * b * b;
 
-        const fiberfloat s_upper = 1.0f;
-        const fiberfloat s_lower = -1.0f;
+        const float s_upper = 1.0f;
+        const float s_lower = -1.0f;
 
-        const fiberfloat u_upper = sqrtf(s_upper * s_upper + b * s_upper + c);
-        const fiberfloat u_lower = sqrtf(s_lower * s_lower + b * s_lower + c);
+        const float u_upper = sqrtf(s_upper * s_upper + b * s_upper + c);
+        const float u_lower = sqrtf(s_lower * s_lower + b * s_lower + c);
 
         // if (debug && quadrature_index_i == 12 && k == 5)
         // {
-        //     fiberfloat y = 0;
-        //     const fiberfloat x = fabs(2.0f * s_upper + b + 2.0f * u_upper);
+        //     float y = 0;
+        //     const float x = fabs(2.0f * s_upper + b + 2.0f * u_upper);
 
         //     for (int i = 0; i < 100; ++i)
         //     {
@@ -108,10 +108,10 @@ void compute_G_analytic(
 
         if (c < climit)
         {
-            fiberfloat pow_s_upper = s_upper;
-            fiberfloat pow_s_lower = s_lower;
+            float pow_s_upper = s_upper;
+            float pow_s_lower = s_lower;
 
-            for (fiberint n = 2; n < k + 3; ++n)
+            for (int n = 2; n < k + 3; ++n)
             {
                 I1[n] = (pow_s_upper * u_upper) / n - (pow_s_lower * u_lower) / n
                         + ((1.0f - 2.0f * n) * b) / (2.0f * n) * I1[n - 1] - ((n - 1) * c) / n * I1[n - 2];
@@ -130,24 +130,24 @@ void compute_G_analytic(
         }
         else
         {
-            fiberfloat i1n2 = 0.0f;
-            fiberfloat i1n1 = 0.0f;
-            fiberfloat i1n0 = 0.0f;
+            float i1n2 = 0.0f;
+            float i1n1 = 0.0f;
+            float i1n0 = 0.0f;
 
-            fiberfloat i3n2 = 0.0f;
-            fiberfloat i3n1 = 0.0f;
-            fiberfloat i3n0 = 0.0f;
+            float i3n2 = 0.0f;
+            float i3n1 = 0.0f;
+            float i3n0 = 0.0f;
 
-            fiberfloat i5n2 = 0.0f;
-            fiberfloat i5n1 = 0.0f;
-            fiberfloat i5n0 = 0.0f;
+            float i5n2 = 0.0f;
+            float i5n1 = 0.0f;
+            float i5n0 = 0.0f;
 
             // if (debug && quadrature_index_i == 0 && k == 5)
             // {
             //     printf("%d,%f\n", 29, i1n2);
             //     printf("%d,%f\n", 28, i1n1);
             // }
-            for (fiberint n = 27; n > 1; --n)
+            for (int n = 27; n > 1; --n)
             {   
                 i1n0 = (n + 2.0f) / ((n + 1.0f) * c) * (
                            ((powf(s_upper, n + 1) * u_upper) / (n + 2.0f)) - ((powf(s_lower, n + 1) * u_lower) / (n + 2.0f))
@@ -194,13 +194,13 @@ void compute_G_analytic(
             }
         }
 
-        fiberfloat L01;
-        fiberfloat L03;
-        fiberfloat L05;
-        fiberfloat L13;
-        fiberfloat L15;
-        fiberfloat L23;
-        fiberfloat L25;
+        float L01;
+        float L03;
+        float L05;
+        float L13;
+        float L15;
+        float L23;
+        float L25;
 
         if (k == 0 || k == 1)
         {
@@ -390,7 +390,7 @@ void compute_G_analytic(
             L23 = I3[0 + 2];
             L25 = I5[0 + 2];
 
-            const fiberfloat G11 =
+            const float G11 =
                 L01
                 + L03 * (R0.x * R0.x)
                 - L13 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
@@ -401,7 +401,7 @@ void compute_G_analytic(
                     + 3.0f * L15 * (orientation_j.x * R0.x + R0.x * orientation_j.x)
                     - 3.0f * L25 * (orientation_j.x * orientation_j.x)
                 );
-            const fiberfloat G22 =
+            const float G22 =
                 L01
                 + L03 * (R0.y * R0.y)
                 - L13 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
@@ -412,7 +412,7 @@ void compute_G_analytic(
                     + 3.0f * L15 * (orientation_j.y * R0.y + R0.y * orientation_j.y)
                     - 3.0f * L25 * (orientation_j.y * orientation_j.y)
                 );
-            const fiberfloat G33 =
+            const float G33 =
                 L01
                 + L03 * (R0.z * R0.z)
                 - L13 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
@@ -423,7 +423,7 @@ void compute_G_analytic(
                     + 3.0f * L15 * (orientation_j.z * R0.z + R0.z * orientation_j.z)
                     - 3.0f * L25 * (orientation_j.z * orientation_j.z)
                 );
-            const fiberfloat G12 =
+            const float G12 =
                 L03 * (R0.x * R0.y)
                 - L13 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
                 + L23 * (orientation_j.x * orientation_j.y)
@@ -432,7 +432,7 @@ void compute_G_analytic(
                     + 3.0f * L15 * (orientation_j.x * R0.y + R0.x * orientation_j.y)
                     - 3.0f * L25 * (orientation_j.x * orientation_j.y)
                 );
-            const fiberfloat G13 =
+            const float G13 =
                 L03 * (R0.x * R0.z)
                 - L13 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
                 + L23 * (orientation_j.x * orientation_j.z)
@@ -441,7 +441,7 @@ void compute_G_analytic(
                     + 3.0f * L15 * (orientation_j.x * R0.z + R0.x * orientation_j.z)
                     - 3.0f * L25 * (orientation_j.x * orientation_j.z)
                 );
-            const fiberfloat G23 =
+            const float G23 =
                 L03 * (R0.y * R0.z)
                 - L13 * (orientation_j.y * R0.z + R0.y * orientation_j.z)
                 + L23 * (orientation_j.y * orientation_j.z)

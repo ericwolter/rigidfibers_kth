@@ -6,10 +6,10 @@
 #include "compute_inner_integral_numerically.cu"
 
 __global__ void assemble_system(
-    const fiberfloat4 *positions,
-    const fiberfloat4 *orientations,
-    fiberfloat *a_matrix,
-    fiberfloat *b_vector
+    const float4 *positions,
+    const float4 *orientations,
+    float *a_matrix,
+    float *b_vector
 )
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -18,34 +18,34 @@ __global__ void assemble_system(
     if (i >= NUMBER_OF_FIBERS) return;
     if (j >= NUMBER_OF_FIBERS) return;
 
-    const fiberfloat c  = logf(SLENDERNESS * SLENDERNESS * M_E);
-    const fiberfloat d  = -c;
-    const fiberfloat e  = 2.0f;
-    const fiberfloat cc = 1.0f;
-    const fiberfloat D1 = 0.75f / (d - 2.0f * cc);
+    const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
+    const float d  = -c;
+    const float e  = 2.0f;
+    const float cc = 1.0f;
+    const float D1 = 0.75f / (d - 2.0f * cc);
 
-    const fiberfloat4 position_i = positions[i];
-    const fiberfloat4 orientation_i = orientations[i];
+    const float4 position_i = positions[i];
+    const float4 orientation_i = orientations[i];
 
-    fiberfloat4 external_force;
+    float4 external_force;
     external_force.x = 0.5f * 0.0f;
     external_force.y = 0.5f * 0.0f;
     external_force.z = 0.5f * -1.0f;
 
-    fiberuint x_row_index;
-    fiberuint y_row_index;
-    fiberuint z_row_index;
+    int x_row_index;
+    int y_row_index;
+    int z_row_index;
 
-    fiberuint x_column_index;
-    fiberuint y_column_index;
-    fiberuint z_column_index;
+    int x_column_index;
+    int y_column_index;
+    int z_column_index;
 
     // b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0f;
     // b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0f;
     // b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0f;
 
-    fiberfloat G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
-    fiberfloat GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+    float G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+    float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 
     // for (int force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     // {
@@ -60,29 +60,29 @@ __global__ void assemble_system(
 
     if (i == j) return;
 
-    const fiberfloat4 position_j = positions[j];
-    const fiberfloat4 orientation_j = orientations[j];
+    const float4 position_j = positions[j];
+    const float4 orientation_j = orientations[j];
 
-    for (fiberuint force_index_i = 0; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
+    for (int force_index_i = 0; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
     {
-        fiberfloat Q1;
-        fiberfloat Q2;
-        fiberfloat Q3;
+        float Q1;
+        float Q2;
+        float Q3;
 
-        fiberuint force_index_j = 0;
+        int force_index_j = 0;
 
         // theta in equation 23
-        fiberfloat T11 = 0.0f;
-        fiberfloat T22 = 0.0f;
-        fiberfloat T33 = 0.0f;
-        fiberfloat T12 = 0.0f;
-        fiberfloat T13 = 0.0f;
-        fiberfloat T23 = 0.0f;
+        float T11 = 0.0f;
+        float T22 = 0.0f;
+        float T33 = 0.0f;
+        float T12 = 0.0f;
+        float T13 = 0.0f;
+        float T23 = 0.0f;
 
-        fiberfloat TF1 = 0.0f;
-        fiberfloat TF2 = 0.0f;
-        fiberfloat TF3 = 0.0f;
-        fiberfloat QF;
+        float TF1 = 0.0f;
+        float TF2 = 0.0f;
+        float TF3 = 0.0f;
+        float QF;
 
 #ifdef USE_ANALYTICAL_INTEGRATION
         compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
@@ -90,10 +90,10 @@ __global__ void assemble_system(
         compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
 #endif
 
-        for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
+        for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
         {
-            const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_i];
-            const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+            const float quadrature_weight = quadrature_weights[quadrature_index_i];
+            const float legendre_polynomial = legendre_polynomials[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
             T11 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
             T22 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
             T33 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
@@ -162,7 +162,7 @@ __global__ void assemble_system(
 
         for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
         {
-            const fiberfloat gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
+            const float gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
 
             T11 = 0.0f;
             T22 = 0.0f;
@@ -175,10 +175,10 @@ __global__ void assemble_system(
             TF2 = 0.0f;
             TF3 = 0.0f;
 
-            for (fiberuint quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
+            for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
-                const fiberfloat quadrature_weight = quadrature_weights[quadrature_index_i];
-                const fiberfloat legendre_polynomial = legendre_polynomials[quadrature_index_i + force_index_j * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+                const float quadrature_weight = quadrature_weights[quadrature_index_i];
+                const float legendre_polynomial = legendre_polynomials[quadrature_index_i + force_index_j * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
                 T11 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T22 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T33 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;

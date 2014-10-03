@@ -34,37 +34,5 @@ cudaError_t checkCuda(cudaError_t result)
 #define IntCeil(num, divider) ((((num) + (divider) - 1) / (divider)) * (divider))
 #define DoubleSwap(t, a, b) { t tmp = a; a = b; b = tmp; }
 #define TripleSwap(t, a, b, c) {t tmp = a; a = b; b = c; c = tmp; }
-
-#ifdef USE_DOUBLE_PRECISION
-    typedef double fiberfloat;
-    typedef double4 fiberfloat4;
-#else
-    typedef float fiberfloat;
-    typedef float4 fiberfloat4;
-#endif // USE_DOUBLE_PRECISION
-
-typedef int fiberint;
-typedef uint fiberuint;
-
-typedef struct
-{
-    fiberfloat slenderness;                         // the slenderness parameter
-                                                    //   epsilon = a/2L (e.g. 0.01)
-    fiberfloat timestep;                            // the timestep size (e.g. 0.1)
-    fiberuint num_fibers;                           // the number of fibers
-    fiberuint num_timesteps;                        // the number of timesteps
-    fiberuint num_terms_in_force_expansion;         // the number of terms used for the
-                                                    //   force expansion (e.g. 5)
-    fiberuint num_quadrature_intervals;             // the number of intervals the
-                                                    //   integral is subdivided into
-                                                    //   on each subinterval 3 gaussian
-                                                    //   quadrature points are used
-                                                    //   (e.g. 8)
-    fiberuint num_quadrature_points_per_interval;   // the number of points per
-                                                    //   quadrature points (e.g. 3)
-    fiberint use_analytical_integration;            // option which determines how the
-                                                    // the inner integral is evaluated
-    fiberint use_direct_solver;                     // NOT YET USED
-} FiberParams;
     
 #endif // FIBERS_COMMON_H_

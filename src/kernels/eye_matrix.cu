@@ -5,7 +5,7 @@
 #include "constants.cu"
 
 __global__ void eye_matrix(
-    fiberfloat *a_matrix
+    float *a_matrix
 )
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;

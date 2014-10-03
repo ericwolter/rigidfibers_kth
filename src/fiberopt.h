@@ -31,7 +31,6 @@ typedef struct
     /* commands */
 
     /* arguments */
-    char *parameters;
     char *layout;
     /* options without arguments */
     int gui;
@@ -44,7 +43,7 @@ const char help_message[] =
     "Rigid Fibers.\n"
     "\n"
     "Usage:\n"
-    "  fibers <parameters> <layout>\n"
+    "  fibers <layout>\n"
     "  fibers --help\n"
     "  fibers --version\n"
     "\n"
@@ -57,7 +56,7 @@ const char help_message[] =
 const char usage_pattern[] =
     "Usage:\n"
     "Usage:\n"
-    "  fibers <parameter> <layout>\n"
+    "  fibers <layout>\n"
     "  fibers --help\n"
     "  fibers --version";
 
@@ -279,26 +278,18 @@ int elems_to_args(Elements *elements, FiberArgs *args, bool help,
     for (i = 0; i < elements->n_arguments; i++)
     {
         argument = &elements->arguments[i];
-        if (!strcmp(argument->name, "<parameters>"))
-        {
-            args->parameters = argument->value;
-        }
-        else if (!strcmp(argument->name, "<layout>"))
+        if (!strcmp(argument->name, "<layout>"))
         {
             args->layout = argument->value;
         }
     }
 
     // both arguments are required
-    if (!args->parameters)
-    {
-        fprintf(stderr, "argument <parameters> is required\n");
-    }
     if (!args->layout)
     {
         fprintf(stderr, "argument <layout> is required\n");
     }
-    if (!args->parameters || !args->layout)
+    if (!args->layout)
     {
         exit(EXIT_FAILURE);
     }
@@ -310,12 +301,11 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
 {
     FiberArgs args =
     {
-        usage_pattern, help_message, NULL, NULL, 0, 0, 0
+        usage_pattern, help_message, NULL, 0, 0, 0
     };
     Command *commands = NULL;
     Argument arguments[] =
     {
-        {"<parameters>", NULL},
         {"<layout>", NULL}
     };
     Option options[] =
@@ -324,7 +314,7 @@ FiberArgs fiberopt(int argc, char *argv[], bool help, const char *version)
         {"-h", "--help", NULL, 0, 0, {0}},
         {"-v", "--version", NULL, 0, 0, {0}}
     };
-    Elements elements = {commands, arguments, options, 0, 2, 3, {0}};
+    Elements elements = {commands, arguments, options, 0, 1, 3, {0}};
 
     Tokens ts = tokens_new(argc, argv);
     if (parse_args(&ts, &elements))
