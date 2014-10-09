@@ -11,6 +11,7 @@ parser.add_argument('config',metavar='CONFIG_FILE',type=open,help='the configura
 parser.add_argument('fibers',metavar='FIBER_FILE',type=open,help='the fiber file containing the initial positions and orientations')
 parser.add_argument('--benchmark',action='store_true',help='an option to dump configuration file (default: False)')
 parser.add_argument('--validate',action='store_true',help='an option to validate results against reference implementation (default: False) (note: limits number of steps to 1)')
+parser.add_argument('--force1D',action='store_true',help='an option to force to execute kernels in 1D (default: False)')
 
 args = parser.parse_args()
 
@@ -78,10 +79,12 @@ with io.open(cuda_constants_path, 'w') as cuda:
 	cuda.write(u'\n')
 	
         if args.benchmark:
-            cuda.write(u'#define BENCHMARK (true)\n')
+            cuda.write(u'#define BENCHMARK\n')
         if args.validate:
-            cuda.write(u'#define VALIDATE (true)\n')
-	cuda.write(u'\n')
+            cuda.write(u'#define VALIDATE\n')
+        if args.force1D:
+            cuda.write(u'#define FORCE_1D\n')
+        cuda.write(u'\n')
 
 	cuda.write(u'#define DIMENSIONS (3)\n')
 	cuda.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['number_of_fibers'])+')\n')
@@ -107,6 +110,7 @@ with io.open(cuda_constants_path, 'w') as cuda:
 	
 	cuda.write(u'#endif //FIBERS_CONSTANTS_KERNEL_\n')
 	cuda.write(u'\n')
+        cuda.flush()
 
 #####
 #

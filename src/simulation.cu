@@ -272,7 +272,6 @@ void Simulation::precomputeLegendrePolynomials()
 
 void Simulation::step(size_t current_timestep)
 {
-    std::cout << "     [GPU]      : Assembling system..." << std::endl;
     assembleSystem();
     std::cout << "     [GPU]      : Solving system..." << std::endl;
     solveSystem();
@@ -299,15 +298,9 @@ void Simulation::step(size_t current_timestep)
 
 void Simulation::assembleSystem()
 {
-    dim3 block_size;
-    block_size.x = 8;
-    block_size.y = 8;
-
-    dim3 grid_size;
-    grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
-    grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
-
     performance_->start("assemble_system");
+#ifdef FORCE_1D
+    std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
     assemble_system <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
                                                            #ifdef VALIDATE
                                                                gpu_validation_,
@@ -317,6 +310,26 @@ void Simulation::assembleSystem()
         gpu_a_matrix_,
         gpu_b_vector_
     );
+#else
+    dim3 block_size;
+    block_size.x = 8;
+    block_size.y = 8;
+
+    dim3 grid_size;
+    grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
+    grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
+
+    std::cout << "     [GPU]      : Assembling system 2D..." << std::endl;
+    assemble_system <<< grid_size, block_size >>> (
+                                                           #ifdef VALIDATE
+                                                               gpu_validation_,
+                                                           #endif //VALIDATE
+        gpu_current_positions_,
+        gpu_current_orientations_,
+        gpu_a_matrix_,
+        gpu_b_vector_
+    );
+#endif
     performance_->stop("assemble_system");
     performance_->print("assemble_system");
 }
@@ -466,13 +479,9 @@ void Simulation::dumpLinearSystem()
     float *b_vector = new float[TOTAL_NUMBER_OF_ROWS];
     float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
-    int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
-
     checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
     checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
     checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
-
-    checkCuda(cudaMemcpy(validation, gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
@@ -539,6 +548,10 @@ void Simulation::dumpLinearSystem()
     delete[] b_vector;
     delete[] x_vector;
 
+#ifdef VALIDATE
+    int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
+    checkCuda(cudaMemcpy(validation, gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int), cudaMemcpyDeviceToHost));
+
     std::string mapping_output_path = executablePath + "/current.map";
     std::ofstream mapping_output_file;
 
@@ -560,10 +573,9 @@ void Simulation::dumpLinearSystem()
                                 << std::endl;
         }
     }
-
     mapping_output_file.close();
-
     delete[] validation;
+#endif //VALIDATE
 }
 
 void Simulation::dumpVelocities()

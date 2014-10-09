@@ -3,12 +3,11 @@
 
 #include "../common.h"
 
-#define VALIDATE (true)
 
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (100)
 #define TIMESTEP (0.1)
-#define NUMBER_OF_TIMESTEPS (1)
+#define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01)
 #define NUMBER_OF_TERMS_IN_FORCE_EXPANSION (5)
 #define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL (3)

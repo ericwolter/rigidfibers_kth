@@ -16,8 +16,15 @@ __global__ void assemble_system(
     )
 {
     const int i = blockIdx.x * blockDim.x + threadIdx.x;
+#ifndef FORCE_1D
+    const int j = blockIdx.y * blockDim.y + threadIdx.y;
+#endif //FORCE_1D
 
     if (i >= NUMBER_OF_FIBERS) return;
+#ifndef FORCE_1D
+    if (j >= NUMBER_OF_FIBERS) return;
+    if (i==j) return;
+#endif //FORCE_1D
 
     const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
     const float d  = -c;
@@ -41,12 +48,13 @@ __global__ void assemble_system(
     int y_column_index;
     int z_column_index;
 
+    float G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
+    float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+
+#ifdef FORCE_1D
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 0] = 0.0f;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 1] = 0.0f;
     b_vector[i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + 2] = 0.0f;
-
-    float G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
-    float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 
     for (int force_index = 1; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
     {
@@ -58,7 +66,6 @@ __global__ void assemble_system(
         b_vector[y_row_index] = 0.0f;
         b_vector[z_row_index] = 0.0f;
     }
-
     for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
         if (i == j)
@@ -83,6 +90,7 @@ __global__ void assemble_system(
 
             continue;
         }
+#endif //FORCE_1D
 
         const float4 position_j = positions[j];
         const float4 orientation_j = orientations[j];
@@ -112,7 +120,7 @@ __global__ void assemble_system(
                 compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
 #else
                 compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 9 && j == 88 && force_index_i == 1);
-#endif
+#endif //USE_ANALYTICAL_INTEGRATION
 
             for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
             {
@@ -232,9 +240,16 @@ __global__ void assemble_system(
                 //}
                 QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
+#ifdef FORCE_1D
                 b_vector[x_row_index] -= D1 * orientation_i.x * QF;
                 b_vector[y_row_index] -= D1 * orientation_i.y * QF;
                 b_vector[z_row_index] -= D1 * orientation_i.z * QF;
+#else
+                atomicAdd(&(b_vector[x_row_index]), -(D1 * orientation_i.x * QF));
+                atomicAdd(&(b_vector[y_row_index]), -(D1 * orientation_i.y * QF));
+                atomicAdd(&(b_vector[z_row_index]), -(D1 * orientation_i.z * QF));
+#endif //FORCE_1D
+
                 //if (i == 0 && j == 1)
                 //{
                 //    printf("i=%d;j=%d\nBx=%f;By=%f;Bz=%f;D1=%f;QF=%f\n", i, j, b_vector[x_row_index], b_vector[y_row_index], b_vector[z_row_index], D1, QF);
@@ -400,13 +415,21 @@ __global__ void assemble_system(
                 {
                     QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
+#ifdef FORCE_1D
                     b_vector[x_row_index] -= gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF);
                     b_vector[y_row_index] -= gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF);
                     b_vector[z_row_index] -= gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF);
+#else
+                    atomicAdd(&(b_vector[x_row_index]), -(gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF)));
+                    atomicAdd(&(b_vector[y_row_index]), -(gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF)));
+                    atomicAdd(&(b_vector[z_row_index]), -(gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF)));
+#endif //FORCE_1D
                 }
             }
         }
+#ifdef FORCE_1D
     }
+#endif //FORCE_1D
 }
 
 #endif // FIBERS_ASSEMBLE_SYSTEM_KERNEL_
