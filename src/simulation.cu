@@ -275,7 +275,6 @@ void Simulation::step(size_t current_timestep)
     assembleSystem();
     std::cout << "     [GPU]      : Solving system..." << std::endl;
     solveSystem();
-    std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
 #ifdef VALIDATE
@@ -361,6 +360,8 @@ void Simulation::solveSystem()
 void Simulation::updateVelocities()
 {
     performance_->start("update_velocities");
+#ifdef FORCE_1D
+    std::cout << "     [GPU]      : Updating velocities 1D..." << std::endl;
     update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
@@ -368,6 +369,24 @@ void Simulation::updateVelocities()
         gpu_current_translational_velocities_,
         gpu_current_rotational_velocities_
     );
+#else
+    dim3 block_size;
+    block_size.x = 8;
+    block_size.y = 8;
+
+    dim3 grid_size;
+    grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
+    grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
+
+    std::cout << "     [GPU]      : Updating velocities 2D..." << std::endl;
+    update_velocities <<< grid_size, block_size >>> (
+        gpu_current_positions_,
+        gpu_current_orientations_,
+        gpu_x_vector_,
+        gpu_current_translational_velocities_,
+        gpu_current_rotational_velocities_
+    );
+#endif
     performance_->stop("update_velocities");
     performance_->print("update_velocities");    
     // cl_int err = 0;

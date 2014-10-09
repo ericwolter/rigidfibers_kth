@@ -107,8 +107,15 @@ __global__ void update_velocities(
 )
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
+#ifndef FORCE_1D
+    const int j = blockIdx.y * blockDim.y + threadIdx.y;
+#endif //FORCE_1D
 
     if (i >= NUMBER_OF_FIBERS) return;
+#ifndef FORCE_1D
+    if (j >= NUMBER_OF_FIBERS) return;
+    if (i==j) return;
+#endif //FORCE_1D
 
     const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
     const float d  = -c;
@@ -135,9 +142,11 @@ __global__ void update_velocities(
     rotational_velocities[i].y = 0.0f;
     rotational_velocities[i].z = 0.0f;
 
+#ifdef FORCE_1D
     for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
         if (i == j) continue;
+#endif // FORCE_1D
 
         const float4 position_j = positions[j];
         const float4 orientation_j = orientations[j];
@@ -168,19 +177,30 @@ __global__ void update_velocities(
             TF3A1 += weighted_polynomial * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
         }
 
-        translational_velocities[i].x += TF1A0;
-        translational_velocities[i].y += TF2A0;
-        translational_velocities[i].z += TF3A0;
-
         const float t1 = orientation_i.x * TF1A1;
         const float t2 = orientation_i.y * TF2A1;
         const float t3 = orientation_i.z * TF3A1;
 
+#ifdef FORCE_1D
+        translational_velocities[i].x += TF1A0;
+        translational_velocities[i].y += TF2A0;
+        translational_velocities[i].z += TF3A0;
+
         rotational_velocities[i].x += TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3);
         rotational_velocities[i].y += TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3);
         rotational_velocities[i].z += TF3A1 - (orientation_i.z * t1 + orientation_i.z * t2 + orientation_i.z * t3);
+#else
+        atomicAdd(&(translational_velocities[i].x), (0.5f / d) * TF1A0);
+        atomicAdd(&(translational_velocities[i].y), (0.5f / d) * TF2A0);
+        atomicAdd(&(translational_velocities[i].z), (0.5f / d) * TF2A0);
+
+        atomicAdd(&(rotational_velocities[i].x), (1.5f / d) * (TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3)));
+        atomicAdd(&(rotational_velocities[i].y), (1.5f / d) * (TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3)));
+        atomicAdd(&(rotational_velocities[i].z), (1.5f / d) * (TF3A1 - (orientation_i.z * t1 + orientation_i.z * t2 + orientation_i.z * t3)));
+#endif //FORCE_1D
     }
 
+#ifdef FORCE_1D
     translational_velocities[i].x *= (0.5f / d);
     translational_velocities[i].y *= (0.5f / d);
     translational_velocities[i].z *= (0.5f / d);
@@ -189,5 +209,6 @@ __global__ void update_velocities(
     rotational_velocities[i].y *= (1.5f / d);
     rotational_velocities[i].z *= (1.5f / d);
 }
+#endif //FORCE_1D
 
 #endif //FIBERS_UPDATE_VELOCITIES_KERNEL_
