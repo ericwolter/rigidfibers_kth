@@ -29,6 +29,8 @@
 #include "viennacl/linalg/gmres.hpp"
 #include "viennacl/linalg/bicgstab.hpp"
 
+#include "kernels/constants.cu"
+
 #include "common.h"
 #include "parameters.h"
 #include "performance.h"
@@ -67,6 +69,10 @@ private:
     float *gpu_a_matrix_;
     float *gpu_b_vector_;
     float *gpu_x_vector_;
+
+#ifdef VALIDATE
+    int *gpu_validation_;
+#endif //VALIDATE
 
     void initializeGPUMemory();
 

@@ -59,6 +59,11 @@ Simulation::~Simulation()
 
 void Simulation::initializeGPUMemory()
 {
+#ifdef VALIDATE
+    checkCuda(cudaMalloc(&gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
+    checkCuda(cudaMemset(gpu_validation_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
+#endif //VALIDATE
+
     checkCuda(cudaMalloc(&gpu_previous_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
     checkCuda(cudaMalloc(&gpu_current_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
     checkCuda(cudaMalloc(&gpu_next_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
@@ -180,9 +185,9 @@ void Simulation::precomputeLegendrePolynomials()
         host_quadrature_points[interval_start_index + 1] = (2.0 * lower_bound + interval_size + p1 * interval_size) / 2.0;
         host_quadrature_points[interval_start_index + 2] = (2.0 * lower_bound + interval_size + p2 * interval_size) / 2.0;
 
-        host_quadrature_weights[interval_start_index + 0] = w0 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
-        host_quadrature_weights[interval_start_index + 1] = w1 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
-        host_quadrature_weights[interval_start_index + 2] = w2 / NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL;
+        host_quadrature_weights[interval_start_index + 0] = w0 / NUMBER_OF_QUADRATURE_INTERVALS;
+        host_quadrature_weights[interval_start_index + 1] = w1 / NUMBER_OF_QUADRATURE_INTERVALS;
+        host_quadrature_weights[interval_start_index + 2] = w2 / NUMBER_OF_QUADRATURE_INTERVALS;
 
         // std::cout << quadrature_points[interval_start_index + 0] << std::endl;
         // std::cout << quadrature_points[interval_start_index + 1] << std::endl;
@@ -274,7 +279,10 @@ void Simulation::step(size_t current_timestep)
     std::cout << "     [GPU]      : Updating velocities..." << std::endl;
     updateVelocities();
 
-    //dumpLinearSystem();
+#ifdef VALIDATE
+    dumpLinearSystem();
+#endif //VALIDATE
+
     // dumpVelocities();
 
     std::cout << "     [GPU]      : Updating fibers..." << std::endl;
@@ -300,7 +308,10 @@ void Simulation::assembleSystem()
     grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
 
     performance_->start("assemble_system");
-    assemble_system <<<grid_size,block_size>>> (
+    assemble_system <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
+                                                           #ifdef VALIDATE
+                                                               gpu_validation_,
+                                                           #endif //VALIDATE
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_a_matrix_,
@@ -455,9 +466,13 @@ void Simulation::dumpLinearSystem()
     float *b_vector = new float[TOTAL_NUMBER_OF_ROWS];
     float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
+    int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
+
     checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
     checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
     checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+
+    checkCuda(cudaMemcpy(validation, gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
@@ -523,6 +538,32 @@ void Simulation::dumpLinearSystem()
     delete[] a_matrix;
     delete[] b_vector;
     delete[] x_vector;
+
+    std::string mapping_output_path = executablePath + "/current.map";
+    std::ofstream mapping_output_file;
+
+    mapping_output_file.open (mapping_output_path.c_str());
+
+    for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
+    {
+        for (int column_index = 0; column_index < TOTAL_NUMBER_OF_ROWS; ++column_index)
+        {
+            mapping_output_file << "[V]"
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0]
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1]
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2]
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3]
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4]
+                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5]
+                                << "|" << row_index
+                                << "|" << column_index
+                                << std::endl;
+        }
+    }
+
+    mapping_output_file.close();
+
+    delete[] validation;
 }
 
 void Simulation::dumpVelocities()

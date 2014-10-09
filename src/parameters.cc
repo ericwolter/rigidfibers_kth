@@ -20,6 +20,8 @@
 #include "parameters.h"
 
 #include <sstream>
+#include <limits>
+#include <iomanip>
 
 const Configuration Parameters::parseConfigurationFiles(const std::string layout_filename) {
     Configuration configuration;

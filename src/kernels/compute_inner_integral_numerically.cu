@@ -94,6 +94,23 @@ void compute_G_numeric(
             const float quadrature_weight = quadrature_weights[quadrature_index_j];
             const float legendre_polynomial = legendre_polynomials[quadrature_index_j + force_index * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 
+//            if(debug && quadrature_index_j==0) {
+//                printf("%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t\n",
+//                       K11,
+//                       K22,
+//                       K33,
+//                       quadrature_weight,
+//                       legendre_polynomial,
+//                       K23
+////                       2.0f * SLENDERNESS * SLENDERNESS
+////                                                          * -3.0f * invDistance5 * difference.x * difference.y,
+////                       2.0f * SLENDERNESS * SLENDERNESS
+////                                                          * -3.0f * invDistance5 * difference.x * difference.z,
+////                       2.0f * SLENDERNESS * SLENDERNESS
+////                                                          * -3.0f * invDistance5 * difference.y * difference.z
+//                       );
+//            }
+
             // @TEST http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html#1262
             // Kahan Summation Formula
 
@@ -134,6 +151,17 @@ void compute_G_numeric(
             GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K12 * external_force.x + K22 * external_force.y + K23 * external_force.z);
             GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] += quadrature_weight * (K13 * external_force.x + K23 * external_force.y + K33 * external_force.z);
         }
+
+//        if(debug) {
+//            printf("%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t%.8f\t\n",
+//                   G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+//                   G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+//                   G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+//                   G[quadrature_index_i + 3 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+//                   G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS],
+//                   G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS]
+//                   );
+//        }
     }
 }
 

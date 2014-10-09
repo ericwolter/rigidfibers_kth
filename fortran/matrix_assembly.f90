@@ -291,6 +291,8 @@ SUBROUTINE assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
   REAL*8 Q1,Q2,Q3
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
+
+    INTEGER::DEBUG
   c=log(eeps**2*exp(1.0d0));
   d=-c;
   e=2.0d0;
@@ -329,24 +331,35 @@ SUBROUTINE assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
           
           kk=1; 
           rowno=(filno-1)*3*N+1;
+
+        IF (filno==9+1 .AND. fno==88+1 .AND. l==1+1) THEN
+          DEBUG=1
+
+        ENDIF
           
-          
+
           DO i=1,LQ
             xbar=xc+pv(i)*ta;  
-            Gmat(i,:)=G_compute_GQ(xcb,tb,xbar,eeps,LQ,pv,wv,LvecMat(:,l));
+            Gmat(i,:)=G_compute_GQ(xcb,tb,xbar,eeps,LQ,pv,wv,LvecMat(:,l),DEBUG);
             !! Inner integral over G*P_l(s') in Eq. (23)
          END DO
+
+        DEBUG=0
           
           
           DO i=1,6
             thvec(i)=sum(wv*Gmat(:,i)*LvecMat(:,1));  !! Theta in Eq. (23)
-          END DO  
+!            IF (filno==9+1 .AND. fno==88+1 .AND. l==1+1) THEN
+!                PRINT '(*(F16.8))',thvec(1),thvec(4),thvec(5)
+!            ENDIF
+          END DO
           
           Q1=thvec(1)*ta(1)+thvec(4)*ta(2)+thvec(5)*ta(3);
           Q2=thvec(4)*ta(1)+thvec(2)*ta(2)+thvec(6)*ta(3);
           Q3=thvec(5)*ta(1)+thvec(6)*ta(2)+thvec(3)*ta(3);
           
-          !!Will add up as we loop over fno, and over l=1..N. 
+
+          !!Will add up as we loop over fno, and over l=1..N.
           p=(fno-1)*N*3+3*(l-1)+1;
           
           AMat(rowno,p)=D1*ta(1)*Q1;

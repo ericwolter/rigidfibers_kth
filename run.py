@@ -77,8 +77,10 @@ with io.open(cuda_constants_path, 'w') as cuda:
 	cuda.write(u'#include "../common.h"\n')
 	cuda.write(u'\n')
 	
-	cuda.write(u'#define BENCHMARK ('+str(args.benchmark).lower()+')\n')
-	cuda.write(u'#define VALIDATE ('+str(args.validate).lower()+')\n')
+        if args.benchmark:
+            cuda.write(u'#define BENCHMARK (true)\n')
+        if args.validate:
+            cuda.write(u'#define VALIDATE (true)\n')
 	cuda.write(u'\n')
 
 	cuda.write(u'#define DIMENSIONS (3)\n')
@@ -90,7 +92,7 @@ with io.open(cuda_constants_path, 'w') as cuda:
 	cuda.write(u'#define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL (3)\n')
 	cuda.write(u'#define NUMBER_OF_QUADRATURE_INTERVALS ('+str(parameters['number_of_quadrature_intervals'])+')\n')
 	cuda.write(u'#define TOTAL_NUMBER_OF_QUADRATURE_POINTS (NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL * NUMBER_OF_QUADRATURE_INTERVALS)\n')
-	cuda.write(u'#define USE_ANALYTICAL_INTEGRATION (false)\n')
+        #cuda.write(u'#define USE_ANALYTICAL_INTEGRATION (false)\n')
 	cuda.write(u'\n')
 
 	cuda.write(u'#define TOTAL_NUMBER_OF_ROWS (NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS)\n')
@@ -127,7 +129,7 @@ cmake = subprocess.Popen(['cmake', '../'], cwd=build_path)
 if cmake.wait():
 	sys.exit(1)
 
-make = subprocess.Popen('make', cwd=build_path)
+make = subprocess.Popen(['make', '-j8'], cwd=build_path)
 if make.wait():
 	sys.exit(2)
 
@@ -138,5 +140,11 @@ if make.wait():
 #####
 import inspect
 fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers.name])
-print fibers.wait()
+if fibers.wait():
+    sys.exit(3)
+
+if args.validate:
+    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/a_matrix.out'), os.path.join(build_path,'bin/current.map'), 'tests/reference/100_numeric_gmres/0_AMat.ref'])
+    print validate.wait()
+
 

@@ -89,15 +89,15 @@ SUBROUTINE quad_pts_and_wts(NoQI,pv,wv)
 !!$ DO i=1,3*NoQI
 !!$    PRINT*,"pv",pv(i)
 !!$ END DO
-!!$ DO i=1,3*NoQI
-!!$    PRINT*,"Wv",wv(i)
-!!$ END DO
+! DO i=1,3*NoQI
+!   PRINT*,"Wv",NoQI
+! END DO
  
 END SUBROUTINE quad_pts_and_wts
 
 
 
-FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m);
+FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m,DEBUG);
   
   !!Contr. from filament b to point xbar. 
   !!G is integral over filament b, with kernel 
@@ -111,6 +111,7 @@ FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m);
   INTEGER, INTENT(IN):: LQ
   !pv,wv,and Lvec_m should be of length LQ. 
   REAL*8,DIMENSION(LQ),INTENT(IN)::pv,wv,Lvec_m
+  INTEGER, INTENT(IN)::DEBUG
 
   REAL*8,DIMENSION(6):: G_compute_GQ
 
@@ -159,6 +160,11 @@ FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m);
 !!$  PRINT*,"G_compute_GQ(4)",G_compute_GQ(4)
 !!$  PRINT*,"G_compute_GQ(5)",G_compute_GQ(5)
 !!$  PRINT*,"G_compute_GQ(6)",G_compute_GQ(6)
+    IF(DEBUG==1) THEN
+    !!    PRINT '(*(F16.8))',xbar,6.0d0*eeps**2*Rvec_x(1)*Rvec_y(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_x(1)*Rvec_z(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_y(1)*Rvec_z(1)/Rmod(1)**5
+        PRINT '(*(F16.8))',K11(1),K22(1),K33(1),wv(1),Lvec_m(1),K23(1)
+       !! PRINT '(*(F16.8))',G_compute_GQ
+    END IF
 !!$STOP  
 
 END FUNCTION G_COMPUTE_GQ

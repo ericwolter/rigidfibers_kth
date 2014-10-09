@@ -1,35 +1,92 @@
-import sys
+#!/usr/bin/python
+
+#####
+#
+# Parsing command line arguments
+#
+#####
+import argparse
+parser = argparse.ArgumentParser(description='Run helper for rigid fibers')
+parser.add_argument('current_map',metavar='CURRENT_MAPPING',type=open,help='the current mapping')
+parser.add_argument('current_matrix',metavar='CURRENT_MATRIX',type=open,help='the current matrix')
+parser.add_argument('reference_map',metavar='REFERENCE_MAPPING',type=open,help='the reference mapping')
+parser.add_argument('reference_matrix',metavar='REFERENCE_MATRIX',type=open,help='the reference matrix')
+
+args = parser.parse_args()
+
+#####
+#
+# Parsing mapping
+#
+#####
+
+# Indexed by row and column and returns simulation variables
+current_mapping = {}
+for idx,line in enumerate(args.current_map):
+    c = [int(component) for component in line.strip().split("|")[1:]]
+    current_mapping[(c[6],c[7])] = (c[0],c[1],c[2],c[3],c[4],c[5])
+
+# Indexed by simulation variables and returns row and column
+reference_mapping = {}
+for idx,line in enumerate(args.reference_map):
+    c = [int(component) for component in line.strip().split("|")[1:]]
+    reference_mapping[(c[0],c[1],c[2],c[3],c[4],c[5])] = (c[6],c[7])
+
+#####
+#
+# Parsing matrices
+#
+#####
+current_matrix = [[float(col) for col in row.strip().split()] for row in args.current_matrix]
+reference_matrix = [[float(col) for col in row.strip().split()] for row in args.reference_matrix]
+args.current_matrix.close()
+args.reference_matrix.close()
+
+#####
+#
+# Calculating delta
+#
+#####
 import math
 
-f_path = sys.argv[1]
-c_path = sys.argv[2]
-
-print f_path
-print c_path
-
-f = [line.strip().split() for line in open(f_path)]
-c = [line.strip().split() for line in open(c_path)]
-
-count = 0.0
-sum = 0.0
-max = -1.0
+count = 0
+total = 0.0
+maximum = -1.0
+max_location = None
 max_row = 0
 max_col = 0
-for row in xrange(len(f)):
-    f_row = f[row]
-    c_row = c[row]
-    for col in xrange(len(f_row)):
-        count+= 1
-        diff = abs(float(f_row[col]) - float(c_row[col]))
-        sum += diff
-        if diff > max:
-            max = diff
-            max_row = row
-            max_col = col
 
-print 'count', count
-print 'sum', sum
-print 'max', max, '(',max_row,',',max_col,')'
-print 'max_f', f[max_row][max_col]
-print 'max_c', c[max_row][max_col]
-print 'avg', sum / count
+for idx_row in xrange(len(current_matrix)):
+    row = current_matrix[idx_row]
+    for idx_col in xrange(len(row)):
+        count += 1
+
+        current_element = row[idx_col]
+
+        # get simulation variables
+        current_location = current_mapping[(idx_row,idx_col)]
+
+        # ignore diagonal
+        if current_location[0] == current_location[1]:
+            continue
+
+        # translate to row and column in reference matrix
+        reference_location = reference_mapping[current_location]
+        reference_element = reference_matrix[reference_location[0]][reference_location[1]]
+
+        delta = abs(current_element) - abs(reference_element)
+        total += delta
+        if delta > maximum:
+            maximum = delta
+            max_location = current_location
+            max_row = idx_row
+            max_col = idx_col
+
+print '**************************************************'
+print 'Validation:'
+print 'Comparison Matrix    :',args.reference_matrix.name
+print 'Maximum Delta        :',maximum
+if maximum > 1e-6:
+    print 'Maximum Location     :',max_location
+print 'Average Delta        :',total/count
+print '**************************************************'
