@@ -346,12 +346,12 @@ void Simulation::solveSystem()
     viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
     viennacl::linalg::gmres_tag custom_gmres(1e-5, 1000, 10);
-    performance_->start("solve_system");
+//    performance_->start("solve_system");
 
     x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
 
-    performance_->stop("solve_system");
-    performance_->print("solve_system");
+//    performance_->stop("solve_system");
+//    performance_->print("solve_system");
 
     // magma_int_t *ipiv=NULL;
     // magma_int_t ldda = ((num_matrix_rows+31)/32)*32;  // round up to multiple of 32 for best GPU performance
@@ -363,7 +363,7 @@ void Simulation::solveSystem()
 
 void Simulation::updateVelocities()
 {
-    performance_->start("update_velocities");
+//    performance_->start("update_velocities");
 #ifdef FORCE_1D
     std::cout << "     [GPU]      : Updating velocities 1D..." << std::endl;
     update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
@@ -391,8 +391,8 @@ void Simulation::updateVelocities()
         gpu_current_rotational_velocities_
     );
 #endif
-    performance_->stop("update_velocities");
-    performance_->print("update_velocities");    
+//    performance_->stop("update_velocities");
+//    performance_->print("update_velocities");
     // cl_int err = 0;
 
     // cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
@@ -422,7 +422,7 @@ void Simulation::updateFibers(bool first_timestep)
 
     if (first_timestep)
     {
-        performance_->start("update_fibers_firststep");
+//        performance_->start("update_fibers_firststep");
         update_fibers_firststep <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_current_positions_,
             gpu_next_positions_,
@@ -431,12 +431,12 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_current_translational_velocities_,
             gpu_current_rotational_velocities_
         );
-        performance_->stop("update_fibers_firststep");
-        performance_->print("update_fibers_firststep");
+//        performance_->stop("update_fibers_firststep");
+//        performance_->print("update_fibers_firststep");
     }
     else
     {
-        performance_->start("update_fibers");
+//        performance_->start("update_fibers");
         update_fibers <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_previous_positions_,
             gpu_current_positions_,
@@ -449,8 +449,8 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_previous_rotational_velocities_,
             gpu_current_rotational_velocities_
         );
-        performance_->stop("update_fibers");
-        performance_->print("update_fibers");
+//        performance_->stop("update_fibers");
+//        performance_->print("update_fibers");
     }
 }
 

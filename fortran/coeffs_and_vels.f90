@@ -232,11 +232,11 @@ FUNCTION solve_coeffs_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CPU_p=real(count2-count1)/count_rate
   PRINT *,"Assemble matrix took ",CPU_p
 
-  OPEN(10,file="AMat.out");
-  DO i=1,3*M*N
-    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
-  END DO
-  CLOSE(10)  
+!  OPEN(10,file="AMat.out");
+!  DO i=1,3*M*N
+!    WRITE(10,'(*(F16.8))') (AMat(i,j),j=1,3*M*N)
+!  END DO
+!  CLOSE(10)
 
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   CALL assemble_rhs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
@@ -244,11 +244,11 @@ FUNCTION solve_coeffs_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CPU_p=real(count2-count1)/count_rate
   PRINT *,"Assemble rhs took ",CPU_p
 
-  OPEN(10,file="BVec.out");
-  DO i=1,3*M*N
-    WRITE(10,'(*(F16.8))') (Brhs(i))
-  END DO
-  CLOSE(10)
+!  OPEN(10,file="BVec.out");
+!  DO i=1,3*M*N
+!    WRITE(10,'(*(F16.8))') (Brhs(i))
+!  END DO
+!  CLOSE(10)
 
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
   !PRINT *,"restart= ",restart

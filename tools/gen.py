@@ -6,14 +6,14 @@ NUM_OF_FIBERS = 100
 if sys.argv[1]:
     NUM_OF_FIBERS = int(sys.argv[1])
 
-MIN_X = -2
-MAX_X = 2
+MIN_X = -1000
+MAX_X = 1000
 
-MIN_Y = -2
-MAX_Y = 2
+MIN_Y = -1000
+MAX_Y = 1000
 
-MIN_Z = -2
-MAX_Z = 2
+MIN_Z = -1000
+MAX_Z = 1000
 
 MIN_T = -1
 MAX_T = 1

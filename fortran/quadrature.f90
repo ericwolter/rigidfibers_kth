@@ -160,11 +160,11 @@ FUNCTION G_compute_GQ(xb,pb,xbar,eeps,LQ,pv,wv,Lvec_m,DEBUG);
 !!$  PRINT*,"G_compute_GQ(4)",G_compute_GQ(4)
 !!$  PRINT*,"G_compute_GQ(5)",G_compute_GQ(5)
 !!$  PRINT*,"G_compute_GQ(6)",G_compute_GQ(6)
-    IF(DEBUG==1) THEN
-    !!    PRINT '(*(F16.8))',xbar,6.0d0*eeps**2*Rvec_x(1)*Rvec_y(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_x(1)*Rvec_z(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_y(1)*Rvec_z(1)/Rmod(1)**5
-        PRINT '(*(F16.8))',K11(1),K22(1),K33(1),wv(1),Lvec_m(1),K23(1)
-       !! PRINT '(*(F16.8))',G_compute_GQ
-    END IF
+!    IF(DEBUG==1) THEN
+!    !!    PRINT '(*(F16.8))',xbar,6.0d0*eeps**2*Rvec_x(1)*Rvec_y(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_x(1)*Rvec_z(1)/Rmod(1)**5,6.0d0*eeps**2*Rvec_y(1)*Rvec_z(1)/Rmod(1)**5
+!        PRINT '(*(F16.8))',K11(1),K22(1),K33(1),wv(1),Lvec_m(1),K23(1)
+!       !! PRINT '(*(F16.8))',G_compute_GQ
+!    END IF
 !!$STOP  
 
 END FUNCTION G_COMPUTE_GQ

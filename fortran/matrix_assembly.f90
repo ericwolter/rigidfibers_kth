@@ -332,10 +332,10 @@ SUBROUTINE assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
           kk=1; 
           rowno=(filno-1)*3*N+1;
 
-        IF (filno==9+1 .AND. fno==88+1 .AND. l==1+1) THEN
-          DEBUG=1
+!        IF (filno==9+1 .AND. fno==88+1 .AND. l==1+1) THEN
+!          DEBUG=1
 
-        ENDIF
+!        ENDIF
           
 
           DO i=1,LQ
@@ -344,7 +344,7 @@ SUBROUTINE assemble_matrix(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
             !! Inner integral over G*P_l(s') in Eq. (23)
          END DO
 
-        DEBUG=0
+!        DEBUG=0
           
           
           DO i=1,6

@@ -151,7 +151,7 @@ if args.validate:
     validate.wait()
 
 if args.benchmark:
-    iterations = 8
+    iterations = 4
     benchmark = []
 
     for i in xrange(iterations):
