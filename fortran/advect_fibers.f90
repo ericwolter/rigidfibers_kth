@@ -348,28 +348,28 @@ PROGRAM ADVECT_FIBERS
   !! AKT-KG 2006
   CALL quad_pts_and_wts(NoQI,pv,wv) 
 
-  OPEN(10,file="quadrature_points.out");
-  OPEN(30,file="quadrature_weights.out");
-  DO i=1,NoQI
-     ind=(i-1)*3
-     WRITE(10,'(2F24.16)') pv(ind+1)
-     WRITE(10,'(2F24.16)') pv(ind+2)
-     WRITE(10,'(2F24.16)') pv(ind+3)
-     WRITE(10,*) ' '
-     WRITE(30,'(2F24.16)') wv(ind+1)
-     WRITE(30,'(2F24.16)') wv(ind+2)
-     WRITE(30,'(2F24.16)') wv(ind+3)
-     WRITE(30,*) ' '
-  END DO
+!  OPEN(10,file="quadrature_points.out");
+!  OPEN(30,file="quadrature_weights.out");
+!  DO i=1,NoQI
+!     ind=(i-1)*3
+!     WRITE(10,'(2F24.16)') pv(ind+1)
+!     WRITE(10,'(2F24.16)') pv(ind+2)
+!     WRITE(10,'(2F24.16)') pv(ind+3)
+!     WRITE(10,*) ' '
+!     WRITE(30,'(2F24.16)') wv(ind+1)
+!     WRITE(30,'(2F24.16)') wv(ind+2)
+!     WRITE(30,'(2F24.16)') wv(ind+3)
+!     WRITE(30,*) ' '
+!  END DO
 
-  OPEN(70,file="quadrature_vectors.out")
   LvecMat=compute_LVecs(N,LQ,pv);
-  DO j=1,N
-    DO i=1,LQ
-      WRITE(70,'(2F24.16)') LvecMat(i,j)
-    END DO
-    WRITE(70,*) ' '
-  END DO
+!  OPEN(70,file="quadrature_vectors.out")
+!  DO j=1,N
+!    DO i=1,LQ
+!      WRITE(70,'(2F24.16)') LvecMat(i,j)
+!    END DO
+!    WRITE(70,*) ' '
+!  END DO
   
   !=================================================================
   PRINT *,"=========== advect_fibers =============="
@@ -495,6 +495,8 @@ PROGRAM ADVECT_FIBERS
       !! Update postition and orientation by solving (24) and (25) in time
       CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
+        PRINT*, "1"
+
       IF (tt==1) THEN
          !!first time step. 
          XcVecs(:,three)=XcVecs(:,two)+dt*VelVecs(:,new);
@@ -508,6 +510,7 @@ PROGRAM ADVECT_FIBERS
               2.0d0/3.0d0*dt*(2.0d0*RotVecs(:,new)-RotVecs(:,old));
       END IF
       
+        PRINT*, "2"
       !! Normalize, make orientation vectors have length one
       DO i=1,M
          ind=(i-1)*3
@@ -518,6 +521,7 @@ PROGRAM ADVECT_FIBERS
          tmod(ind+3)=tmod0(i)
       END DO
       
+        PRINT*, "3"
       tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
       
       tVecs(:,three)=tVecs(:,three)/tmod;
@@ -526,21 +530,22 @@ PROGRAM ADVECT_FIBERS
       CPU_p = real(count2-count1)/count_rate
       PRINT *,"Updating fibers took ",CPU_p," seconds."
       
-      OPEN(90,file="POS.out");
-      DO i=1,3*M
-        WRITE(90,'(*(F16.8))') (XcVecs(i,three))
-      END DO
-      CLOSE(90)
+!      OPEN(90,file="POS.out");
+!      DO i=1,3*M
+!        WRITE(90,'(*(F16.8))') (XcVecs(i,three))
+!      END DO
+!      CLOSE(90)
 
-      OPEN(90,file="ORIENT.out");
-      DO i=1,3*M
-        WRITE(90,'(*(F16.8))') (tVecs(i,three))
-      END DO
-      CLOSE(90)
+!      OPEN(90,file="ORIENT.out");
+!      DO i=1,3*M
+!        WRITE(90,'(*(F16.8))') (tVecs(i,three))
+!      END DO
+!      CLOSE(90)
 
 
       
-      
+        PRINT*, "4"
+
       t=t+dt;
       
       IF (mod(tt,save_ival)==0) THEN
@@ -575,6 +580,8 @@ PROGRAM ADVECT_FIBERS
          END DO
          WRITE(70,*) ' '
       END IF
+      PRINT*, "5"
+
      IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
         pp=pp+1;
         CALL int2str(filenostr,pp)

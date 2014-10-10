@@ -1,6 +1,0 @@
-name,time
-assemble_matrix,2.7209999561309814
-assemble_rhs,0.52600002288818359
-solve_system,0.041999999433755875
-update_velocities,1.0349999666213989
-update_fibers,0.0000000000000000

@@ -3,9 +3,11 @@
 
 #include "../common.h"
 
+#define BENCHMARK
+#define FORCE_1D
 
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (600)
+#define NUMBER_OF_FIBERS (700)
 #define TIMESTEP (0.1)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01)

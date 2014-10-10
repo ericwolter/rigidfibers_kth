@@ -86,11 +86,11 @@ void Simulation::initializeGPUMemory()
     std::cout << "     [GPU]      : Resetting system..." << std::endl;
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
-    performance_->start("eye_matrix");
+    //performance_->start("eye_matrix");
     eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
     
-    performance_->stop("eye_matrix");
-    performance_->print("eye_matrix");    
+    //performance_->stop("eye_matrix");
+    //performance_->print("eye_matrix");
 
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMemset(gpu_x_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
@@ -277,6 +277,10 @@ void Simulation::step(size_t current_timestep)
     solveSystem();
     updateVelocities();
 
+#ifdef BENCHMARK
+    performance_->exportMeasurements("performance.out");
+#endif //BENCHMARK
+
 #ifdef VALIDATE
     dumpLinearSystem();
 #endif //VALIDATE
@@ -341,7 +345,7 @@ void Simulation::solveSystem()
     viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
-    viennacl::linalg::gmres_tag custom_gmres(1e-5, 100, 10);
+    viennacl::linalg::gmres_tag custom_gmres(1e-5, 1000, 10);
     performance_->start("solve_system");
 
     x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
@@ -637,9 +641,4 @@ void Simulation::dumpVelocities()
 
     delete[] t_vel;
     delete[] r_vel;
-}
-
-void Simulation::exportPerformanceMeasurments()
-{
-    // performance_->exportMeasurements("performance.out");
 }

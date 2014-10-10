@@ -19,6 +19,7 @@
  */
 #include "performance.h"
 #include "resources.h"
+#include "kernels/constants.cu"
 
 #include <sstream>
 #include <iomanip>  // used for standard output manipulation (e.g setprecision)
@@ -30,6 +31,7 @@ Performance::~Performance() {}
 
 void Performance::start(std::string name)
 {
+#ifdef BENCHMARK
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
 
     // create a new event if this is the first time we encounter it
@@ -47,10 +49,12 @@ void Performance::start(std::string name)
     }
 
     cudaEventRecord(performance_tracker->second.start);
+#endif //BENCHMARK
 }
 
 void Performance::stop(std::string name)
 {
+#ifdef BENCHMARK
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
     PerformanceTracker *tracker = &performance_tracker->second;
 
@@ -62,41 +66,48 @@ void Performance::stop(std::string name)
     cudaEventElapsedTime(&tracker->device_last_time, tracker->start, tracker->stop);
     tracker->device_last_time *= 1e-3; 
     tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / tracker->device_count);
+#endif //BENCHMARK
 }
 
 void Performance::print(std::string name)
 {
+#ifdef BENCHMARK
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
     std::cout << "  [BENCHMARK]   : " << std::left << std::setw(17) << std::setfill(' ') 
                                       << performance_tracker->second.name
                                       << std::setprecision(5) << std::fixed
                                       << " : " << performance_tracker->second.device_last_time << "(" << performance_tracker->second.device_average_time << ")" << " sec" << std::endl;
+#endif //BENCHMARK
 }
 
 void Performance::dump()
 {
+#ifdef BENCHMARK
     std::map<std::string, PerformanceTracker>::iterator iter;
     for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
     {
         print(iter->second.name);
     }
+#endif //BENCHMARK
 }
 
 void Performance::exportMeasurements(std::string filename)
 {
-    // std::string executablePath = Resources::getExecutablePath();
+#ifdef BENCHMARK
+     std::string executablePath = Resources::getExecutablePath();
 
-    // std::string outputPath = executablePath + "/" + filename;
-    // std::ofstream performance_output_file;
-    // performance_output_file.open (outputPath.c_str());
-    // performance_output_file << std::fixed << std::setprecision(8);
-    // std::map<std::string, PerformanceTracker>::iterator iter;
+     std::string outputPath = executablePath + "/" + filename;
+     std::ofstream performance_output_file;
+     performance_output_file.open (outputPath.c_str());
+     performance_output_file << std::setprecision(8) << std::fixed;
+     std::map<std::string, PerformanceTracker>::iterator iter;
 
-    // performance_output_file << "name" << "," << "time" << std::endl;
-    // for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
-    // {
-    //     PerformanceTracker *tracker = &iter->second;
-    //     performance_output_file << tracker->name << "," << tracker->device_average_time << std::endl;
-    // }
-    // performance_output_file.close();
+     performance_output_file << "name" << "," << "time" << std::endl;
+     for (iter = trackers_.begin(); iter != trackers_.end(); ++iter)
+     {
+         PerformanceTracker *tracker = &iter->second;
+         performance_output_file << tracker->name << "," << tracker->device_average_time << std::endl;
+     }
+     performance_output_file.close();
+#endif //BENCHMARK
 }

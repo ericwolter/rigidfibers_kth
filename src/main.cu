@@ -37,23 +37,44 @@ int main(int argc, char *argv[])
     {
         cudaDeviceProp prop;
         cudaGetDeviceProperties(&prop, i);
-        printf("Device Number: %d\n", i);
-        printf("  Device name: %s\n", prop.name);
-        printf("  Memory Clock Rate (KHz): %d\n",
+        printf("  Device Number: %d\n", i);
+        printf("    Device name: %s\n", prop.name);
+        printf("    Memory Clock Rate (KHz): %d\n",
                prop.memoryClockRate);
-        printf("  Memory Bus Width (bits): %d\n",
+        printf("    Memory Bus Width (bits): %d\n",
                prop.memoryBusWidth);
-        printf("  Peak Memory Bandwidth (GB/s): %f\n",
+        printf("    Peak Memory Bandwidth (GB/s): %f\n",
                2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6);
+
+        size_t free_byte;
+        size_t total_byte;
+        cudaMemGetInfo( &free_byte, &total_byte );
+        printf("    Total Memory (MB): %.0f\n",
+               total_byte/1024.0/1024.0);
+        printf("    Free Memory (MB): %.0f\n",
+               free_byte/1024.0/1024.0);
+        printf("    Used Memory (MB): %.0f\n",
+               (total_byte-free_byte)/1024.0/1024.0);
     }
     std::cout << "**************************************************" << std::endl;
     std::cout << "Parameters:" << std::endl;
-    std::cout << "Number of fibers                   : " << NUMBER_OF_FIBERS << std::endl;
-    std::cout << "Number of timesteps                : " << NUMBER_OF_TIMESTEPS << std::endl;
-    std::cout << "Size of timesteps                  : " << TIMESTEP << std::endl;
-    std::cout << "Slenderness                        : " << SLENDERNESS << std::endl;
-    std::cout << "Number of terms in force expansion : " << NUMBER_OF_TERMS_IN_FORCE_EXPANSION << std::endl;
-    std::cout << "Number of quadrature intervals     : " << NUMBER_OF_QUADRATURE_INTERVALS << std::endl;
+    std::cout << "  Number of fibers                   : " << NUMBER_OF_FIBERS << std::endl;
+    std::cout << "  Number of timesteps                : " << NUMBER_OF_TIMESTEPS << std::endl;
+    std::cout << "  Size of timesteps                  : " << TIMESTEP << std::endl;
+    std::cout << "  Slenderness                        : " << SLENDERNESS << std::endl;
+    std::cout << "  Number of terms in force expansion : " << NUMBER_OF_TERMS_IN_FORCE_EXPANSION << std::endl;
+    std::cout << "  Number of quadrature intervals     : " << NUMBER_OF_QUADRATURE_INTERVALS << std::endl;
+    std::cout << "  Number of quadrature intervals     : " << NUMBER_OF_QUADRATURE_INTERVALS << std::endl;
+#ifdef VALIDATE
+    std::cout << "  Validating enabled                 : Yes" << std::endl;
+#else
+    std::cout << "  Validating enabled                 : No" << std::endl;
+#endif //VALIDATE
+#ifdef BENCHMARK
+    std::cout << "  Benchmarking enabled               : Yes" << std::endl;
+#else
+    std::cout << "  Benchmarking enabled               : No" << std::endl;
+#endif //BENCHMARK
     std::cout << "**************************************************" << std::endl;
 
     Configuration configuration = Parameters::parseConfigurationFiles(args.layout);

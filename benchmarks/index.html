@@ -3,7 +3,6 @@
 <head>
     <meta charset=utf-8>
     <title>Performance - RigidFibers</title>
-    <link rel="stylesheet" href="bower_components/normalize-css/normalize.css">
     <style>
         * { 
         }
@@ -11,20 +10,20 @@
             font-size: 10px;
             font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
         }
-
-        .axis path,
-        .axis line {
-          fill: none;
-          stroke: #000;
-          shape-rendering: crispEdges;
-        }
     </style>
-    <script src="bower_components/underscore/underscore-min.js"></script>
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/d3/d3.js"></script>
-    <script src="bower_components/queue-async/queue.min.js"></script>
+    <script type="text/javascript" src="dygraph-combined.js"></script>
 </head>
 <body>
+<div id="graphdiv" style="width:1200px; height:750px;"></div>
+<script type="text/javascript">
+  g = new Dygraph(
+    document.getElementById("graphdiv"),"number_of_fibers.txt",
+	{
+		legend: "always",
+		valueRange: [0,20],
+		dateWindow: [0,1000]
+	}
+  );
+</script>
 </body>
-    <script src="main.js"></script>
 </html>
