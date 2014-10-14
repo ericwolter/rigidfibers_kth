@@ -49,6 +49,8 @@ void Performance::start(std::string name)
     }
 
     cudaEventRecord(performance_tracker->second.start);
+#else
+    (void)0; //noop
 #endif //BENCHMARK
 }
 
@@ -66,6 +68,8 @@ void Performance::stop(std::string name)
     cudaEventElapsedTime(&tracker->device_last_time, tracker->start, tracker->stop);
     tracker->device_last_time *= 1e-3; 
     tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / tracker->device_count);
+#else
+    (void)0; //noop
 #endif //BENCHMARK
 }
 
@@ -77,6 +81,8 @@ void Performance::print(std::string name)
                                       << performance_tracker->second.name
                                       << std::setprecision(5) << std::fixed
                                       << " : " << performance_tracker->second.device_last_time << "(" << performance_tracker->second.device_average_time << ")" << " sec" << std::endl;
+#else
+    (void)0; //noop
 #endif //BENCHMARK
 }
 
@@ -88,6 +94,8 @@ void Performance::dump()
     {
         print(iter->second.name);
     }
+#else
+    (void)0; //noop
 #endif //BENCHMARK
 }
 
@@ -109,5 +117,7 @@ void Performance::exportMeasurements(std::string filename)
          performance_output_file << tracker->name << "," << tracker->device_average_time << std::endl;
      }
      performance_output_file.close();
+#else
+    (void)0; //noop
 #endif //BENCHMARK
 }

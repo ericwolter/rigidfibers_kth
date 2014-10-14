@@ -61,7 +61,7 @@ void Simulation::initializeGPUMemory()
 {
 #ifdef VALIDATE
     checkCuda(cudaMalloc(&gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
-    checkCuda(cudaMemset(gpu_validation_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
+    checkCuda(cudaMemset(gpu_validation_, -1, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
 #endif //VALIDATE
 
     checkCuda(cudaMalloc(&gpu_previous_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
@@ -87,7 +87,7 @@ void Simulation::initializeGPUMemory()
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
     //performance_->start("eye_matrix");
-    eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
+    //eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
     
     //performance_->stop("eye_matrix");
     //performance_->print("eye_matrix");
@@ -273,7 +273,6 @@ void Simulation::precomputeLegendrePolynomials()
 void Simulation::step(size_t current_timestep)
 {
     assembleSystem();
-    std::cout << "     [GPU]      : Solving system..." << std::endl;
     solveSystem();
     updateVelocities();
 
@@ -287,7 +286,6 @@ void Simulation::step(size_t current_timestep)
 
     // dumpVelocities();
 
-    std::cout << "     [GPU]      : Updating fibers..." << std::endl;
     updateFibers(current_timestep == 0);
 
     DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
@@ -339,19 +337,26 @@ void Simulation::assembleSystem()
 
 void Simulation::solveSystem()
 {
+    std::cout << "     [GPU]      : Solving system..." << std::endl;
+
     viennacl::matrix_base<float, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
-    viennacl::linalg::gmres_tag custom_gmres(1e-5, 1000, 10);
-//    performance_->start("solve_system");
+    //viennacl::linalg::gmres_tag custom_solver(1e-5, 1000, 10);
+    viennacl::linalg::bicgstab_tag custom_solver(1e-5, 1000);
+    performance_->start("solve_system");
 
-    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
+//    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
+    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
 
-//    performance_->stop("solve_system");
-//    performance_->print("solve_system");
+    performance_->stop("solve_system");
+    performance_->print("solve_system");
+
+    std::cout << "     [GPU]      : No. of iters : " << custom_solver.iters() << std::endl;
+    std::cout << "     [GPU]      : Est. error   : " << custom_solver.error() << std::endl;
 
     // magma_int_t *ipiv=NULL;
     // magma_int_t ldda = ((num_matrix_rows+31)/32)*32;  // round up to multiple of 32 for best GPU performance
@@ -363,7 +368,7 @@ void Simulation::solveSystem()
 
 void Simulation::updateVelocities()
 {
-//    performance_->start("update_velocities");
+    performance_->start("update_velocities");
 #ifdef FORCE_1D
     std::cout << "     [GPU]      : Updating velocities 1D..." << std::endl;
     update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
@@ -391,38 +396,21 @@ void Simulation::updateVelocities()
         gpu_current_rotational_velocities_
     );
 #endif
-//    performance_->stop("update_velocities");
-//    performance_->print("update_velocities");
-    // cl_int err = 0;
-
-    // cl_uint param = 0; cl_kernel kernel = kernels_["update_velocities"];
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_position_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_orientation_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &x_vector_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_translational_velocity_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &current_rotational_velocity_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_points_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &quadrature_weights_buffer_);
-    // err |= clSetKernelArg(kernel, param++, sizeof(cl_mem), &legendre_polynomials_buffer_);
-    // clCheckError(err, "Could not set kernel arguments for updating velocities");
-
-    // performance_->start("update_velocities", false);
-    // err = clEnqueueNDRangeKernel(queue_, kernel, 1, NULL, &global_work_size_, NULL, 0, NULL, performance_->getDeviceEvent("update_velocities"));
-    // clCheckError(err, "Could not enqueue kernel");
-
-    // performance_->stop("update_velocities");
-    // performance_->print("update_velocities");
+    performance_->stop("update_velocities");
+    performance_->print("update_velocities");
 }
 
 void Simulation::updateFibers(bool first_timestep)
 {
+    std::cout << "     [GPU]      : Updating fibers..." << std::endl;
+
     // A second order multi-step method
     // @TODO Why? Which one?
     // The first time step is a simple forward euler
 
     if (first_timestep)
     {
-//        performance_->start("update_fibers_firststep");
+        performance_->start("update_fibers_firststep");
         update_fibers_firststep <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_current_positions_,
             gpu_next_positions_,
@@ -431,12 +419,12 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_current_translational_velocities_,
             gpu_current_rotational_velocities_
         );
-//        performance_->stop("update_fibers_firststep");
-//        performance_->print("update_fibers_firststep");
+        performance_->stop("update_fibers_firststep");
+        performance_->print("update_fibers_firststep");
     }
     else
     {
-//        performance_->start("update_fibers");
+        performance_->start("update_fibers");
         update_fibers <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_previous_positions_,
             gpu_current_positions_,
@@ -449,8 +437,8 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_previous_rotational_velocities_,
             gpu_current_rotational_velocities_
         );
-//        performance_->stop("update_fibers");
-//        performance_->print("update_fibers");
+        performance_->stop("update_fibers");
+        performance_->print("update_fibers");
     }
 }
 

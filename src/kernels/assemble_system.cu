@@ -5,7 +5,8 @@
 #include "compute_inner_integral_analytically.cu"
 #include "compute_inner_integral_numerically.cu"
 
-__global__ void assemble_system(
+__global__ void
+assemble_system(
         #ifdef VALIDATE
         int *validation,
         #endif //VALIDATE
@@ -23,8 +24,9 @@ __global__ void assemble_system(
     if (i >= NUMBER_OF_FIBERS) return;
 #ifndef FORCE_1D
     if (j >= NUMBER_OF_FIBERS) return;
-    if (i==j) return;
 #endif //FORCE_1D
+
+    //if (i==j) return;
 
     const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
     const float d  = -c;
@@ -95,13 +97,57 @@ __global__ void assemble_system(
         const float4 position_j = positions[j];
         const float4 orientation_j = orientations[j];
 
-        for (int force_index_i = 0; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
+        for (int force_index_j = 0; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
         {
+            if(i==j) {
+                // only need to set the diagonals to one the rest of the entries is only initialized to 0 in the very beginning
+                // and doesn't change throughout the simulation
+                x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 0;
+                y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 1;
+                z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 2;
+
+//                    x_row_index = 0 * NUMBER_OF_FIBERS + force_index_j + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//                    y_row_index = 1 * NUMBER_OF_FIBERS + force_index_j + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//                    z_row_index = 2 * NUMBER_OF_FIBERS + force_index_j + NUMBER_OF_FIBERS * DIMENSIONS + i;
+
+                x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 0;
+                y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 1;
+                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 2;
+
+                a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
+                a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
+                a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
+
+#ifdef VALIDATE
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
+                    validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
+
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
+                    validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
+
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
+                    validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
+#endif //VALIDATE
+                continue;
+            }
+
             float Q1;
             float Q2;
             float Q3;
 
-            int force_index_j = 0;
+            int force_index_i = 0;
 
             // theta in equation 23
             float T11 = 0.0f;
@@ -117,9 +163,9 @@ __global__ void assemble_system(
             float QF;
 
 #ifdef USE_ANALYTICAL_INTEGRATION
-                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 89 && j == 21);
+                compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_j, external_force, G, GF, i == 89 && j == 21);
 #else
-                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_i, external_force, G, GF, i == 9 && j == 88 && force_index_i == 1);
+                compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_j, external_force, G, GF, i == 9 && j == 88 && force_index_j == 1);
 #endif //USE_ANALYTICAL_INTEGRATION
 
             for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
@@ -133,7 +179,7 @@ __global__ void assemble_system(
                 T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                 T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
 
-                if (force_index_i == 0)
+                if (force_index_j == 0)
                 {
                     TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
@@ -145,16 +191,20 @@ __global__ void assemble_system(
             Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
             Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
 
-            x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 0;
-            y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 1;
-            z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 2;
+            x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 0;
+            y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 1;
+            z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 2;
 
-            x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 0;
-            y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 1;
-            z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;
+//            x_row_index = 0 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//            y_row_index = 1 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//            z_row_index = 2 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+
+            x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 0;
+            y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 1;
+            z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 2;
 
             // if(i==0) {
-            //     printf("%d,%d,%d:\t\t(%d,%d,%d)\t\t(%d,%d,%d)\n",i,j,force_index_i,x_row_index,y_row_index,z_row_index,x_column_index,y_column_index,z_column_index);
+            //     printf("%d,%d,%d:\t\t(%d,%d,%d)\t\t(%d,%d,%d)\n",i,j,force_index_j,x_row_index,y_row_index,z_row_index,x_column_index,y_column_index,z_column_index);
             // }
 
             a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = D1 * orientation_i.x * Q1;
@@ -170,69 +220,69 @@ __global__ void assemble_system(
 #ifdef VALIDATE
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 #endif //VALIDATE
 
-            if (force_index_i == 0)
+            if (force_index_j == 0)
             {
                 //if (i == 0 && j == 1)
                 //{
@@ -256,9 +306,9 @@ __global__ void assemble_system(
                 //}
             }
 
-            for (force_index_j = 1; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
+            for (force_index_i = 1; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
             {
-                const float gamma = 0.5f * (2.0f * (force_index_j + 1) + 1.0f) / (d + e - cc * lambda[force_index_j]);
+                const float gamma = 0.5f * (2.0f * (force_index_i + 1) + 1.0f) / (d + e - cc * lambda[force_index_i]);
 
                 T11 = 0.0f;
                 T22 = 0.0f;
@@ -274,7 +324,7 @@ __global__ void assemble_system(
                 for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
                 {
                     const float quadrature_weight = quadrature_weights[quadrature_index_i];
-                    const float legendre_polynomial = legendre_polynomials[quadrature_index_i + force_index_j * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+                    const float legendre_polynomial = legendre_polynomials[quadrature_index_i + force_index_i * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
                     T11 += quadrature_weight * G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T22 += quadrature_weight * G[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T33 += quadrature_weight * G[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
@@ -282,12 +332,12 @@ __global__ void assemble_system(
                     T13 += quadrature_weight * G[quadrature_index_i + 4 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                     T23 += quadrature_weight * G[quadrature_index_i + 5 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
 
-                    // if (i == 89 && j == 21 && force_index_i == 4 && force_index_j == 3 && quadrature_index_i==12)
+                    // if (i == 89 && j == 21 && force_index_j == 4 && force_index_i == 3 && quadrature_index_i==12)
                     // {
-                    //     printf("%d,%d,%d,%d,%d,%f\n",i,j,force_index_i,force_index_j,quadrature_index_i,G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS]);
+                    //     printf("%d,%d,%d,%d,%d,%f\n",i,j,force_index_j,force_index_i,quadrature_index_i,G[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS]);
                     // }
 
-                    if (force_index_i == 0)
+                    if (force_index_j == 0)
                     {
                         TF1 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
                         TF2 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS] * legendre_polynomial;
@@ -299,130 +349,134 @@ __global__ void assemble_system(
                 Q2 = T12 * orientation_i.x + T22 * orientation_i.y + T23 * orientation_i.z;
                 Q3 = T13 * orientation_i.x + T23 * orientation_i.y + T33 * orientation_i.z;
 
-                // if (i == 89 && j == 21 && force_index_i == 4 && force_index_j == 3)
+                // if (i == 89 && j == 21 && force_index_j == 4 && force_index_i == 3)
                 // {
-                //     printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d\nek=%f;gamma=%f;lambda=%f\n", i, j, force_index_i, force_index_j, eigen[force_index_j], gamma, lambda[force_index_j]);
-                //     printf("i=%d;j=%d;force_index_i=%d;force_index_j=%d\nT11=%f;T22=%f;T33=%f;T12=%f;T13=%f;T23=%f\nQ1=%f\n", i, j, force_index_i, force_index_j, T11, T22, T33, T12, T13, T23, Q1);
+                //     printf("i=%d;j=%d;force_index_j=%d;force_index_i=%d\nek=%f;gamma=%f;lambda=%f\n", i, j, force_index_j, force_index_i, eigen[force_index_i], gamma, lambda[force_index_i]);
+                //     printf("i=%d;j=%d;force_index_j=%d;force_index_i=%d\nT11=%f;T22=%f;T33=%f;T12=%f;T13=%f;T23=%f\nQ1=%f\n", i, j, force_index_j, force_index_i, T11, T22, T33, T12, T13, T23, Q1);
                 // }
 
-                x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 0;
-                y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 1;
-                z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 2;
+                x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 0;
+                y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 1;
+                z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_i + 2;
 
-                x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 0;
-                y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 1;
-                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_i * DIMENSIONS + 2;
+//                x_row_index = 0 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//                y_row_index = 1 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+//                z_row_index = 2 * NUMBER_OF_FIBERS + force_index_i + NUMBER_OF_FIBERS * DIMENSIONS + i;
+
+                x_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 0;
+                y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 1;
+                z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 2;
 
                 // if(x_row_index == 1344) {
                 //     if(x_column_index == 327) {
-                //         printf("xcol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //         printf("xcol,%d,%d,%d,%d\n",i,j,force_index_j,force_index_i);
                 //     }
                 //     if(y_column_index == 327) {
-                //         printf("ycol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //         printf("ycol,%d,%d,%d,%d\n",i,j,force_index_j,force_index_i);
                 //     }
                 //     if(z_column_index == 327) {
-                //         printf("zcol,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //         printf("zcol,%d,%d,%d,%d\n",i,j,force_index_j,force_index_i);
                 //     }
                 // }
                 // if(y_row_index == 1344) {
-                //     printf("yrow,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //     printf("yrow,%d,%d,%d,%d\n",i,j,force_index_j,force_index_i);
                 // }
                 // if(z_row_index == 1344) {
-                //     printf("zrow,%d,%d,%d,%d\n",i,j,force_index_i,force_index_j);
+                //     printf("zrow,%d,%d,%d,%d\n",i,j,force_index_j,force_index_i);
                 // }
 
-                a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T11 - eigen[force_index_j] * orientation_i.x * Q1);
-                a_matrix[x_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_j] * orientation_i.x * Q2);
-                a_matrix[x_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_j] * orientation_i.x * Q3);
-                a_matrix[y_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_j] * orientation_i.y * Q1);
-                a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T22 - eigen[force_index_j] * orientation_i.y * Q2);
-                a_matrix[y_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_j] * orientation_i.y * Q3);
-                a_matrix[z_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_j] * orientation_i.z * Q1);
-                a_matrix[z_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_j] * orientation_i.z * Q2);
-                a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T33 - eigen[force_index_j] * orientation_i.z * Q3);
+                a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T11 - eigen[force_index_i] * orientation_i.x * Q1);
+                a_matrix[x_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_i] * orientation_i.x * Q2);
+                a_matrix[x_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_i] * orientation_i.x * Q3);
+                a_matrix[y_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T12 - eigen[force_index_i] * orientation_i.y * Q1);
+                a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T22 - eigen[force_index_i] * orientation_i.y * Q2);
+                a_matrix[y_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_i] * orientation_i.y * Q3);
+                a_matrix[z_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T13 - eigen[force_index_i] * orientation_i.z * Q1);
+                a_matrix[z_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T23 - eigen[force_index_i] * orientation_i.z * Q2);
+                a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = gamma * (T33 - eigen[force_index_i] * orientation_i.z * Q3);
 
 #ifdef VALIDATE
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 0;
             validation[x_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 1;
             validation[y_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 0;
 
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + y_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 1;
 
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;
-            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_i;
-            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_j;
+            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2] = force_index_j;
+            validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3] = force_index_i;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4] = 2;
             validation[z_row_index * 6 + z_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5] = 2;
 #endif //VALIDATE
 
-                // if (i == 9 && j == 88 && force_index_i == 0 && force_index_j == 3)
+                // if (i == 9 && j == 88 && force_index_j == 0 && force_index_i == 3)
                 // {
-                //     printf("%d,%d,%d,%d,%d,%d,%f\n", i, j, force_index_i, force_index_j, z_row_index, y_column_index, a_matrix[z_row_index + y_column_index * total_number_of_rows]);
+                //     printf("%d,%d,%d,%d,%d,%d,%f\n", i, j, force_index_j, force_index_i, z_row_index, y_column_index, a_matrix[z_row_index + y_column_index * total_number_of_rows]);
                 // }
 
-                if (force_index_i == 0)
+                if (force_index_j == 0)
                 {
                     QF = TF1 * orientation_i.x + TF2 * orientation_i.y + TF3 * orientation_i.z;
 
 #ifdef FORCE_1D
-                    b_vector[x_row_index] -= gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF);
-                    b_vector[y_row_index] -= gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF);
-                    b_vector[z_row_index] -= gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF);
+                    b_vector[x_row_index] -= gamma * (TF1 - eigen[force_index_i] * orientation_i.x * QF);
+                    b_vector[y_row_index] -= gamma * (TF2 - eigen[force_index_i] * orientation_i.y * QF);
+                    b_vector[z_row_index] -= gamma * (TF3 - eigen[force_index_i] * orientation_i.z * QF);
 #else
-                    atomicAdd(&(b_vector[x_row_index]), -(gamma * (TF1 - eigen[force_index_j] * orientation_i.x * QF)));
-                    atomicAdd(&(b_vector[y_row_index]), -(gamma * (TF2 - eigen[force_index_j] * orientation_i.y * QF)));
-                    atomicAdd(&(b_vector[z_row_index]), -(gamma * (TF3 - eigen[force_index_j] * orientation_i.z * QF)));
+                    atomicAdd(&(b_vector[x_row_index]), -(gamma * (TF1 - eigen[force_index_i] * orientation_i.x * QF)));
+                    atomicAdd(&(b_vector[y_row_index]), -(gamma * (TF2 - eigen[force_index_i] * orientation_i.y * QF)));
+                    atomicAdd(&(b_vector[z_row_index]), -(gamma * (TF3 - eigen[force_index_i] * orientation_i.z * QF)));
 #endif //FORCE_1D
                 }
             }

@@ -53,40 +53,56 @@ count = 0
 total = 0.0
 maximum = -1.0
 max_location = None
-max_row = 0
-max_col = 0
 
-for idx_row in xrange(len(current_matrix)):
-    row = current_matrix[idx_row]
-    for idx_col in xrange(len(row)):
-        count += 1
+is_vector = len(current_matrix[0]) == 1
 
-        current_element = row[idx_col]
+if not is_vector:
+    for idx_row in xrange(len(current_matrix)):
+        row = current_matrix[idx_row]
+        for idx_col in xrange(len(row)):
+            count += 1
 
-        # get simulation variables
-        current_location = current_mapping[(idx_row,idx_col)]
+            current_element = row[idx_col]
 
-        # ignore diagonal
-        if current_location[0] == current_location[1]:
-            continue
+            # get simulation variables
+            current_location = current_mapping[(idx_row,idx_col)]
 
-        # translate to row and column in reference matrix
+            # if element was not explicitly set it should always be zero.
+            # this should only occur on the diagonal
+            if current_location[0] == -1:
+                reference_element = 0.0
+            else:
+                # translate to row and column in reference matrix
+                reference_location = reference_mapping[current_location]
+                reference_element = reference_matrix[reference_location[0]][reference_location[1]]
+
+            delta = abs(current_element) - abs(reference_element)
+            total += delta
+            if delta > maximum:
+                maximum = delta
+                max_location = current_location
+else:
+    for idx_row in xrange(len(current_matrix)):
+        count +=1
+
+        current_element = current_matrix[idx_row][0]
+        current_location = current_mapping[(idx_row,idx_row)]
+
         reference_location = reference_mapping[current_location]
-        reference_element = reference_matrix[reference_location[0]][reference_location[1]]
+        reference_element = reference_matrix[reference_location[0]][0]
 
         delta = abs(current_element) - abs(reference_element)
         total += delta
         if delta > maximum:
             maximum = delta
             max_location = current_location
-            max_row = idx_row
-            max_col = idx_col
+
 
 print '**************************************************'
 print 'Validation:'
-print 'Comparison Matrix    :',args.reference_matrix.name
+print 'Comparison Matrix    :',args.current_matrix.name
+print 'Reference Matrix     :',args.reference_matrix.name
 print 'Maximum Delta        :',maximum
 if maximum > 1e-6:
     print 'Maximum Location     :',max_location
 print 'Average Delta        :',total/count
-print '**************************************************'

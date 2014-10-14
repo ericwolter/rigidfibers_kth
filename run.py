@@ -90,7 +90,7 @@ with io.open(cuda_constants_path, 'w') as cuda:
 	cuda.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['number_of_fibers'])+')\n')
 	cuda.write(u'#define TIMESTEP ('+str(parameters['timestep'])+')\n')
 	cuda.write(u'#define NUMBER_OF_TIMESTEPS ('+str(parameters['number_of_timesteps'])+')\n')
-	cuda.write(u'#define SLENDERNESS ('+str(parameters['slenderness'])+')\n')
+        cuda.write(u'#define SLENDERNESS ('+str(parameters['slenderness'])+'f)\n')
 	cuda.write(u'#define NUMBER_OF_TERMS_IN_FORCE_EXPANSION ('+str(parameters['number_of_terms_in_force_expansion'])+')\n')
 	cuda.write(u'#define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL (3)\n')
 	cuda.write(u'#define NUMBER_OF_QUADRATURE_INTERVALS ('+str(parameters['number_of_quadrature_intervals'])+')\n')
@@ -147,36 +147,42 @@ if fibers.wait():
     sys.exit(3)
 
 if args.validate:
-    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/a_matrix.out'), os.path.join(build_path,'bin/current.map'), 'tests/reference/100_numeric_gmres/0_AMat.ref'])
+    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/a_matrix.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_AMat.ref'])
+    validate.wait()
+    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/b_vector.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_BVec.ref'])
     validate.wait()
 
 if args.benchmark:
-    iterations = 4
+    iterations = 8
     benchmark = []
 
-    for i in xrange(iterations):
-        fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers.name])
-        if fibers.wait():
-            sys.exit(3)
-        with io.open(os.path.join(build_path,'bin/performance.out'), 'r') as performance:
-            total = Decimal(0.0)
-            for idx,line in enumerate(performance):
-                if idx > 0: # ignore header
-                    line = line.rstrip().split(',')
-                    total += Decimal(line[1])
-            benchmark.append(total)
-
-    sample_mean = sum(benchmark)/len(benchmark)
+    sample_mean = Decimal(0.0)
     sample_deviation = Decimal(0.0)
-    for x in benchmark:
-        sample_deviation += (x - sample_mean)**2
-    sample_deviation /= len(benchmark)-1
-    sample_deviation = sample_deviation.sqrt()
+    standard_error = Decimal(0.0)
+    relative_standard_error = Decimal(1.0)
 
-    standard_error = sample_deviation / Decimal(len(benchmark)).sqrt()
-    relative_standard_error = standard_error / sample_mean
+    while relative_standard_error > Decimal(0.05):
+        for i in xrange(iterations):
+            fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers.name])
+            if fibers.wait():
+                sys.exit(3)
+            with io.open(os.path.join(build_path,'bin/performance.out'), 'r') as performance:
+                total = Decimal(0.0)
+                for idx,line in enumerate(performance):
+                    if idx > 0: # ignore header
+                        line = line.rstrip().split(',')
+                        total += Decimal(line[1])
+                benchmark.append(total)
 
-    print iterations, sample_mean, sample_deviation, standard_error, relative_standard_error
+        sample_mean = sum(benchmark)/len(benchmark)
+        sample_deviation = Decimal(0.0)
+        for x in benchmark:
+            sample_deviation += (x - sample_mean)**2
+        sample_deviation /= len(benchmark)-1
+        sample_deviation = sample_deviation.sqrt()
 
+        standard_error = sample_deviation / Decimal(len(benchmark)).sqrt()
+        relative_standard_error = standard_error / sample_mean
 
-
+        print iterations, sample_mean, sample_deviation,relative_standard_error
+        iterations = len(benchmark)
