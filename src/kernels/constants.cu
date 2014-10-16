@@ -4,6 +4,7 @@
 #include "../common.h"
 
 #define BENCHMARK
+#define MAGMA
 
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (700)

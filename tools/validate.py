@@ -103,6 +103,6 @@ print 'Validation:'
 print 'Comparison Matrix    :',args.current_matrix.name
 print 'Reference Matrix     :',args.reference_matrix.name
 print 'Maximum Delta        :',maximum
-if maximum > 1e-6:
+if maximum > 1e-5:
     print 'Maximum Location     :',max_location
 print 'Average Delta        :',total/count

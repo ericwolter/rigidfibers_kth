@@ -8,11 +8,12 @@ cmake_minimum_required(VERSION 2.8)
 # correctly link it into other programs
 project(fibers)
 
-find_package(CUDA REQUIRED)
-# find_package(OpenMP REQUIRED)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/lib/")
 
-include(FindCUDA)
-# include(FindOpenMP)
+find_package(CUDA REQUIRED)
+find_package(OpenMP REQUIRED)
+find_package(OpenBlas REQUIRED)
+find_package(MAGMA REQUIRED)
 
 # add the source directory to allow cmake to compile/link the actual code
 add_subdirectory(src)

@@ -87,8 +87,9 @@ private:
     void updateVelocities();
     void updateFibers(bool first_timestep);
 
-    void dumpFibers();
     void dumpLinearSystem();
+    void dumpSolutionSystem();
+    void dumpFibers();
     void dumpVelocities();
 };
 

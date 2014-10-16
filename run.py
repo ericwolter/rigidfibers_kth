@@ -12,6 +12,7 @@ parser.add_argument('fibers',metavar='FIBER_FILE',type=open,help='the fiber file
 parser.add_argument('--benchmark',action='store_true',help='an option to dump configuration file (default: False)')
 parser.add_argument('--validate',action='store_true',help='an option to validate results against reference implementation (default: False) (note: limits number of steps to 1)')
 parser.add_argument('--force1D',action='store_true',help='an option to force to execute kernels in 1D (default: False)')
+parser.add_argument('--magma',action='store_true',help='an option to use direct solver from MAGMA instead of iterative solver from ViennaCL (default: False)')
 
 args = parser.parse_args()
 
@@ -84,6 +85,8 @@ with io.open(cuda_constants_path, 'w') as cuda:
             cuda.write(u'#define VALIDATE\n')
         if args.force1D:
             cuda.write(u'#define FORCE_1D\n')
+        if args.magma:
+            cuda.write(u'#define MAGMA\n')
         cuda.write(u'\n')
 
 	cuda.write(u'#define DIMENSIONS (3)\n')
@@ -151,6 +154,8 @@ if args.validate:
     validate.wait()
     validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/b_vector.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_BVec.ref'])
     validate.wait()
+    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/x_vector.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_XVec.ref'])
+    validate.wait()
 
 if args.benchmark:
     iterations = 8
@@ -186,3 +191,5 @@ if args.benchmark:
 
         print iterations, sample_mean, sample_deviation,relative_standard_error
         iterations = len(benchmark)
+
+print '**************************************************'

@@ -27,7 +27,7 @@
 #include <sstream>
 #include <iomanip>  // used for standard output manipulation (e.g setprecision)
 
-// #include "magma.h"
+#include "magma.h"
 
 #include "resources.h"
 
@@ -46,7 +46,7 @@ Simulation::Simulation(Configuration configuration)
 
     initializeGPUMemory();
 
-    //magma_init();
+    magma_init();
     
     writeFiberStateToDevice();
     precomputeLegendrePolynomials();
@@ -54,7 +54,7 @@ Simulation::Simulation(Configuration configuration)
 
 Simulation::~Simulation()
 {
-    //magma_finalize();
+    magma_finalize();
 }
 
 void Simulation::initializeGPUMemory()
@@ -273,18 +273,21 @@ void Simulation::precomputeLegendrePolynomials()
 void Simulation::step(size_t current_timestep)
 {
     assembleSystem();
-    solveSystem();
-    updateVelocities();
-
-#ifdef BENCHMARK
-    performance_->exportMeasurements("performance.out");
-#endif //BENCHMARK
-
 #ifdef VALIDATE
     dumpLinearSystem();
 #endif //VALIDATE
 
+    solveSystem();
+#ifdef VALIDATE
+    dumpSolutionSystem();
+#endif //VALIDATE
+
+    updateVelocities();
     // dumpVelocities();
+
+#ifdef BENCHMARK
+    performance_->exportMeasurements("performance.out");
+#endif //BENCHMARK
 
     updateFibers(current_timestep == 0);
 
@@ -337,7 +340,34 @@ void Simulation::assembleSystem()
 
 void Simulation::solveSystem()
 {
-    std::cout << "     [GPU]      : Solving system..." << std::endl;
+#ifdef MAGMA
+    std::cout << "     [GPU]      : Solving system (MAGMA)..." << std::endl;
+
+    magma_int_t *ipiv = NULL;
+    magma_int_t info = 0;
+    magma_imalloc_cpu( &ipiv, TOTAL_NUMBER_OF_ROWS );
+
+//    float *dA=NULL, *dX=NULL;
+
+//    magma_int_t n = TOTAL_NUMBER_OF_ROWS;
+//    magma_int_t nrhs = TOTAL_NUMBER_OF_ROWS;
+//    magma_int_t ldda = ((n+31)/32)*32;  // round up to multiple of 32 for best GPU performance
+//    magma_int_t lddx = ldda;
+//    magma_int_t info = 0;
+//    magma_zmalloc( &dA, ldda*n );
+//    magma_zmalloc( &dX, lddx*nrhs );
+
+    performance_->start("solve_system");
+
+    magma_sgesv_gpu(TOTAL_NUMBER_OF_ROWS, 1, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS, ipiv, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS, &info);
+
+    std::cout << "     [GPU]      : Info    : " << info << std::endl;
+
+    performance_->stop("solve_system");
+    performance_->print("solve_system");
+
+#else
+    std::cout << "     [GPU]      : Solving system (ViennaCL)..." << std::endl;
 
     viennacl::matrix_base<float, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
@@ -347,9 +377,9 @@ void Simulation::solveSystem()
 
     //viennacl::linalg::gmres_tag custom_solver(1e-5, 1000, 10);
     viennacl::linalg::bicgstab_tag custom_solver(1e-5, 1000);
-    performance_->start("solve_system");
 
-//    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
+    performance_->start("solve_system");
+    //    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
     x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
 
     performance_->stop("solve_system");
@@ -357,13 +387,11 @@ void Simulation::solveSystem()
 
     std::cout << "     [GPU]      : No. of iters : " << custom_solver.iters() << std::endl;
     std::cout << "     [GPU]      : Est. error   : " << custom_solver.error() << std::endl;
+#endif //MAGMA
 
-    // magma_int_t *ipiv=NULL;
-    // magma_int_t ldda = ((num_matrix_rows+31)/32)*32;  // round up to multiple of 32 for best GPU performance
-    // magma_int_t lddx = ldda;
-    // magma_int_t info = 0;
 
-    // magma_imalloc_cpu( &ipiv, num_matrix_rows );  // ipiv always on CPU
+
+
 }
 
 void Simulation::updateVelocities()
@@ -488,29 +516,23 @@ void Simulation::dumpLinearSystem()
 {
     float *a_matrix = new float[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS];
     float *b_vector = new float[TOTAL_NUMBER_OF_ROWS];
-    float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
     checkCuda(cudaMemcpy(a_matrix, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
     checkCuda(cudaMemcpy(b_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
-    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 
     std::string a_matrix_output_path = executablePath + "/a_matrix.out";
     std::string b_vector_output_path = executablePath + "/b_vector.out";
-    std::string x_vector_output_path = executablePath + "/x_vector.out";
 
     std::ofstream a_matrix_output_file;
     std::ofstream b_vector_output_file;
-    std::ofstream x_vector_output_file;
 
     a_matrix_output_file.open (a_matrix_output_path.c_str());
     b_vector_output_file.open (b_vector_output_path.c_str());
-    x_vector_output_file.open (x_vector_output_path.c_str());
 
     a_matrix_output_file << std::fixed << std::setprecision(8);
     b_vector_output_file << std::fixed << std::setprecision(8);
-    x_vector_output_file << std::fixed << std::setprecision(8);
 
     for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
     {
@@ -537,27 +559,15 @@ void Simulation::dumpLinearSystem()
         {
             b_vector_output_file << "      " << value;
         }
-        value = x_vector[row_index];
-        if (value < 0)
-        {
-            x_vector_output_file << "     " << value;
-        }
-        else
-        {
-            x_vector_output_file << "      " << value;
-        }
 
         a_matrix_output_file << std::endl;
         b_vector_output_file << std::endl;
-        x_vector_output_file << std::endl;
     }
     a_matrix_output_file.close();
     b_vector_output_file.close();
-    x_vector_output_file.close();
 
     delete[] a_matrix;
     delete[] b_vector;
-    delete[] x_vector;
 
 #ifdef VALIDATE
     int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
@@ -587,6 +597,45 @@ void Simulation::dumpLinearSystem()
     mapping_output_file.close();
     delete[] validation;
 #endif //VALIDATE
+}
+
+void Simulation::dumpSolutionSystem()
+{
+    float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
+
+#ifdef MAGMA
+    checkCuda(cudaMemcpy(x_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+#else
+    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+#endif //MAGMA
+
+    std::string executablePath = Resources::getExecutablePath();
+
+    std::string x_vector_output_path = executablePath + "/x_vector.out";
+
+    std::ofstream x_vector_output_file;
+
+    x_vector_output_file.open (x_vector_output_path.c_str());
+
+    x_vector_output_file << std::fixed << std::setprecision(8);
+
+    for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
+    {
+        float value = x_vector[row_index];
+        if (value < 0)
+        {
+            x_vector_output_file << "     " << value;
+        }
+        else
+        {
+            x_vector_output_file << "      " << value;
+        }
+
+        x_vector_output_file << std::endl;
+    }
+    x_vector_output_file.close();
+
+    delete[] x_vector;
 }
 
 void Simulation::dumpVelocities()
