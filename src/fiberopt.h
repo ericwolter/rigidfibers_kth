@@ -213,6 +213,8 @@ int parse_long(Tokens *ts, Elements *elements)
 
 int parse_short(Tokens *ts, Elements *elements)
 {
+    (void)(ts);
+    (void)(elements);
     return 1;
 }
 

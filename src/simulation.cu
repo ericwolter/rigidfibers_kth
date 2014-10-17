@@ -341,7 +341,7 @@ void Simulation::assembleSystem()
 void Simulation::solveSystem()
 {
 #ifdef MAGMA
-    std::cout << "     [GPU]      : Solving system (MAGMA)..." << std::endl;
+    std::cout << "     [GPU]      : Solving system (MAGMA + Direct)..." << std::endl;
 
     magma_int_t *ipiv = NULL;
     magma_int_t info = 0;
@@ -367,7 +367,14 @@ void Simulation::solveSystem()
     performance_->print("solve_system");
 
 #else
-    std::cout << "     [GPU]      : Solving system (ViennaCL)..." << std::endl;
+
+#ifdef GMRES
+    std::cout << "     [GPU]      : Solving system (ViennaCL + GMRES)..." << std::endl;
+    viennacl::linalg::gmres_tag custom_solver(1e-5, 1000, 10);
+#else
+    std::cout << "     [GPU]      : Solving system (ViennaCL + BiCGStab)..." << std::endl;
+    viennacl::linalg::bicgstab_tag custom_solver(1e-5, 1000);
+#endif // GMRES
 
     viennacl::matrix_base<float, viennacl::column_major> a_matrix_vienna(gpu_a_matrix_, viennacl::CUDA_MEMORY,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
@@ -375,11 +382,7 @@ void Simulation::solveSystem()
     viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
-    //viennacl::linalg::gmres_tag custom_solver(1e-5, 1000, 10);
-    viennacl::linalg::bicgstab_tag custom_solver(1e-5, 1000);
-
     performance_->start("solve_system");
-    //    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_gmres);
     x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
 
     performance_->stop("solve_system");

@@ -46,6 +46,7 @@ set(KERNELS
 set(ADDONS
     ../run.py
     ../tools/validate.py
+    ../tools/gen.py
     ../fortran/Int_analytical.f90
     ../fortran/advect_fibers.f90
     ../fortran/coeffs_and_vels.f90
