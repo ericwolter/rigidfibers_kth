@@ -20,19 +20,16 @@
 <div id="graphdiv_assemble" style="width:1200px; height:750px;"></div>
 <script type="text/javascript">
   new Dygraph(
-    document.getElementById("graphdiv_overall"),"number_of_fibers.txt",
+    document.getElementById("graphdiv_overall"),"overall.csv",
 	{
-		legend: "always",
-		valueRange: [0,20],
-		dateWindow: [0,1000]
+		legend: "always"
 	}
   );
   new Dygraph(
     document.getElementById("graphdiv_assemble"),"assemble_system.txt",
 	{
 		legend: "always",
-		valueRange: [0,20],
-		dateWindow: [0,1000]
+		valueRange: [0,20]
 	}
   );
 </script>

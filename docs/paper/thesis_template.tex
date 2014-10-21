@@ -1,0 +1,175 @@
+% arara: lualatex: { shell : yes }
+
+\documentclass[a4paper,11pt]{kth-mag}
+
+% Math and code packages
+\usepackage{amsmath}   % all things math
+\usepackage{amssymb}   % additional math symbols
+\usepackage{xfrac}     % nice fractions in body of text
+\usepackage{siunitx}   % typesets numbers with units
+\usepackage{mathtools} % extensions for amsmath
+\usepackage{minted}	   % advanced code examples
+
+% Tables
+\usepackage{booktabs} % professionally looking tables
+\usepackage{tabulary} % whole page tables
+
+% Graphics
+\usepackage{graphicx} % all things graphics
+\usepackage{pgfplots} % complex graphs
+\pgfplotsset{width=\textwidth,compat=1.11} % avoid running in backwards compatibility mode
+\definecolor{set11}{cmyk}{.1 ,.9 ,.8 ,.0 }
+\definecolor{set12}{cmyk}{.8 ,.3 ,.0 ,.0 }
+\definecolor{set13}{cmyk}{.7 ,.0 ,.8 ,.0 }
+\definecolor{set14}{cmyk}{.4 ,.65,.0 ,.0 }
+\definecolor{set15}{cmyk}{.0 ,.5 ,1.0,.0 }
+\definecolor{set16}{cmyk}{.0 ,.0 ,.8 ,.0 }
+\definecolor{set17}{cmyk}{.35,.6 ,.8 ,.0 }
+\definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
+\definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
+
+% Caption and split floats
+\usepackage{caption}    % customizable captions
+\usepackage{subcaption} % nice subfigures and subtables
+
+% Bibliographies
+\usepackage{biblatex} % modern bibliographies
+
+% PDF Metadata
+\usepackage{hyperref} % enables PDF hyperlinks
+
+% Fonts, typography and languages
+\usepackage{fontspec}     % all things fonts
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont{FiraSans-Book.otf}[
+  BoldFont = FiraSans-SemiBold.otf,
+  ItalicFont = FiraSans-Italic.otf,
+  BoldItalicFont = FiraSans-SemiBoldItalic.otf]
+\setsansfont{FiraSans-Regular.otf}[Scale=MatchLowercase]
+\setmonofont{FiraMono-Bold.otf}[Scale=MatchLowercase]
+\usepackage{unicode-math} % use custom fonts for math
+\setmathfont{XITS Math}
+\usepackage{microtype}	  % advanced typesetting
+\usepackage[main=english, swedish]{babel} % language-specific conventions
+
+\usepackage{modifications}
+
+\linespread{1.2}
+
+\title{GPU Simulation of Rigid Fibers}
+
+\foreigntitle{GPU simulering av stela fibrer}
+
+\author{Eric Wolter}
+\date{January 2015}
+\blurb{Master's Thesis at School of Engineering Sciences\\Supervisor: Katarina Gustavsson\\Examiner: Michael Hanke}
+\trita{TRITA xxx yyyy-nn}
+
+\begin{document}
+\frontmatter
+\pagestyle{empty}
+
+\maketitle
+\selectlanguage{english}
+\begin{abstract}
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
+purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
+ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
+rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
+nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
+aptent taciti sociosqu ad litora torquent per conubia nostra, per
+inceptos hymenaeos.
+\end{abstract}
+
+\clearpage
+
+
+\begin{foreignabstract}{swedish}
+Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
+purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
+ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
+rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
+nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
+aptent taciti sociosqu ad litora torquent per conubia nostra, per
+inceptos hymenaeos.
+\end{foreignabstract}
+
+\clearpage
+
+\tableofcontents*
+
+\mainmatter
+\pagestyle{newchap}
+
+\chapter{Introduction}
+
+\begin{tikzpicture}
+\pgfplotstableread{benchmarks/overall.csv}\loadedtable
+\begin{axis}[
+  title=Overall,
+  xlabel={number of fibers},
+  ylabel={simulation time (sec)},
+  separate axis lines,
+  y axis line style={draw opacity=0},
+  axis x line*=bottom,
+  axis y line*=left,
+  major tick length=0pt,
+  grid=both,
+  y grid style={dashed},
+  legend pos=north west,
+  ]
+\addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=FortranMulti] {\loadedtable};
+\addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_GMRES] {\loadedtable};
+\addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_BiCGStab] {\loadedtable};
+\addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=MAGMA] {\loadedtable};
+
+\legend{Fortran Multi,GMRES, BiCGStab, MAGMA}
+\end{axis}
+\end{tikzpicture}
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
+
+Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
+
+Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
+
+Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
+
+Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
+
+\chapter{Review of Naviar Stokes Equations}
+
+
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
+
+Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
+
+Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
+
+Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
+
+Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
+
+\chapter{State of the Art in Fibers}
+
+
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
+
+Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
+
+Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
+
+Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
+
+Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
+
+\chapter{Parallization of Rigid Fibers Simulation}
+\chapter{Implementation}
+\chapter{Conclusions}
+
+\appendix
+\addappheadtotoc
+
+\end{document}
