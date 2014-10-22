@@ -14,20 +14,6 @@
 \usepackage{booktabs} % professionally looking tables
 \usepackage{tabulary} % whole page tables
 
-% Graphics
-\usepackage{graphicx} % all things graphics
-\usepackage{pgfplots} % complex graphs
-\pgfplotsset{width=\textwidth,compat=1.11} % avoid running in backwards compatibility mode
-\definecolor{set11}{cmyk}{.1 ,.9 ,.8 ,.0 }
-\definecolor{set12}{cmyk}{.8 ,.3 ,.0 ,.0 }
-\definecolor{set13}{cmyk}{.7 ,.0 ,.8 ,.0 }
-\definecolor{set14}{cmyk}{.4 ,.65,.0 ,.0 }
-\definecolor{set15}{cmyk}{.0 ,.5 ,1.0,.0 }
-\definecolor{set16}{cmyk}{.0 ,.0 ,.8 ,.0 }
-\definecolor{set17}{cmyk}{.35,.6 ,.8 ,.0 }
-\definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
-\definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
-
 % Caption and split floats
 \usepackage{caption}    % customizable captions
 \usepackage{subcaption} % nice subfigures and subtables
@@ -51,6 +37,36 @@
 \setmathfont{XITS Math}
 \usepackage{microtype}	  % advanced typesetting
 \usepackage[main=english, swedish]{babel} % language-specific conventions
+
+% Graphics
+\usepackage{graphicx} % all things graphics
+\usepackage{pgfplots} % complex graphs
+\pgfplotsset{
+  compat=1.11, % avoid running in backwards compatibility mode
+  width=\textwidth,
+  tick label style = {font=\ttfamily},
+  every axis label = {font=\sffamily},
+  legend style = {font=\sffamily},
+  label style = {font=\sffamily},
+  separate axis lines,
+  y axis line style={draw opacity=0},
+  x axis line style={gray},
+  axis x line*=bottom,
+  axis y line*=left,
+  major tick length=0pt,
+  grid=both,
+  y grid style={dashed},
+  legend pos=north west,
+}
+\definecolor{set11}{cmyk}{.1 ,.9 ,.8 ,.0 }
+\definecolor{set12}{cmyk}{.8 ,.3 ,.0 ,.0 }
+\definecolor{set13}{cmyk}{.7 ,.0 ,.8 ,.0 }
+\definecolor{set14}{cmyk}{.4 ,.65,.0 ,.0 }
+\definecolor{set15}{cmyk}{.0 ,.5 ,1.0,.0 }
+\definecolor{set16}{cmyk}{.0 ,.0 ,.8 ,.0 }
+\definecolor{set17}{cmyk}{.35,.6 ,.8 ,.0 }
+\definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
+\definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
 
 \usepackage{modifications}
 
@@ -104,19 +120,15 @@ inceptos hymenaeos.
 \chapter{Introduction}
 
 \begin{tikzpicture}
+\setmathfont{FiraSans-Book.otf}
 \pgfplotstableread{benchmarks/overall.csv}\loadedtable
 \begin{axis}[
   title=Overall,
   xlabel={number of fibers},
   ylabel={simulation time (sec)},
-  separate axis lines,
-  y axis line style={draw opacity=0},
-  axis x line*=bottom,
-  axis y line*=left,
-  major tick length=0pt,
-  grid=both,
-  y grid style={dashed},
-  legend pos=north west,
+  ymin=0,ymax=14,
+  xmin=0,xmax=800,
+  unbounded coords=discard,
   ]
 \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=FortranMulti] {\loadedtable};
 \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_GMRES] {\loadedtable};
@@ -125,8 +137,41 @@ inceptos hymenaeos.
 
 \legend{Fortran Multi,GMRES, BiCGStab, MAGMA}
 \end{axis}
+\setmathfont{XITS Math}
 \end{tikzpicture}
 
+\begin{tikzpicture}
+\setmathfont{FiraSans-Book.otf}
+\pgfplotstableread{benchmarks/assemble_system.csv}\loadedtable
+\begin{axis}[
+  title=Assemble System,
+  xlabel={number of fibers},
+  ylabel={simulation time (sec)},
+  ymin=0,ymax=6,
+  xmin=0,xmax=800,
+  ]
+\addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=F90Multi_analytic] {\loadedtable};
+\addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D] {\loadedtable};
+\addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=1D] {\loadedtable};
+\addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_FP32] {\loadedtable};
+
+\legend{Fortran Multi Analytic, 2D, 1D, 2D Single Precision}
+\end{axis}
+\setmathfont{XITS Math}
+\end{tikzpicture}
+
+Rigid fibers Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
+
+Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
+
+Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
+
+Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
+
+Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
+
+\chapter{Theoretical Foundation}
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
 
 Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
@@ -137,7 +182,7 @@ Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulu
 
 Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
 
-\chapter{Review of Naviar Stokes Equations}
+\chapter{CPU Implementation}
 
 
 
@@ -151,22 +196,12 @@ Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulu
 
 Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
 
-\chapter{State of the Art in Fibers}
+\chapter{CUDA}
+\chapter{GPU Implementation}
+\chapter{Results}
 
 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
-
-Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
-
-Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
-
-Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
-
-Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
-
-\chapter{Parallization of Rigid Fibers Simulation}
-\chapter{Implementation}
 \chapter{Conclusions}
 
 \appendix
