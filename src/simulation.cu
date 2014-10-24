@@ -33,6 +33,7 @@
 
 #include "kernels/assemble_system.cu"
 #include "kernels/update_velocities.cu"
+#include "kernels/reset_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
 #include "kernels/update_fibers.cu"
 #include "kernels/eye_matrix.cu"
@@ -80,8 +81,6 @@ void Simulation::initializeGPUMemory()
 
     checkCuda(cudaMalloc(&gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMalloc(&gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
-    // @TODO might be able to just use B vector for the solution
-    checkCuda(cudaMalloc(&gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
     std::cout << "     [GPU]      : Resetting system..." << std::endl;
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
@@ -93,7 +92,6 @@ void Simulation::initializeGPUMemory()
     //performance_->print("eye_matrix");
 
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
-    checkCuda(cudaMemset(gpu_x_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -274,20 +272,18 @@ void Simulation::step(size_t current_timestep)
 {
     assembleSystem();
 #ifdef VALIDATE
-    dumpLinearSystem();
+    dumpLinearSystem(current_timestep);
 #endif //VALIDATE
 
     solveSystem();
 #ifdef VALIDATE
-    dumpSolutionSystem();
+    dumpSolutionSystem(current_timestep);
 #endif //VALIDATE
 
     updateVelocities();
-    // dumpVelocities();
-
-#ifdef BENCHMARK
-    performance_->exportMeasurements("performance.out");
-#endif //BENCHMARK
+#ifdef VALIDATE
+    dumpVelocities(current_timestep);
+#endif //VALIDATE
 
     updateFibers(current_timestep == 0);
 
@@ -297,12 +293,20 @@ void Simulation::step(size_t current_timestep)
     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
-    //dumpFibers();
+#ifdef VALIDATE
+    dumpFibers(current_timestep);
+#endif //VALIDATE
+
+#ifdef BENCHMARK
+    performance_->exportMeasurements();
+#endif //BENCHMARK
 }
 
 void Simulation::assembleSystem()
 {
     performance_->start("assemble_system");
+    checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+
 #ifdef FORCE_1D
     std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
     assemble_system <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
@@ -347,16 +351,6 @@ void Simulation::solveSystem()
     magma_int_t info = 0;
     magma_imalloc_cpu( &ipiv, TOTAL_NUMBER_OF_ROWS );
 
-//    float *dA=NULL, *dX=NULL;
-
-//    magma_int_t n = TOTAL_NUMBER_OF_ROWS;
-//    magma_int_t nrhs = TOTAL_NUMBER_OF_ROWS;
-//    magma_int_t ldda = ((n+31)/32)*32;  // round up to multiple of 32 for best GPU performance
-//    magma_int_t lddx = ldda;
-//    magma_int_t info = 0;
-//    magma_zmalloc( &dA, ldda*n );
-//    magma_zmalloc( &dX, lddx*nrhs );
-
     performance_->start("solve_system");
 
     magma_sgesv_gpu(TOTAL_NUMBER_OF_ROWS, 1, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS, ipiv, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS, &info);
@@ -380,10 +374,9 @@ void Simulation::solveSystem()
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
-    viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
     performance_->start("solve_system");
-    x_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
+    b_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
 
     performance_->stop("solve_system");
     performance_->print("solve_system");
@@ -391,9 +384,6 @@ void Simulation::solveSystem()
     std::cout << "     [GPU]      : No. of iters : " << custom_solver.iters() << std::endl;
     std::cout << "     [GPU]      : Est. error   : " << custom_solver.error() << std::endl;
 #endif //MAGMA
-
-
-
 
 }
 
@@ -405,11 +395,18 @@ void Simulation::updateVelocities()
     update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
-        gpu_x_vector_,
+        gpu_b_vector_,
         gpu_current_translational_velocities_,
         gpu_current_rotational_velocities_
     );
 #else
+    std::cout << "     [GPU]      : Resetting velocities 2D..." << std::endl;
+    reset_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
+        gpu_current_orientations_,
+        gpu_current_translational_velocities_,
+        gpu_current_rotational_velocities_
+    );
+
     dim3 block_size;
     block_size.x = 8;
     block_size.y = 8;
@@ -422,10 +419,18 @@ void Simulation::updateVelocities()
     update_velocities <<< grid_size, block_size >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
-        gpu_x_vector_,
+        gpu_b_vector_,
         gpu_current_translational_velocities_,
         gpu_current_rotational_velocities_
     );
+
+    {
+        cudaError_t cudaerr = cudaDeviceSynchronize();
+        if (cudaerr)
+            printf("kernel launch failed with error \"%s\".\n",
+                   cudaGetErrorString(cudaerr));
+    }
+
 #endif
     performance_->stop("update_velocities");
     performance_->print("update_velocities");
@@ -439,9 +444,9 @@ void Simulation::updateFibers(bool first_timestep)
     // @TODO Why? Which one?
     // The first time step is a simple forward euler
 
+    performance_->start("update_fibers");
     if (first_timestep)
     {
-        performance_->start("update_fibers_firststep");
         update_fibers_firststep <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_current_positions_,
             gpu_next_positions_,
@@ -450,12 +455,9 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_current_translational_velocities_,
             gpu_current_rotational_velocities_
         );
-        performance_->stop("update_fibers_firststep");
-        performance_->print("update_fibers_firststep");
     }
     else
     {
-        performance_->start("update_fibers");
         update_fibers <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
             gpu_previous_positions_,
             gpu_current_positions_,
@@ -468,12 +470,12 @@ void Simulation::updateFibers(bool first_timestep)
             gpu_previous_rotational_velocities_,
             gpu_current_rotational_velocities_
         );
-        performance_->stop("update_fibers");
-        performance_->print("update_fibers");
     }
+    performance_->stop("update_fibers");
+    performance_->print("update_fibers");
 }
 
-void Simulation::dumpFibers()
+void Simulation::dumpFibers(size_t current_timestep)
 {
     float4 *p = new float4[NUMBER_OF_FIBERS];
     float4 *o = new float4[NUMBER_OF_FIBERS];
@@ -483,14 +485,17 @@ void Simulation::dumpFibers()
 
     std::string executablePath = Resources::getExecutablePath();
 
-    std::string p_output_path = executablePath + "/positions.out";
-    std::string o_output_path = executablePath + "/orientations.out";
+    std::stringstream p_output_path;
+    p_output_path << executablePath << "/positions_" << current_timestep << ".out";
+
+    std::stringstream o_output_path;
+    o_output_path << executablePath << "/orientations_" << current_timestep << ".out";
 
     std::ofstream p_output_file;
     std::ofstream o_output_file;
 
-    p_output_file.open (p_output_path.c_str());
-    o_output_file.open (o_output_path.c_str());
+    p_output_file.open (p_output_path.str().c_str());
+    o_output_file.open (o_output_path.str().c_str());
 
     p_output_file << std::fixed << std::setprecision(8);
     o_output_file << std::fixed << std::setprecision(8);
@@ -515,7 +520,7 @@ void Simulation::dumpFibers()
     delete[] o;
 }
 
-void Simulation::dumpLinearSystem()
+void Simulation::dumpLinearSystem(size_t current_timestep)
 {
     float *a_matrix = new float[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS];
     float *b_vector = new float[TOTAL_NUMBER_OF_ROWS];
@@ -525,14 +530,16 @@ void Simulation::dumpLinearSystem()
 
     std::string executablePath = Resources::getExecutablePath();
 
-    std::string a_matrix_output_path = executablePath + "/a_matrix.out";
-    std::string b_vector_output_path = executablePath + "/b_vector.out";
+    std::stringstream a_matrix_output_path;
+    a_matrix_output_path << executablePath << "/a_matrix_" << current_timestep << ".out";
+    std::stringstream b_vector_output_path;
+    b_vector_output_path << executablePath << "/b_vector_" << current_timestep << ".out";
 
     std::ofstream a_matrix_output_file;
     std::ofstream b_vector_output_file;
 
-    a_matrix_output_file.open (a_matrix_output_path.c_str());
-    b_vector_output_file.open (b_vector_output_path.c_str());
+    a_matrix_output_file.open (a_matrix_output_path.str().c_str());
+    b_vector_output_file.open (b_vector_output_path.str().c_str());
 
     a_matrix_output_file << std::fixed << std::setprecision(8);
     b_vector_output_file << std::fixed << std::setprecision(8);
@@ -573,52 +580,53 @@ void Simulation::dumpLinearSystem()
     delete[] b_vector;
 
 #ifdef VALIDATE
-    int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
-    checkCuda(cudaMemcpy(validation, gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int), cudaMemcpyDeviceToHost));
+    // only write the mapping on the first timestep as it will not change
+    // throughout the simulation
+    if(current_timestep == 0) {
+        int *validation = new int[TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6];
+        checkCuda(cudaMemcpy(validation, gpu_validation_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int), cudaMemcpyDeviceToHost));
 
-    std::string mapping_output_path = executablePath + "/current.map";
-    std::ofstream mapping_output_file;
+        std::string mapping_output_path = executablePath + "/current.map";
+        std::ofstream mapping_output_file;
 
-    mapping_output_file.open (mapping_output_path.c_str());
+        mapping_output_file.open (mapping_output_path.c_str());
 
-    for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
-    {
-        for (int column_index = 0; column_index < TOTAL_NUMBER_OF_ROWS; ++column_index)
+        for (int row_index = 0; row_index < TOTAL_NUMBER_OF_ROWS; ++row_index)
         {
-            mapping_output_file << "[V]"
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0]
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1]
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2]
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3]
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4]
-                                << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5]
-                                << "|" << row_index
-                                << "|" << column_index
-                                << std::endl;
+            for (int column_index = 0; column_index < TOTAL_NUMBER_OF_ROWS; ++column_index)
+            {
+                mapping_output_file << "[V]"
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0]
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1]
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 2]
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 3]
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 4]
+                                    << "|" << validation[row_index * 6 + column_index * TOTAL_NUMBER_OF_ROWS * 6 + 5]
+                                    << "|" << row_index
+                                    << "|" << column_index
+                                    << std::endl;
+            }
         }
+        mapping_output_file.close();
+        delete[] validation;
     }
-    mapping_output_file.close();
-    delete[] validation;
 #endif //VALIDATE
 }
 
-void Simulation::dumpSolutionSystem()
+void Simulation::dumpSolutionSystem(size_t current_timestep)
 {
     float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
-#ifdef MAGMA
     checkCuda(cudaMemcpy(x_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
-#else
-    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
-#endif //MAGMA
 
     std::string executablePath = Resources::getExecutablePath();
 
-    std::string x_vector_output_path = executablePath + "/x_vector.out";
+    std::stringstream x_vector_output_path;
+    x_vector_output_path << executablePath << "/x_vector_" << current_timestep << ".out";
 
     std::ofstream x_vector_output_file;
 
-    x_vector_output_file.open (x_vector_output_path.c_str());
+    x_vector_output_file.open (x_vector_output_path.str().c_str());
 
     x_vector_output_file << std::fixed << std::setprecision(8);
 
@@ -641,7 +649,7 @@ void Simulation::dumpSolutionSystem()
     delete[] x_vector;
 }
 
-void Simulation::dumpVelocities()
+void Simulation::dumpVelocities(size_t current_timestep)
 {
     float4 *t_vel = new float4[NUMBER_OF_FIBERS];
     float4 *r_vel = new float4[NUMBER_OF_FIBERS];
@@ -651,14 +659,16 @@ void Simulation::dumpVelocities()
 
     std::string executablePath = Resources::getExecutablePath();
 
-    std::string t_vel_output_path = executablePath + "/t_vel.out";
-    std::string r_vel_output_path = executablePath + "/r_vel.out";
+    std::stringstream t_vel_output_path;
+    t_vel_output_path << executablePath << "/t_vel_" << current_timestep << ".out";
+    std::stringstream r_vel_output_path;
+    r_vel_output_path << executablePath << "/r_vel_" << current_timestep << ".out";
 
     std::ofstream t_vel_output_file;
     std::ofstream r_vel_output_file;
 
-    t_vel_output_file.open (t_vel_output_path.c_str());
-    r_vel_output_file.open (r_vel_output_path.c_str());
+    t_vel_output_file.open (t_vel_output_path.str().c_str());
+    r_vel_output_file.open (r_vel_output_path.str().c_str());
 
     t_vel_output_file << std::fixed << std::setprecision(8);
     r_vel_output_file << std::fixed << std::setprecision(8);

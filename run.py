@@ -31,7 +31,9 @@ def read_parameters(args):
                 elif idx==4:
                         parameters['timestep'] = Decimal(value)
                 elif idx==5:
-                        parameters['number_of_timesteps'] = 1 if args.validate else int(value)
+                        # we only have 2 timesteps from the reference run so we can't validate
+                        # more timesteps than that
+                        parameters['number_of_timesteps'] = 2 if args.validate else int(value)
                 elif idx==6:
                         pass
                 elif idx==7:
@@ -120,7 +122,7 @@ def build(args):
 
     if cmake.wait():
         FNULL.close()
-        sys.exit(1)
+        raise Exception("Error building (cmake) the program")
 
     if args.benchmark:
         make = subprocess.Popen(['make', '-j8'], cwd=build_path, stdout=FNULL)
@@ -129,7 +131,7 @@ def build(args):
 
     if make.wait():
         FNULL.close()
-        sys.exit(2)
+        raise Exception("Error building (make) the program")
 
     FNULL.close()
 
@@ -164,14 +166,51 @@ if args.validate:
 
     fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers])
     if fibers.wait():
-        sys.exit(3)
+        raise Exception("Error running the program for validation")
 
-    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/a_matrix.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_AMat.ref'])
-    validate.wait()
-    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/b_vector.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_BVec.ref'])
-    validate.wait()
-    validate = subprocess.Popen(['python','tools/validate.py', os.path.join(build_path,'bin/current.map'), os.path.join(build_path,'bin/x_vector.out'), 'tests/reference/reference.map', 'tests/reference/100_numeric_gmres/0_XVec.ref'])
-    validate.wait()
+    for i in xrange(parameters['number_of_timesteps']):
+        current_a_matrix_filename = os.path.join(build_path,'bin/a_matrix_'+str(i)+'.out')
+        reference_a_matrix_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_AMat.ref'
+        current_b_vector_filename = os.path.join(build_path,'bin/b_vector_'+str(i)+'.out')
+        reference_b_vector_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_BVec.ref'
+        current_x_vector_filename = os.path.join(build_path,'bin/x_vector_'+str(i)+'.out')
+        reference_x_vector_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_XVec.ref'
+
+        current_t_velocity_filename = os.path.join(build_path,'bin/t_vel_'+str(i)+'.out')
+        reference_t_velocity_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_TRANSVel.ref'
+        current_r_velocity_filename = os.path.join(build_path,'bin/r_vel_'+str(i)+'.out')
+        reference_r_velocity_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_ROTVel.ref'
+
+        current_positions_filename = os.path.join(build_path,'bin/positions_'+str(i)+'.out')
+        reference_positions_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_POS.ref'
+        current_orientations_filename = os.path.join(build_path,'bin/orientations_'+str(i)+'.out')
+        reference_orientations_filename = 'tests/reference/100_numeric_gmres/'+str(i)+'_ORIENT.ref'
+
+
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', os.path.join(build_path,'bin/current.map'), current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
+        if validate.wait():
+            raise Exception("Error validating A matrix")
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', os.path.join(build_path,'bin/current.map'), current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
+        if validate.wait():
+            raise Exception("Error validating B vector")
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', os.path.join(build_path,'bin/current.map'), current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
+        if validate.wait():
+            raise Exception("Error validating X vector")
+
+        validate = subprocess.Popen(['python','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
+        if validate.wait():
+            raise Exception("Error validating translational velocity")
+        validate = subprocess.Popen(['python','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
+        if validate.wait():
+            raise Exception("Error validating rotational velocity")
+
+        validate = subprocess.Popen(['python','tools/validate.py', current_positions_filename, reference_positions_filename])
+        if validate.wait():
+            raise Exception("Error validating positions")
+        validate = subprocess.Popen(['python','tools/validate.py', current_orientations_filename, reference_orientations_filename])
+        if validate.wait():
+            raise Exception("Error validating orientations")
+
 elif args.benchmark:
 
     tests = glob.glob("tests/*.in")
@@ -186,6 +225,9 @@ elif args.benchmark:
         """
         return [atoi(c) for c in re.split('(\d+)', text)]
 
+    def extract_timestep(filename):
+        return re.search('_(\d+)\.', filename).groups()[0]
+
     tests.sort(key=natural_keys)
     #print tests[:30]
 
@@ -193,16 +235,19 @@ elif args.benchmark:
 
     results = {}
 
-    for test in tests[:30]:
+    tests = tests[:30]
+    tests.reverse()
 
-        print test
+    for idx,test in enumerate(tests):
+
+        print '  [BENCHMARK]   : ' + test + ' ('+str(idx+1)+'/'+str(len(tests))+')'
 
         args.fibers = test
         parameters = read_parameters(args)
         write_parameters(args, parameters)
         build_path = build(args)
 
-        iterations = 8
+        iterations = 2
         benchmark = []
 
         sample_mean = 0.0
@@ -210,19 +255,21 @@ elif args.benchmark:
         standard_error = 0.0
         relative_standard_error = sys.float_info.max
 
-        while relative_standard_error > 0.05:
+        while relative_standard_error > 0.1:
             for i in xrange(iterations):
                 fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers], stdout=FNULL)
                 if fibers.wait():
                     FNULL.close()
-                    sys.exit(3)
-                with io.open(os.path.join(build_path,'bin/performance.out'), 'r') as performance:
+                    raise Exception("Error running the program for benchmarking")
+                performance = os.path.join(build_path,'bin/performance.out')
+                with io.open(performance) as performance_file:
                     total = 0.0
-                    for idx,line in enumerate(performance):
+                    for idx,line in enumerate(performance_file):
                         if idx > 0: # ignore header
                             line = line.rstrip().split(',')
                             total += float(line[1])
                     benchmark.append(total)
+                os.remove(performance)
 
             sample_mean = sum(benchmark)/len(benchmark)
             sample_deviation = 0.0
@@ -234,18 +281,23 @@ elif args.benchmark:
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean
 
-            #print parameters["number_of_fibers"], iterations, sample_mean, sample_deviation,relative_standard_error
             iterations = len(benchmark)
 
         results[parameters["number_of_fibers"]] = sample_mean
 
-    print results
     FNULL.close()
 
-    #with open("benchmarks/overall.csv", "wb") as csvfile:
-        #resultswriter = csv.writer(csvfile, dialect="excel-tab")
-        #resultswriter.writerow(["X","test"])
-
+    with open("benchmarks/results.csv", "wb") as csvfile:
+        resultswriter = csv.writer(csvfile, dialect="excel-tab")
+        row = ["X","AVG_TIME"]
+        resultswriter.writerow(row)
+        print '**************************************************'
+        print 'Benchmark:'
+        print '  '+'\t'.join([str(x) for x in row])
+        for key in sorted(results):
+            row = [key,results[key]]
+            resultswriter.writerow(row)
+            print '  '+'\t'.join([str(x) for x in row])
 else:
     parameters = read_parameters(args)
     write_parameters(args, parameters)
@@ -253,6 +305,6 @@ else:
 
     fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers])
     if fibers.wait():
-        sys.exit(3)
+        raise Exception("Error running the program")
 
 print '**************************************************'

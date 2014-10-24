@@ -64,12 +64,12 @@ FUNCTION solve_coeffs(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Solving system using direct solver took ",CPU_p," seconds."
  
-  solve_coeffs=Brhs
-  OPEN(10,file="XVec.out");
-  DO i=1,3*M*N
-    WRITE(10,'(*(F16.8))') (solve_coeffs(i))
-  END DO
-  CLOSE(10)
+!  solve_coeffs=Brhs
+!  OPEN(10,file="XVec.out");
+!  DO i=1,3*M*N
+!    WRITE(10,'(*(F16.8))') (solve_coeffs(i))
+!  END DO
+!  CLOSE(10)
 
   !DO j=1,M
   !   PRINT *,"coeff, element ",(j-1)*3*N+6,":",solve_coeffs((j-1)*3*N+6)
@@ -563,6 +563,7 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   REAL*8,DIMENSION(3):: xc,ta,xcb,tb,IF_a0,IF_a1
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
+  INTEGER::DEBUG
 
   INTEGER i
   
@@ -596,28 +597,42 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
     VelVecs(ind+1:ind+3)=0.5d0*((d+e)*ExtForce(ind+1:ind+3)+(d-e)*ta_dot_Fa*ta);
     VelVecs(ind+1)=VelVecs(ind+1)+sh*mubar*xc(2);
                                           !!Y-coord of xc for this fil. 
+    IF (filno == 1) THEN
+      PRINT *, mubar, VelVecs(0+1:0+3)
+    END IF
+
     RotVecs(ind+1:ind+3)=-sh*mubar*ta(2)*ta(1)*ta;
     RotVecs(ind+1)=RotVecs(ind+1)+sh*mubar*ta(2);
 
     DO fno=1,M
       IF (fno/=filno) THEN
-        !!Add IF_a0 and IF_a1 contributions to the velocities. 
-        !!From fil fno to fil filno.  
+        !!Add IF_a0 and IF_a1 contributions to the velocities.
+        !!From fil fno to fil filno.
         ind2=(fno-1)*3;
         xcb=XcVecs(ind2+1:ind2+3);
         tb=tVecs(ind2+1:ind2+3);
         
-        
+        IF (filno == 1) THEN
+            DEBUG=1
+        ENDIF
         
         IF_a0=TH_f_GQ(xcb,tb,xc,ta,eeps,Fmatx(:,fno),Fmaty(:,fno),Fmatz(:,fno),&
-              LQ,pv,wv,LvecZero);
+              LQ,pv,wv,LvecZero,DEBUG);
         IF_a1=TH_f_GQ(xcb,tb,xc,ta,eeps,Fmatx(:,fno),Fmaty(:,fno),Fmatz(:,fno),&
-             LQ,pv,wv,LvecMat(:,1));
+             LQ,pv,wv,LvecMat(:,1),0);
         
+        IF(DEBUG==1) THEN
+            PRINT '(*(F16.8))', (0.5d0*IF_a0(1))/mubar,0.5d0*IF_a0(1),IF_a0(1)
+        END IF
         
-        !!Adding on non-local contributions to velocities. 
+        !!Adding on non-local contributions to velocities.
         VelVecs(ind+1:ind+3)=VelVecs(ind+1:ind+3)+0.5d0*IF_a0;
+!        IF(DEBUG==1) THEN
+!            PRINT *, VelVecs(0+1:0+3)
+!        END IF
         RotVecs(ind+1:ind+3)=RotVecs(ind+1:ind+3)+1.5d0*(IF_a1-sum(ta*IF_a1)*ta);
+
+        DEBUG=0
 
       END IF
     END DO
@@ -626,20 +641,22 @@ SUBROUTINE compute_velocities(eeps,M,N,LQ,pv,wv,LvecMat,&
   VelVecs=VelVecs/mubar;
   RotVecs=RotVecs/mubar;
 
+  PRINT *, VelVecs(0+1:0+3)
+
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
   PRINT *,"Updating velocities took ",CPU_p," seconds."
 
-  OPEN(10,file="TRANSVel.out");
-  DO i=1,3*M
-    WRITE(10,'(*(F16.8))') (VelVecs(i))
-  END DO
-  CLOSE(10)
-  OPEN(10,file="ROTVel.out");
-  DO i=1,3*M
-    WRITE(10,'(*(F16.8))') (RotVecs(i))
-  END DO
-  CLOSE(10)
+!  OPEN(10,file="TRANSVel.out");
+!  DO i=1,3*M
+!    WRITE(10,'(*(F16.8))') (VelVecs(i))
+!  END DO
+!  CLOSE(10)
+!  OPEN(10,file="ROTVel.out");
+!  DO i=1,3*M
+!    WRITE(10,'(*(F16.8))') (RotVecs(i))
+!  END DO
+!  CLOSE(10)
   
 END SUBROUTINE compute_velocities
 

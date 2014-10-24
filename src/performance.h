@@ -44,7 +44,7 @@ public:
     void stop(std::string name);
     void print(std::string name);
     void dump();
-    void exportMeasurements(std::string name);
+    void exportMeasurements();
 private:
     DISALLOW_COPY_AND_ASSIGN(Performance);
 

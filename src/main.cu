@@ -38,22 +38,22 @@ int main(int argc, char *argv[])
         cudaDeviceProp prop;
         cudaGetDeviceProperties(&prop, i);
         printf("  Device Number: %d\n", i);
-        printf("    Device name: %s\n", prop.name);
-        printf("    Memory Clock Rate (KHz): %d\n",
+        printf("    Device name                  : %s\n", prop.name);
+        printf("    Memory Clock Rate (KHz)      : %d\n",
                prop.memoryClockRate);
-        printf("    Memory Bus Width (bits): %d\n",
+        printf("    Memory Bus Width (bits)      : %d\n",
                prop.memoryBusWidth);
-        printf("    Peak Memory Bandwidth (GB/s): %f\n",
+        printf("    Peak Memory Bandwidth (GB/s) : %f\n",
                2.0 * prop.memoryClockRate * (prop.memoryBusWidth / 8) / 1.0e6);
 
         size_t free_byte;
         size_t total_byte;
         cudaMemGetInfo( &free_byte, &total_byte );
-        printf("    Total Memory (MB): %.0f\n",
+        printf("    Total Memory (MB)            : %.0f\n",
                total_byte/1024.0/1024.0);
-        printf("    Free Memory (MB): %.0f\n",
+        printf("    Free Memory (MB)             : %.0f\n",
                free_byte/1024.0/1024.0);
-        printf("    Used Memory (MB): %.0f\n",
+        printf("    Used Memory (MB)             : %.0f\n",
                (total_byte-free_byte)/1024.0/1024.0);
     }
     std::cout << "**************************************************" << std::endl;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
         current_timestep++;
 
-        if (current_timestep >= 1)
+        if (current_timestep >= NUMBER_OF_TIMESTEPS)
         {
             running = false;
         }

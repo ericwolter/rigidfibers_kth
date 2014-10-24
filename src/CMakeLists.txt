@@ -41,12 +41,15 @@ set(KERNELS
     kernels/update_fibers.cu
     kernels/update_fibers_firststep.cu
     kernels/update_velocities.cu
+    kernels/reset_velocities.cu
 )
 
 set(ADDONS
     ../run.py
     ../tools/validate.py
+    ../tools/validate_mapping.py
     ../tools/gen.py
+    ../fortran/benchmark.py
     ../fortran/Int_analytical.f90
     ../fortran/advect_fibers.f90
     ../fortran/coeffs_and_vels.f90

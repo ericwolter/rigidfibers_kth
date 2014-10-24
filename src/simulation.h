@@ -68,7 +68,6 @@ private:
 
     float *gpu_a_matrix_;
     float *gpu_b_vector_;
-    float *gpu_x_vector_;
 
 #ifdef VALIDATE
     int *gpu_validation_;
@@ -87,10 +86,10 @@ private:
     void updateVelocities();
     void updateFibers(bool first_timestep);
 
-    void dumpLinearSystem();
-    void dumpSolutionSystem();
-    void dumpFibers();
-    void dumpVelocities();
+    void dumpLinearSystem(size_t current_timestep);
+    void dumpSolutionSystem(size_t current_timestep);
+    void dumpFibers(size_t current_timestep);
+    void dumpVelocities(size_t current_timestep);
 };
 
 #endif // FIBERS_SIMULATION_H_

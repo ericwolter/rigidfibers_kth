@@ -25,6 +25,7 @@ __device__
         position_on_fiber_i.y = position_i.y + quadrature_points[quadrature_index_i] * orientation_i.y;
         position_on_fiber_i.z = position_i.z + quadrature_points[quadrature_index_i] * orientation_i.z;
 
+        #pragma unroll
         for (int quadrature_index_j = 0; quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_j)
         {
             const float quadrature_point = quadrature_points[quadrature_index_j];
@@ -129,19 +130,6 @@ __global__ void update_velocities(
     external_force.y = 0.0f;
     external_force.z = -1.0f;
 
-    float4 oriented_force;
-    oriented_force.x = orientation_i.x * orientation_i.x * external_force.x + orientation_i.x * orientation_i.y * external_force.y + orientation_i.x * orientation_i.z * external_force.z;
-    oriented_force.y = orientation_i.x * orientation_i.y * external_force.x + orientation_i.y * orientation_i.y * external_force.y + orientation_i.y * orientation_i.z * external_force.z;
-    oriented_force.z = orientation_i.x * orientation_i.z * external_force.x + orientation_i.y * orientation_i.z * external_force.y + orientation_i.z * orientation_i.z * external_force.z;
-
-    translational_velocities[i].x = 0.5f * ((d + 2.0f) * external_force.x + (d - 2.0f) * oriented_force.x);
-    translational_velocities[i].y = 0.5f * ((d + 2.0f) * external_force.y + (d - 2.0f) * oriented_force.y);
-    translational_velocities[i].z = 0.5f * ((d + 2.0f) * external_force.z + (d - 2.0f) * oriented_force.z);
-
-    rotational_velocities[i].x = 0.0f;
-    rotational_velocities[i].y = 0.0f;
-    rotational_velocities[i].z = 0.0f;
-
 #ifdef FORCE_1D
     for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
     {
@@ -192,7 +180,7 @@ __global__ void update_velocities(
 #else
         atomicAdd(&(translational_velocities[i].x), (0.5f / d) * TF1A0);
         atomicAdd(&(translational_velocities[i].y), (0.5f / d) * TF2A0);
-        atomicAdd(&(translational_velocities[i].z), (0.5f / d) * TF2A0);
+        atomicAdd(&(translational_velocities[i].z), (0.5f / d) * TF3A0);
 
         atomicAdd(&(rotational_velocities[i].x), (1.5f / d) * (TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3)));
         atomicAdd(&(rotational_velocities[i].y), (1.5f / d) * (TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3)));

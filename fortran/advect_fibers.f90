@@ -139,6 +139,15 @@ PROGRAM ADVECT_FIBERS
   INTEGER count2
 
   !me:  @todo ???
+  INTEGER step_count_rate
+  !me:  @todo ???
+  INTEGER step_count_max
+  !me:  @todo ???
+  INTEGER step_count1
+  !me:  @todo ???
+  INTEGER step_count2
+
+  !me:  @todo ???
   CHARACTER (LEN=10)::labstr
   !me:  @todo ???
   CHARACTER (LEN=10)::filenostr
@@ -434,10 +443,9 @@ PROGRAM ADVECT_FIBERS
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,1 !!no_ts
-     IF (mod(tt,5)==0) THEN
-        PRINT *,"time step no ",tt
-     END IF
+  DO tt=1,no_ts
+      CALL SYSTEM_CLOCK(step_count1,step_count_rate,step_count_max);
+    PRINT *,"time step no ",tt
      !! Compute the coefficient in the force expansion using Legendre polynomials
      !! Use either direct solver for the linear system (dir_solve==1) or GMRES
      
@@ -495,7 +503,7 @@ PROGRAM ADVECT_FIBERS
       !! Update postition and orientation by solving (24) and (25) in time
       CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
-        PRINT*, "1"
+        !PRINT*, "1"
 
       IF (tt==1) THEN
          !!first time step. 
@@ -510,7 +518,7 @@ PROGRAM ADVECT_FIBERS
               2.0d0/3.0d0*dt*(2.0d0*RotVecs(:,new)-RotVecs(:,old));
       END IF
       
-        PRINT*, "2"
+        !PRINT*, "2"
       !! Normalize, make orientation vectors have length one
       DO i=1,M
          ind=(i-1)*3
@@ -521,11 +529,13 @@ PROGRAM ADVECT_FIBERS
          tmod(ind+3)=tmod0(i)
       END DO
       
-        PRINT*, "3"
-      tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
-      
+        !PRINT*, "3"
+      !tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
+      !PRINT*, "3.1"
+
       tVecs(:,three)=tVecs(:,three)/tmod;
 
+      !PRINT*, "3.2"
       CALL SYSTEM_CLOCK(count2, count_rate, count_max)
       CPU_p = real(count2-count1)/count_rate
       PRINT *,"Updating fibers took ",CPU_p," seconds."
@@ -544,59 +554,63 @@ PROGRAM ADVECT_FIBERS
 
 
       
-        PRINT*, "4"
+        !PRINT*, "4"
 
       t=t+dt;
       
-      IF (mod(tt,save_ival)==0) THEN
-         !Time to save
-         nos=nos+1;
-         PRINT *,"========================================"
-         PRINT *,"Time step no ",tt,"."
-         PRINT *,"========================================"
-         PRINT *,"Saving to file ",trim(filename),", nos=",nos
-         PRINT *,"Saving to file ",trim(filename2),", nos=",nos
-         DO i=1,M
-            ind=(i-1)*3
-            WRITE(10,'(2F24.16)') XcVecs(ind+1,three)
-            WRITE(10,'(2F24.16)') XcVecs(ind+2,three)
-            WRITE(10,'(2F24.16)') XcVecs(ind+3,three)
-            WRITE(10,*) ' '
-            WRITE(10,'(2F24.16)') tVecs(ind+1,three)
-            WRITE(10,'(2F24.16)') tVecs(ind+2,three)
-            WRITE(10,'(2F24.16)') tVecs(ind+3,three)
-            WRITE(10,*) ' '
-            WRITE(30,'(2F24.16)') VelVecs(ind+1,new)
-            WRITE(30,'(2F24.16)') VelVecs(ind+2,new)
-            WRITE(30,'(2F24.16)') VelVecs(ind+3,new)
-            WRITE(30,*) ' '
-            WRITE(30,'(2F24.16)') RotVecs(ind+1,new)
-            WRITE(30,'(2F24.16)') RotVecs(ind+2,new)
-            WRITE(30,'(2F24.16)') RotVecs(ind+3,new)
-            WRITE(30,*) ' '
-         END DO
-         DO i=1,3*M*N
-            WRITE(70,'(2F24.16)') coeffvec(i)
-         END DO
-         WRITE(70,*) ' '
-      END IF
-      PRINT*, "5"
+!      IF (mod(tt,save_ival)==0) THEN
+!         !Time to save
+!         nos=nos+1;
+!         PRINT *,"========================================"
+!         PRINT *,"Time step no ",tt,"."
+!         PRINT *,"========================================"
+!         PRINT *,"Saving to file ",trim(filename),", nos=",nos
+!         PRINT *,"Saving to file ",trim(filename2),", nos=",nos
+!         DO i=1,M
+!            ind=(i-1)*3
+!            WRITE(10,'(2F24.16)') XcVecs(ind+1,three)
+!            WRITE(10,'(2F24.16)') XcVecs(ind+2,three)
+!            WRITE(10,'(2F24.16)') XcVecs(ind+3,three)
+!            WRITE(10,*) ' '
+!            WRITE(10,'(2F24.16)') tVecs(ind+1,three)
+!            WRITE(10,'(2F24.16)') tVecs(ind+2,three)
+!            WRITE(10,'(2F24.16)') tVecs(ind+3,three)
+!            WRITE(10,*) ' '
+!            WRITE(30,'(2F24.16)') VelVecs(ind+1,new)
+!            WRITE(30,'(2F24.16)') VelVecs(ind+2,new)
+!            WRITE(30,'(2F24.16)') VelVecs(ind+3,new)
+!            WRITE(30,*) ' '
+!            WRITE(30,'(2F24.16)') RotVecs(ind+1,new)
+!            WRITE(30,'(2F24.16)') RotVecs(ind+2,new)
+!            WRITE(30,'(2F24.16)') RotVecs(ind+3,new)
+!            WRITE(30,*) ' '
+!         END DO
+!         DO i=1,3*M*N
+!            WRITE(70,'(2F24.16)') coeffvec(i)
+!         END DO
+!         WRITE(70,*) ' '
+!      END IF
+!      PRINT*, "5"
 
-     IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
-        pp=pp+1;
-        CALL int2str(filenostr,pp)
+!     IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
+!        pp=pp+1;
+!        CALL int2str(filenostr,pp)
         
-        filename=trim(abbr)//filenostr
-        filename2=trim(abbr2)//filenostr
-        CLOSE(10)
-        CLOSE(30)
-        CLOSE(70)
-        OPEN(10,file=trim(filename));
-        OPEN(30,file=trim(filename2));
-        OPEN(70,file=trim(filename3));
-        PRINT *,"Opened new file: ",filename, "and", filename2
-     END IF
-     
+!        filename=trim(abbr)//filenostr
+!        filename2=trim(abbr2)//filenostr
+!        CLOSE(10)
+!        CLOSE(30)
+!        CLOSE(70)
+!        OPEN(10,file=trim(filename));
+!        OPEN(30,file=trim(filename2));
+!        OPEN(70,file=trim(filename3));
+!        PRINT *,"Opened new file: ",filename, "and", filename2
+!     END IF
+    CALL SYSTEM_CLOCK(step_count2,step_count_rate,step_count_max);
+    CPU_p=real(step_count2-step_count1)/step_count_rate
+
+    PRINT *,"BENCHMARK:", CPU_p
+
   END DO
   
   

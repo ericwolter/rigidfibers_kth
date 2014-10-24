@@ -228,7 +228,7 @@ FUNCTION  G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,DEBUG);
   
 END FUNCTION G_f_GQ
 
-FUNCTION TH_f_GQ(xb,pb,xa,pa,eeps,fvec_x,fvec_y,fvec_z,LQ,pv,wv,Lvec);
+FUNCTION TH_f_GQ(xb,pb,xa,pa,eeps,fvec_x,fvec_y,fvec_z,LQ,pv,wv,Lvec,DEBUG);
 
   REAL*8,DIMENSION(3),INTENT(IN)::xb,pb,xa,pa
   REAL*8,INTENT(IN)::eeps
@@ -237,6 +237,8 @@ FUNCTION TH_f_GQ(xb,pb,xa,pa,eeps,fvec_x,fvec_y,fvec_z,LQ,pv,wv,Lvec);
   !pv,wv,and Lvec_m should be of length LQ. 
   REAL*8,DIMENSION(LQ),INTENT(IN)::fvec_x,fvec_y,fvec_z
   REAL*8,DIMENSION(LQ),INTENT(IN)::pv,wv,Lvec
+
+  INTEGER, INTENT(IN):: DEBUG
 
   INTEGER i
   REAL*8,DIMENSION(3):: TH_f_GQ
@@ -255,10 +257,16 @@ FUNCTION TH_f_GQ(xb,pb,xa,pa,eeps,fvec_x,fvec_y,fvec_z,LQ,pv,wv,Lvec);
     
   DO i=1,LQ
      xbar=xa+pv(i)*pa;  
-     Gmat(i,:)=G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,0);
-     
+     Gmat(i,:)=G_f_GQ(xb,pb,xbar,eeps,LQ,fvec_x,fvec_y,fvec_z,pv,wv,DEBUG);
+
   END DO
-  
+
+!  DO i=1,LQ
+!    IF(DEBUG==1) THEN
+!        PRINT '(F16.8)', wv(i)*Gmat(i,1)*Lvec(i)
+!    END IF
+!  END DO
+
   DO i=1,3
      TH_f_GQ(i)=sum(wv*Gmat(:,i)*Lvec);
   END DO
