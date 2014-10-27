@@ -244,18 +244,23 @@ elif args.benchmark:
 
         args.fibers = test
         parameters = read_parameters(args)
+        number_of_fibers = parameters["number_of_fibers"]
         write_parameters(args, parameters)
         build_path = build(args)
 
         iterations = 2
         benchmark = []
 
+        # allocate dict holding the row of data belonging to the current
+        # number of fibers
+        results[number_of_fibers] = {}
+
         sample_mean = 0.0
         sample_deviation = 0.0
         standard_error = 0.0
         relative_standard_error = sys.float_info.max
 
-        while relative_standard_error > 0.1:
+        while relative_standard_error > 0.05:
             for i in xrange(iterations):
                 fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers], stdout=FNULL)
                 if fibers.wait():
@@ -263,18 +268,36 @@ elif args.benchmark:
                     raise Exception("Error running the program for benchmarking")
                 performance = os.path.join(build_path,'bin/performance.out')
                 with io.open(performance) as performance_file:
-                    total = 0.0
+                    run = {'$TOTAL':0.0}
                     for idx,line in enumerate(performance_file):
                         if idx > 0: # ignore header
                             line = line.rstrip().split(',')
-                            total += float(line[1])
-                    benchmark.append(total)
+
+                            step_name = str(line[0].strip())
+                            step_value = float(line[1])
+
+                            run[step_name] = step_value
+                            run['$TOTAL'] += step_value
+
+                    benchmark.append(run)
                 os.remove(performance)
 
-            sample_mean = sum(benchmark)/len(benchmark)
+            # reset the mean value for the different steps
+            for run in benchmark:
+                for step in run.keys():
+                    results[parameters["number_of_fibers"]][step] = 0.0
+
+            run_sum = reduce(lambda memo, run: memo + run['$TOTAL'], benchmark, 0.0)
+
+            sample_mean = run_sum/len(benchmark)
             sample_deviation = 0.0
-            for x in benchmark:
-                sample_deviation += (x - sample_mean)**2
+            for idx, run in enumerate(benchmark):
+                sample_deviation += (run['$TOTAL'] - sample_mean)**2
+
+                # calculate cumulative moving average
+                for step in run.keys():
+                    results[parameters["number_of_fibers"]][step] = results[parameters["number_of_fibers"]][step] + (run[step] - results[parameters["number_of_fibers"]][step]) / (idx+1)
+
             sample_deviation /= len(benchmark)-1
             sample_deviation = math.sqrt(sample_deviation)
 
@@ -283,19 +306,19 @@ elif args.benchmark:
 
             iterations = len(benchmark)
 
-        results[parameters["number_of_fibers"]] = sample_mean
+        results[parameters["number_of_fibers"]]['$TOTAL'] = sample_mean
 
     FNULL.close()
 
     with open("benchmarks/results.csv", "wb") as csvfile:
         resultswriter = csv.writer(csvfile, dialect="excel-tab")
-        row = ["X","AVG_TIME"]
+        row = ["X"] + [x for x in sorted(results.values()[0].keys())]
         resultswriter.writerow(row)
         print '**************************************************'
         print 'Benchmark:'
         print '  '+'\t'.join([str(x) for x in row])
         for key in sorted(results):
-            row = [key,results[key]]
+            row = [key] + [results[key][k] for k in sorted(results[key].keys())]
             resultswriter.writerow(row)
             print '  '+'\t'.join([str(x) for x in row])
 else:

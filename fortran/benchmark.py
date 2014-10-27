@@ -57,7 +57,7 @@ for idx,test in enumerate(tests):
 
     print '  [BENCHMARK]   : ' + test + ' ('+str(idx+1)+'/'+str(len(tests))+')'
 
-    iterations = 1
+    iterations = 2
     benchmark = []
 
     number_of_fibers = int(extract_timestep(test))
@@ -86,7 +86,6 @@ for idx,test in enumerate(tests):
             count = 0
             for line in fibers.stdout:
                 line = line.strip()
-                print line
                 if line.startswith('BENCHMARK'):
                     count += 1
                     if count > 1: # ignore first step as warmup

@@ -68,6 +68,16 @@
 \definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
 \definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
 
+\definecolor{set11_light}{cmyk}{.0 ,.3 ,.2 ,.0 }
+\definecolor{set12_light}{cmyk}{.3 ,.1 ,.0 ,.0 }
+\definecolor{set13_light}{cmyk}{.2 ,.0 ,.2 ,.0 }
+\definecolor{set14_light}{cmyk}{.12 ,.17,.0 ,.0 }
+\definecolor{set15_light}{cmyk}{.0 ,.15 ,.3,.0 }
+\definecolor{set16_light}{cmyk}{.0 ,.0 ,.2 ,.0 }
+\definecolor{set17_light}{cmyk}{.1,.12 ,.2 ,.0 }
+\definecolor{set18_light}{cmyk}{.0 ,.15 ,.0 ,.0 }
+\definecolor{set19_light}{cmyk}{.0 ,.0 ,.0 ,.05 }
+
 \usepackage{modifications}
 
 \linespread{1.2}
@@ -120,44 +130,46 @@ inceptos hymenaeos.
 \chapter{Introduction}
 
 \begin{tikzpicture}
-\setmathfont{FiraSans-Book.otf}
-\pgfplotstableread{benchmarks/overall.csv}\loadedtable
-\begin{axis}[
-  title=Overall,
-  xlabel={number of fibers},
-  ylabel={simulation time (sec)},
-  ymin=0,ymax=14,
-  xmin=0,xmax=800,
-  unbounded coords=discard,
-  ]
-\addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=FortranMulti] {\loadedtable};
-\addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_GMRES] {\loadedtable};
-\addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_BiCGStab] {\loadedtable};
-\addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=MAGMA] {\loadedtable};
+  \setmathfont{FiraSans-Book.otf}
+  \pgfplotstableread{benchmarks/overall.csv}\loadedtable
+  \begin{axis}[
+    title=Overall,
+    xlabel={number of fibers},
+    ylabel={simulation time (sec)},
+    ymin=0,ymax=14,
+    xmin=0,xmax=800,
+    unbounded coords=discard,
+    ]
+  \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=FortranMulti] {\loadedtable};
+  \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_GMRES] {\loadedtable};
+  \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_BiCGStab] {\loadedtable};
+  \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=MAGMA] {\loadedtable};
 
-\legend{Fortran Multi,GMRES, BiCGStab, MAGMA}
-\end{axis}
-\setmathfont{XITS Math}
+  \legend{Fortran Multi,GMRES, BiCGStab, MAGMA}
+  \end{axis}
+  \setmathfont{XITS Math}
 \end{tikzpicture}
 
 \begin{tikzpicture}
-\setmathfont{FiraSans-Book.otf}
-\pgfplotstableread{benchmarks/assemble_system.csv}\loadedtable
-\begin{axis}[
-  title=Assemble System,
-  xlabel={number of fibers},
-  ylabel={simulation time (sec)},
-  ymin=0,ymax=6,
-  xmin=0,xmax=800,
-  ]
-\addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=F90Multi_analytic] {\loadedtable};
-\addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D] {\loadedtable};
-\addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=1D] {\loadedtable};
-\addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_FP32] {\loadedtable};
+  \setmathfont{FiraSans-Book.otf}
+  \pgfplotstableread{benchmarks/steps.csv}\loadedtable
+  \begin{axis}[
+    stack plots=y,
+    area style,
+    title=Steps,
+    xlabel={number of fibers},
+    ylabel={simulation time (sec)},
+    xmin=0,xmax=700,
+    ymin=0,ymax=3.5,
+    ]
+  \addplot[color=set11, fill=set11_light, very thick] table[x=X,y=assemble_system] {\loadedtable} \closedcycle;
+  \addplot[color=set12, fill=set12_light, very thick] table[x=X,y=solve_system] {\loadedtable} \closedcycle;
+  \addplot[color=set13, fill=set13_light, very thick] table[x=X,y=update_velocities] {\loadedtable} \closedcycle;
+  \addplot[color=set14, fill=set14_light, very thick] table[x=X,y=update_fibers] {\loadedtable} \closedcycle;
 
-\legend{Fortran Multi Analytic, 2D, 1D, 2D Single Precision}
-\end{axis}
-\setmathfont{XITS Math}
+  \legend{Assemble System, Solve System, Update Velocities, Update Fibers}
+  \end{axis}
+  \setmathfont{XITS Math}
 \end{tikzpicture}
 
 Rigid fibers Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
