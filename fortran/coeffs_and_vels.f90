@@ -415,7 +415,8 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CALL assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
-  PRINT *,"Assembling the matrix took ",CPU_p," seconds."
+  PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
+!  PRINT *,"Assembling the matrix took ",CPU_p," seconds."
 
 !  OPEN(10,file="AMat.out");
 !  DO i=1,3*M*N
@@ -427,7 +428,8 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
   CALL assemble_rhs_an(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,Brhs);
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
-  PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
+  PRINT *,"BENCHMARK:assemble_rhs:", CPU_p
+!  PRINT *,"Assembling the right hand side took ",CPU_p," seconds."
  
 !  OPEN(10,file="BVec.out");
 !  DO i=1,3*M*N
@@ -521,13 +523,14 @@ FUNCTION solve_coeffs_an_iter(eeps,M,N,XcVecs,tVecs,ExtForce,LQ,pv,wv,LvecMat,&
 
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
-  PRINT *,"Solving system using GMRES took ",CPU_p," seconds."
+  PRINT *,"BENCHMARK:solve_system:", CPU_p
+!  PRINT *,"Solving system using GMRES took ",CPU_p," seconds."
 
-  OPEN(10,file="XVec.out");
-  DO i=1,3*M*N
-    WRITE(10,'(*(F16.8))') (solve_coeffs_an_iter(i))
-  END DO
-  CLOSE(10)
+!  OPEN(10,file="XVec.out");
+!  DO i=1,3*M*N
+!    WRITE(10,'(*(F16.8))') (solve_coeffs_an_iter(i))
+!  END DO
+!  CLOSE(10)
 
 END FUNCTION solve_coeffs_an_iter
 
@@ -702,7 +705,7 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
              Fmatx,Fmaty,Fmatz);
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
-  PRINT *,"Assembling forces took ",CPU_p," seconds."
+  PRINT *,"BENCHMARK:assemble_force:", CPU_p
 
   CALL SYSTEM_CLOCK(count1, count_rate, count_max)
   !!From fil b to fil a. 
@@ -747,7 +750,8 @@ SUBROUTINE compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
   RotVecs=RotVecs/mubar;
   CALL SYSTEM_CLOCK(count2, count_rate, count_max)
   CPU_p = real(count2-count1)/count_rate
-  PRINT *,"Updating velocities took ",CPU_p," seconds."
+  PRINT *,"BENCHMARK:update_velocities:", CPU_p
+!  PRINT *,"Updating velocities took ",CPU_p," seconds."
 
 !  OPEN(10,file="TRANSVel.out");
 !  DO i=1,3*M

@@ -160,14 +160,37 @@ inceptos hymenaeos.
     title=Steps,
     xlabel={number of fibers},
     ylabel={simulation time (sec)},
-    xmin=0,xmax=700,
-    ymin=0,ymax=3.5,
+    xmin=0,xmax=256,
     ]
   \addplot[color=set11, fill=set11_light, very thick] table[x=X,y=assemble_system] {\loadedtable} \closedcycle;
   \addplot[color=set12, fill=set12_light, very thick] table[x=X,y=solve_system] {\loadedtable} \closedcycle;
   % update_fibers is so small it just causes ugly undefined jagginess of the lines
   % so we just add it to update velocities and rename both to update system
   \addplot[color=set13, fill=set13_light, very thick] table[x=X,y expr=\thisrow{update_velocities} + \thisrow{update_fibers}] {\loadedtable} \closedcycle;
+  % \addplot[color=set14, fill=set14_light, very thick] table[x=X,y=update_fibers] {\loadedtable} \closedcycle;
+
+  \legend{Assemble System, Solve System, Update System}
+  \end{axis}
+  \setmathfont{XITS Math}
+\end{tikzpicture}
+
+\begin{tikzpicture}
+  \setmathfont{FiraSans-Book.otf}
+  \pgfplotstableread{benchmarks/steps_fortran.csv}\loadedtable
+  \begin{axis}[
+    stack plots=y,
+    area style,
+    title=Steps (Fortran),
+    xlabel={number of fibers},
+    ylabel={simulation time (sec)},
+    xmin=0,xmax=256,
+    ymin=0,ymax=10,
+    ]
+  \addplot[color=set11, fill=set11_light, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}] {\loadedtable} \closedcycle;
+  \addplot[color=set12, fill=set12_light, very thick] table[x=X,y=SOLVE_SYSTEM] {\loadedtable} \closedcycle;
+  % update_fibers is so small it just causes ugly undefined jagginess of the lines
+  % so we just add it to update velocities and rename both to update system
+  \addplot[color=set13, fill=set13_light, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_FORCE} + \thisrow{UPDATE_VELOCITIES} + \thisrow{UPDATE_FIBERS}] {\loadedtable} \closedcycle;
   % \addplot[color=set14, fill=set14_light, very thick] table[x=X,y=update_fibers] {\loadedtable} \closedcycle;
 
   \legend{Assemble System, Solve System, Update System}

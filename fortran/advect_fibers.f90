@@ -538,7 +538,8 @@ PROGRAM ADVECT_FIBERS
       !PRINT*, "3.2"
       CALL SYSTEM_CLOCK(count2, count_rate, count_max)
       CPU_p = real(count2-count1)/count_rate
-      PRINT *,"Updating fibers took ",CPU_p," seconds."
+      PRINT *,"BENCHMARK:update_fibers:", CPU_p
+!      PRINT *,"Updating fibers took ",CPU_p," seconds."
       
 !      OPEN(90,file="POS.out");
 !      DO i=1,3*M
@@ -609,7 +610,7 @@ PROGRAM ADVECT_FIBERS
     CALL SYSTEM_CLOCK(step_count2,step_count_rate,step_count_max);
     CPU_p=real(step_count2-step_count1)/step_count_rate
 
-    PRINT *,"BENCHMARK:", CPU_p
+    PRINT *,"BENCHMARK:$total:", CPU_p
 
   END DO
   

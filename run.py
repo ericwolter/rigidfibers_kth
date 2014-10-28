@@ -285,7 +285,7 @@ elif args.benchmark:
             # reset the mean value for the different steps
             for run in benchmark:
                 for step in run.keys():
-                    results[parameters["number_of_fibers"]][step] = 0.0
+                    results[number_of_fibers][step] = 0.0
 
             run_sum = reduce(lambda memo, run: memo + run['$TOTAL'], benchmark, 0.0)
 
@@ -296,7 +296,7 @@ elif args.benchmark:
 
                 # calculate cumulative moving average
                 for step in run.keys():
-                    results[parameters["number_of_fibers"]][step] = results[parameters["number_of_fibers"]][step] + (run[step] - results[parameters["number_of_fibers"]][step]) / (idx+1)
+                    results[number_of_fibers][step] = results[number_of_fibers][step] + (run[step] - results[number_of_fibers][step]) / (idx+1)
 
             sample_deviation /= len(benchmark)-1
             sample_deviation = math.sqrt(sample_deviation)
@@ -306,7 +306,7 @@ elif args.benchmark:
 
             iterations = len(benchmark)
 
-        results[parameters["number_of_fibers"]]['$TOTAL'] = sample_mean
+        results[number_of_fibers]['$TOTAL'] = sample_mean
 
     FNULL.close()
 

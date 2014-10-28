@@ -50,7 +50,7 @@ FNULL = open(os.devnull, 'w')
 
 results = {}
 
-tests = tests[:30]
+tests = tests[:10]
 tests.reverse()
 
 for idx,test in enumerate(tests):
@@ -72,25 +72,43 @@ for idx,test in enumerate(tests):
     rundata = run.write(rundata)
     run.close()
 
+    # allocate dict holding the row of data belonging to the current
+    # number of fibers
+    results[number_of_fibers] = {}
+
     sample_mean = 0.0
     sample_deviation = 0.0
     standard_error = 0.0
     relative_standard_error = sys.float_info.max
 
-    while relative_standard_error > 100000.0:
+    while relative_standard_error > 0.05:
         for i in xrange(iterations):
             run = open('run100_iter.in', 'r')
             fibers = subprocess.Popen('./ADVECT_FIBERS', stdin=run, stdout=subprocess.PIPE)
 
+
             total = 0.0
             count = 0
+
+            data = {}
+
             for line in fibers.stdout:
                 line = line.strip()
                 if line.startswith('BENCHMARK'):
-                    count += 1
-                    if count > 1: # ignore first step as warmup
-                        total += float(line.split(':')[1])
-            benchmark.append(total/(count-1))
+                    line = [x.strip() for x in line.split(':')]
+                    step_name = str(line[1].strip()).upper()
+                    step_value = float(line[2])
+
+                    if not step_name in data:
+                        data[step_name] = []
+                    data[step_name].append(step_value)
+
+            for step in data:
+                # ignore first timing as warmup
+                times = data[step][1:]
+                data[step] = sum(times)/len(times)
+
+            benchmark.append(data)
 
             if fibers.wait():
                 run.close()
@@ -99,10 +117,22 @@ for idx,test in enumerate(tests):
 
             run.close()
 
-        sample_mean = sum(benchmark)/len(benchmark)
+        # reset the mean value for the different steps
+        for run in benchmark:
+            for step in run.keys():
+                results[number_of_fibers][step] = 0.0
+
+        run_sum = reduce(lambda memo, run: memo + run['$TOTAL'], benchmark, 0.0)
+
+        sample_mean = run_sum/len(benchmark)
         sample_deviation = 0.0
-        for x in benchmark:
-            sample_deviation += (x - sample_mean)**2
+        for idx, run in enumerate(benchmark):
+            sample_deviation += (run['$TOTAL'] - sample_mean)**2
+
+            # calculate cumulative moving average
+            for step in run.keys():
+                results[number_of_fibers][step] = results[number_of_fibers][step] + (run[step] - results[number_of_fibers][step]) / (idx+1)
+
         sample_deviation /= len(benchmark)-1
         sample_deviation = math.sqrt(sample_deviation)
 
@@ -111,19 +141,20 @@ for idx,test in enumerate(tests):
 
         iterations = len(benchmark)
 
-    results[number_of_fibers] = sample_mean
+
+    results[number_of_fibers]['$TOTAL'] = sample_mean
 
 FNULL.close()
 
 with open("results.csv", "wb") as csvfile:
     resultswriter = csv.writer(csvfile, dialect="excel-tab")
-    row = ["X","SINGLE_AVG_TIME","MULTI_AVG_TIME"]
+    row = ["X"] + [x for x in sorted(results.values()[0].keys())]
     resultswriter.writerow(row)
     print '**************************************************'
     print 'Benchmark:'
     print '  '+'\t'.join([str(x) for x in row])
     for key in sorted(results):
-        row = [key,results[key],results[key]/8.0]
+        row = [key] + [results[key][k] for k in sorted(results[key].keys())]
         resultswriter.writerow(row)
         print '  '+'\t'.join([str(x) for x in row])
 
