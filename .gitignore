@@ -22,6 +22,9 @@ fort.*
 
 # binary output
 ADVECT_FIBERS
+fortranMP/fibers
+fortranMP/XcT_init*.in
+fortranMP/*.out
 
 # build output
 build/
