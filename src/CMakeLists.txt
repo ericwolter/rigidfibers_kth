@@ -42,7 +42,8 @@ set(KERNELS
     kernels/eye_matrix.cu
     kernels/update_fibers.cu
     kernels/update_fibers_firststep.cu
-    kernels/update_velocities.cu
+    kernels/update_velocities_1D.cu
+    kernels/update_velocities_2D.cu
     kernels/reset_velocities.cu
 )
 

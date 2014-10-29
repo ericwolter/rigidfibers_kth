@@ -45,17 +45,6 @@ assemble_system_1D(
   float G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
   float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
 
-  for (int force_index = 0; force_index < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index)
-  {
-    x_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 0;
-    y_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 1;
-    z_row_index = i * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index + 2;
-
-    b_vector[x_row_index] = 0.0f;
-    b_vector[y_row_index] = 0.0f;
-    b_vector[z_row_index] = 0.0f;
-  }
-
   for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
   {
     const float4 position_j = positions[j];

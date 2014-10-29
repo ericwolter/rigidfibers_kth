@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by Qt Creator 2.4.1, 2014-10-28T17:38:46. -->
+<!-- Written by Qt Creator 2.4.1, 2014-10-29T12:12:05. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -173,7 +173,7 @@
     </valuelist>
     <value type="int" key="CMakeProjectManager.BaseEnvironmentBase">2</value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguation.Title">fibers</value>
-    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments">/NOBACKUP/ewolter/code/rigidfibers/fortran/XcT_init100.in</value>
+    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments">/NOBACKUP/ewolter/code/rigidfibers/fortran/XcT_init128.in</value>
     <value type="bool" key="CMakeProjectManager.CMakeRunConfiguration.UseTerminal">false</value>
     <valuelist type="QVariantList" key="CMakeProjectManager.CMakeRunConfiguration.UserEnvironmentChanges"/>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>

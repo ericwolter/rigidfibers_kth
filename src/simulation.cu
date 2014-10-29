@@ -34,7 +34,8 @@
 #include "kernels/assemble_system_1D.cu"
 #include "kernels/assemble_system_2D.cu"
 #include "kernels/assemble_system_3D.cu"
-#include "kernels/update_velocities.cu"
+#include "kernels/update_velocities_1D.cu"
+#include "kernels/update_velocities_2D.cu"
 #include "kernels/reset_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
 #include "kernels/update_fibers.cu"
@@ -272,32 +273,34 @@ void Simulation::precomputeLegendrePolynomials()
 
 void Simulation::step(size_t current_timestep)
 {
+    (void)current_timestep;
+
     assembleSystem();
 #ifdef VALIDATE
     dumpLinearSystem(current_timestep);
 #endif //VALIDATE
 
-    solveSystem();
-#ifdef VALIDATE
-    dumpSolutionSystem(current_timestep);
-#endif //VALIDATE
-
-    updateVelocities();
-#ifdef VALIDATE
-    dumpVelocities(current_timestep);
-#endif //VALIDATE
-
-    updateFibers(current_timestep == 0);
-
-    DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
-    DoubleSwap(float4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
-
-    TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
-    TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
-
-#ifdef VALIDATE
-    dumpFibers(current_timestep);
-#endif //VALIDATE
+//     solveSystem();
+// #ifdef VALIDATE
+//     dumpSolutionSystem(current_timestep);
+// #endif //VALIDATE
+//
+//     updateVelocities();
+// #ifdef VALIDATE
+//     dumpVelocities(current_timestep);
+// #endif //VALIDATE
+//
+//     updateFibers(current_timestep == 0);
+//
+//     DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
+//     DoubleSwap(float4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
+//
+//     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
+//     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
+//
+// #ifdef VALIDATE
+//     dumpFibers(current_timestep);
+// #endif //VALIDATE
 
 #ifdef BENCHMARK
     performance_->exportMeasurements();
@@ -310,45 +313,45 @@ void Simulation::assembleSystem()
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
 #if defined(FORCE_1D)
-  std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
-  assemble_system_1D <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
+    std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
+    assemble_system_1D <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
 #ifdef VALIDATE
-    gpu_validation_,
+      gpu_validation_,
 #endif //VALIDATE
-    gpu_current_positions_,
-    gpu_current_orientations_,
-    gpu_a_matrix_,
-    gpu_b_vector_
-  );
+      gpu_current_positions_,
+      gpu_current_orientations_,
+      gpu_a_matrix_,
+      gpu_b_vector_
+    );
 #elif defined(FORCE_2D)
-  dim3 block_size;
-  block_size.x = 8;
-  block_size.y = 8;
-
-  dim3 grid_size;
-  grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
-  grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
-
-  std::cout << "     [GPU]      : Assembling system 2D..." << std::endl;
-  assemble_system_2D <<< grid_size, block_size >>> (
-#ifdef VALIDATE
-    gpu_validation_,
-#endif //VALIDATE
-    gpu_current_positions_,
-    gpu_current_orientations_,
-    gpu_a_matrix_,
-    gpu_b_vector_
-  );
-#else
     dim3 block_size;
     block_size.x = 8;
     block_size.y = 8;
-    block_size.z = NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
 
     dim3 grid_size;
     grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
     grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
-    grid_size.z = (NUMBER_OF_TERMS_IN_FORCE_EXPANSION + block_size.z-1) / block_size.z;
+
+    std::cout << "     [GPU]      : Assembling system 2D..." << std::endl;
+    assemble_system_2D <<< grid_size, block_size >>> (
+#ifdef VALIDATE
+      gpu_validation_,
+#endif //VALIDATE
+      gpu_current_positions_,
+      gpu_current_orientations_,
+      gpu_a_matrix_,
+      gpu_b_vector_
+    );
+#else
+    dim3 block_size;
+    block_size.x = NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
+    block_size.y = 8;
+    block_size.z = 8;
+
+    dim3 grid_size;
+    grid_size.x = (NUMBER_OF_TERMS_IN_FORCE_EXPANSION + block_size.x-1) / block_size.x;
+    grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
+    grid_size.z = (NUMBER_OF_FIBERS + block_size.z-1) / block_size.z;
 
     std::cout << "     [GPU]      : Assembling system 3D..." << std::endl;
     assemble_system_3D <<< grid_size, block_size >>> (
@@ -413,9 +416,10 @@ void Simulation::solveSystem()
 void Simulation::updateVelocities()
 {
     performance_->start("update_velocities");
-#ifdef FORCE_1D
+
+#if defined(FORCE_1D)
     std::cout << "     [GPU]      : Updating velocities 1D..." << std::endl;
-    update_velocities <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
+    update_velocities_1D <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_b_vector_,
@@ -439,22 +443,15 @@ void Simulation::updateVelocities()
     grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
 
     std::cout << "     [GPU]      : Updating velocities 2D..." << std::endl;
-    update_velocities <<< grid_size, block_size >>> (
+    update_velocities_2D <<< grid_size, block_size >>> (
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_b_vector_,
         gpu_current_translational_velocities_,
         gpu_current_rotational_velocities_
     );
-
-    {
-        cudaError_t cudaerr = cudaDeviceSynchronize();
-        if (cudaerr)
-            printf("kernel launch failed with error \"%s\".\n",
-                   cudaGetErrorString(cudaerr));
-    }
-
 #endif
+
     performance_->stop("update_velocities");
     performance_->print("update_velocities");
 }

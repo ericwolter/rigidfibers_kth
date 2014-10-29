@@ -16,9 +16,9 @@ assemble_system_3D(
     float *b_vector
     )
 {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-  const int force_index_j = blockIdx.z * blockDim.z + threadIdx.z;
+  const int force_index_j = blockIdx.x * blockDim.x + threadIdx.x;
+  const int i = blockIdx.y * blockDim.y + threadIdx.y;
+  const int j = blockIdx.z * blockDim.z + threadIdx.z;
 
   if (i >= NUMBER_OF_FIBERS) return;
   if (j >= NUMBER_OF_FIBERS) return;

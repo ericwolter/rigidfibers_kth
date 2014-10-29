@@ -8,7 +8,7 @@
 \usepackage{xfrac}     % nice fractions in body of text
 \usepackage{siunitx}   % typesets numbers with units
 \usepackage{mathtools} % extensions for amsmath
-\usepackage{minted}	   % advanced code examples
+\usepackage{minted}    % advanced code examples
 
 % Tables
 \usepackage{booktabs} % professionally looking tables
@@ -167,7 +167,7 @@ inceptos hymenaeos.
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
-      ymin=0,ymax=3,
+      ymin=0,ymax=3
       ]
     \addplot[color=set11, fill=set11_light, very thick] table[x=X,y=assemble_system] {\loadedtable} \closedcycle;
     \addplot[color=set12, fill=set12_light, very thick] table[x=X,y=solve_system] {\loadedtable} \closedcycle;
@@ -220,7 +220,7 @@ inceptos hymenaeos.
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
-      ymin=0
+      ymin=0,ymax=8
       ]
     \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/steps_fortran.csv};
     \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_MATRIX} * 0.125] {benchmarks/steps_fortran_new.csv};
@@ -252,6 +252,30 @@ inceptos hymenaeos.
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Average time for solve system step. Averaged over 10 timesteps (1st excluded). Assuming linear scaling for Fortran.}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{tikzpicture}
+    \setmathfont{FiraSans-Book.otf}
+    \pgfplotstableread{benchmarks/assemble_system_grid.csv}\loadedtable
+    \begin{axis}[
+      title=CUDA Grid Dimension,
+      xlabel={number of fibers},
+      ylabel={simulation time (sec)},
+      ymin=0,ymax=0.8,
+      xmin=0,xmax=700,
+      unbounded coords=discard,
+      ]
+    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D] {\loadedtable};
+    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=3D] {\loadedtable};
+    \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=3D2] {\loadedtable};
+
+    \legend{1D, 2D, 3D, 3D2}
+    \end{axis}
+    \setmathfont{XITS Math}
+  \end{tikzpicture}
+  \caption{Total time per timestep using the average over 10 timesteps. First timestep is excluded as warmup.}
 \end{figure}
 
 \chapter{Theoretical Foundation}

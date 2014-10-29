@@ -1,10 +1,10 @@
-#ifndef FIBERS_UPDATE_VELOCITIES_KERNEL_
-#define FIBERS_UPDATE_VELOCITIES_KERNEL_
+#ifndef FIBERS_UPDATE_VELOCITIES_2D_KERNEL_
+#define FIBERS_UPDATE_VELOCITIES_2D_KERNEL_
 
 #include "constants.cu"
 
 __device__
-    void compute_GV(const int j,
+    void compute_GV_2D(const int j,
                 const float4 position_i,
                 const float4 orientation_i,
                 const float4 position_j,
@@ -99,7 +99,7 @@ __device__
     }
 }
 
-__global__ void update_velocities(
+__global__ void update_velocities_2D(
     const float4 *positions,
     const float4 *orientations,
     const float *coefficients,
@@ -107,16 +107,12 @@ __global__ void update_velocities(
     float4 *rotational_velocities
 )
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-#ifndef FORCE_1D
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
     const int j = blockIdx.y * blockDim.y + threadIdx.y;
-#endif //FORCE_1D
 
     if (i >= NUMBER_OF_FIBERS) return;
-#ifndef FORCE_1D
     if (j >= NUMBER_OF_FIBERS) return;
     if (i==j) return;
-#endif //FORCE_1D
 
     const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
     const float d  = -c;
@@ -130,73 +126,46 @@ __global__ void update_velocities(
     external_force.y = 0.0f;
     external_force.z = -1.0f;
 
-#ifdef FORCE_1D
-    for (int j = 0; j < NUMBER_OF_FIBERS; ++j)
+    const float4 position_j = positions[j];
+    const float4 orientation_j = orientations[j];
+
+    float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
+    compute_GV_2D(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, GF);
+
+    float TF1A0 = 0.0f;
+    float TF2A0 = 0.0f;
+    float TF3A0 = 0.0f;
+
+    float TF1A1 = 0.0f;
+    float TF2A1 = 0.0f;
+    float TF3A1 = 0.0f;
+
+    for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
     {
-        if (i == j) continue;
-#endif // FORCE_1D
+      const float quadrature_weight = quadrature_weights[quadrature_index_i];
+      const float legendre_polynomial = legendre_polynomials[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+      const float weighted_polynomial = quadrature_weight * legendre_polynomial;
 
-        const float4 position_j = positions[j];
-        const float4 orientation_j = orientations[j];
+      TF1A0 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+      TF2A0 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+      TF3A0 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
 
-        float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
-        compute_GV(j, position_i, orientation_i, position_j, orientation_j, coefficients, external_force, GF);
-
-        float TF1A0 = 0.0f;
-        float TF2A0 = 0.0f;
-        float TF3A0 = 0.0f;
-
-        float TF1A1 = 0.0f;
-        float TF2A1 = 0.0f;
-        float TF3A1 = 0.0f;
-
-        for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
-        {
-            const float quadrature_weight = quadrature_weights[quadrature_index_i];
-            const float legendre_polynomial = legendre_polynomials[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-            const float weighted_polynomial = quadrature_weight * legendre_polynomial;
-
-            TF1A0 += quadrature_weight * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-            TF2A0 += quadrature_weight * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-            TF3A0 += quadrature_weight * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-
-            TF1A1 += weighted_polynomial * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-            TF2A1 += weighted_polynomial * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-            TF3A1 += weighted_polynomial * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
-        }
-
-        const float t1 = orientation_i.x * TF1A1;
-        const float t2 = orientation_i.y * TF2A1;
-        const float t3 = orientation_i.z * TF3A1;
-
-#ifdef FORCE_1D
-        translational_velocities[i].x += TF1A0;
-        translational_velocities[i].y += TF2A0;
-        translational_velocities[i].z += TF3A0;
-
-        rotational_velocities[i].x += TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3);
-        rotational_velocities[i].y += TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3);
-        rotational_velocities[i].z += TF3A1 - (orientation_i.z * t1 + orientation_i.z * t2 + orientation_i.z * t3);
-#else
-        atomicAdd(&(translational_velocities[i].x), (0.5f / d) * TF1A0);
-        atomicAdd(&(translational_velocities[i].y), (0.5f / d) * TF2A0);
-        atomicAdd(&(translational_velocities[i].z), (0.5f / d) * TF3A0);
-
-        atomicAdd(&(rotational_velocities[i].x), (1.5f / d) * (TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3)));
-        atomicAdd(&(rotational_velocities[i].y), (1.5f / d) * (TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3)));
-        atomicAdd(&(rotational_velocities[i].z), (1.5f / d) * (TF3A1 - (orientation_i.z * t1 + orientation_i.z * t2 + orientation_i.z * t3)));
-#endif //FORCE_1D
+      TF1A1 += weighted_polynomial * GF[quadrature_index_i + 0 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+      TF2A1 += weighted_polynomial * GF[quadrature_index_i + 1 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
+      TF3A1 += weighted_polynomial * GF[quadrature_index_i + 2 * TOTAL_NUMBER_OF_QUADRATURE_POINTS];
     }
 
-#ifdef FORCE_1D
-    translational_velocities[i].x *= (0.5f / d);
-    translational_velocities[i].y *= (0.5f / d);
-    translational_velocities[i].z *= (0.5f / d);
+    const float t1 = orientation_i.x * TF1A1;
+    const float t2 = orientation_i.y * TF2A1;
+    const float t3 = orientation_i.z * TF3A1;
 
-    rotational_velocities[i].x *= (1.5f / d);
-    rotational_velocities[i].y *= (1.5f / d);
-    rotational_velocities[i].z *= (1.5f / d);
+    atomicAdd(&(translational_velocities[i].x), (0.5f / d) * TF1A0);
+    atomicAdd(&(translational_velocities[i].y), (0.5f / d) * TF2A0);
+    atomicAdd(&(translational_velocities[i].z), (0.5f / d) * TF3A0);
+
+    atomicAdd(&(rotational_velocities[i].x), (1.5f / d) * (TF1A1 - (orientation_i.x * t1 + orientation_i.x * t2 + orientation_i.x * t3)));
+    atomicAdd(&(rotational_velocities[i].y), (1.5f / d) * (TF2A1 - (orientation_i.y * t1 + orientation_i.y * t2 + orientation_i.y * t3)));
+    atomicAdd(&(rotational_velocities[i].z), (1.5f / d) * (TF3A1 - (orientation_i.z * t1 + orientation_i.z * t2 + orientation_i.z * t3)));
 }
-#endif //FORCE_1D
 
-#endif //FIBERS_UPDATE_VELOCITIES_KERNEL_
+#endif //FIBERS_UPDATE_VELOCITIES_2D_KERNEL_

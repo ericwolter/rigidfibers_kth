@@ -71,8 +71,10 @@ void Performance::stop(std::string name)
     // therefore we have to subtract 1 event during the rolling average
     // calculation
     if(tracker->device_count > 1) {
-        tracker->device_last_time *= 1e-3;
-        tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / (tracker->device_count-1));
+      tracker->device_last_time *= 1e-3;
+      tracker->device_average_time = tracker->device_average_time + ((tracker->device_last_time - tracker->device_average_time) / (tracker->device_count-1));
+    } else {
+      tracker->device_last_time *= 1e-3;
     }
 #else
     (void)0; //noop
@@ -83,7 +85,7 @@ void Performance::print(std::string name)
 {
 #ifdef BENCHMARK
     std::map<std::string, PerformanceTracker>::iterator performance_tracker = trackers_.find(name);
-    std::cout << "  [BENCHMARK]   : " << std::left << std::setw(17) << std::setfill(' ') 
+    std::cout << "  [BENCHMARK]   : " << std::left << std::setw(17) << std::setfill(' ')
                                       << performance_tracker->second.name
                                       << std::setprecision(5) << std::fixed
                                       << " : " << performance_tracker->second.device_last_time << "(" << performance_tracker->second.device_average_time << ")" << " sec" << std::endl;
