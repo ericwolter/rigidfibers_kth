@@ -51,7 +51,7 @@ for idx_row in xrange(len(current_matrix)):
         current_element = current_row[idx_col]
         reference_element = reference_row[idx_col]
 
-        delta = abs(current_element) - abs(reference_element)
+        delta = abs(current_element - reference_element)
         total += delta
         if delta > maximum:
             maximum = delta

@@ -6,6 +6,10 @@
 PROGRAM fibers
   IMPLICIT NONE
 
+  CHARACTER(LEN=256)::program_name, data_name
+
+  INTEGER total_count_rate,total_count_max,total_count1,total_count2
+  REAL*8 total_CPU_p
   INTEGER count_rate,count_max,count1,count2
   REAL*8 CPU_p
 
@@ -66,7 +70,13 @@ PROGRAM fibers
   !--------------------------------------------------
   !me:  Intializes the positons and @todo tVecs with data from the specified
   !     input file.
-  OPEN(10,file="XcT_init700.in");
+  CALL GETARG(0, program_name)
+	CALL GETARG(1, data_name)
+
+  PRINT *, TRIM(data_name)
+  PRINT *, NUMBER_OF_FIBERS
+
+  OPEN(10,file=TRIM(data_name));
   READ(10,*) IDUMMY
   DO i=1,NUMBER_OF_FIBERS
      ind=(i-1)*3
@@ -85,6 +95,7 @@ PROGRAM fibers
   !--------------------------------------------------
   ! Simulation Step
   !--------------------------------------------------
+  CALL SYSTEM_CLOCK(total_count1, total_count_rate, total_count_max)
 
     !--------------------------------------------------
     ! 1. Assemble System
@@ -95,6 +106,8 @@ PROGRAM fibers
     DO i = 0, NUMBER_OF_FIBERS-1
 
       position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
+      PRINT '(*(F16.8))', real(i), position_i
+
       orientation_i = current_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
 
       DO j = 0, NUMBER_OF_FIBERS-1
@@ -266,11 +279,15 @@ PROGRAM fibers
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
 
-    /*OPEN(10,file="AMat.out");
+    OPEN(10,file="AMat.out");
     DO i=1,TOTAL_NUMBER_OF_ROWS
       WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
     END DO
-    CLOSE(10)*/
+    CLOSE(10)
+
+  CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
+  total_CPU_p = real(total_count2-total_count1)/total_count_rate
+  PRINT *,"BENCHMARK:$total:", total_CPU_p
 
   PRINT *, "Hello World!",TOTAL_NUMBER_OF_ROWS
 END PROGRAM fibers

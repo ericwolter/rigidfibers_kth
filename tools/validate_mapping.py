@@ -76,7 +76,7 @@ if not is_vector:
                 reference_location = reference_mapping[current_location]
                 reference_element = reference_matrix[reference_location[0]][reference_location[1]]
 
-            delta = abs(current_element) - abs(reference_element)
+            delta = abs(current_element - reference_element)
             total += delta
             if delta > maximum:
                 maximum = delta
@@ -91,7 +91,7 @@ else:
         reference_location = reference_mapping[current_location]
         reference_element = reference_matrix[reference_location[0]][0]
 
-        delta = abs(current_element) - abs(reference_element)
+        delta = abs(current_element - reference_element)
         total += delta
         if delta > maximum:
             maximum = delta
