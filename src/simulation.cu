@@ -31,7 +31,9 @@
 
 #include "resources.h"
 
-#include "kernels/assemble_system.cu"
+#include "kernels/assemble_system_1D.cu"
+#include "kernels/assemble_system_2D.cu"
+#include "kernels/assemble_system_3D.cu"
 #include "kernels/update_velocities.cu"
 #include "kernels/reset_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
@@ -48,7 +50,7 @@ Simulation::Simulation(Configuration configuration)
     initializeGPUMemory();
 
     magma_init();
-    
+
     writeFiberStateToDevice();
     precomputeLegendrePolynomials();
 }
@@ -87,7 +89,7 @@ void Simulation::initializeGPUMemory()
 
     //performance_->start("eye_matrix");
     //eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
-    
+
     //performance_->stop("eye_matrix");
     //performance_->print("eye_matrix");
 
@@ -307,35 +309,56 @@ void Simulation::assembleSystem()
     performance_->start("assemble_system");
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
-#ifdef FORCE_1D
-    std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
-    assemble_system <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
-                                                           #ifdef VALIDATE
-                                                               gpu_validation_,
-                                                           #endif //VALIDATE
-        gpu_current_positions_,
-        gpu_current_orientations_,
-        gpu_a_matrix_,
-        gpu_b_vector_
-    );
+#if defined(FORCE_1D)
+  std::cout << "     [GPU]      : Assembling system 1D..." << std::endl;
+  assemble_system_1D <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (
+#ifdef VALIDATE
+    gpu_validation_,
+#endif //VALIDATE
+    gpu_current_positions_,
+    gpu_current_orientations_,
+    gpu_a_matrix_,
+    gpu_b_vector_
+  );
+#elif defined(FORCE_2D)
+  dim3 block_size;
+  block_size.x = 8;
+  block_size.y = 8;
+
+  dim3 grid_size;
+  grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
+  grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
+
+  std::cout << "     [GPU]      : Assembling system 2D..." << std::endl;
+  assemble_system_2D <<< grid_size, block_size >>> (
+#ifdef VALIDATE
+    gpu_validation_,
+#endif //VALIDATE
+    gpu_current_positions_,
+    gpu_current_orientations_,
+    gpu_a_matrix_,
+    gpu_b_vector_
+  );
 #else
     dim3 block_size;
     block_size.x = 8;
     block_size.y = 8;
+    block_size.z = NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
 
     dim3 grid_size;
     grid_size.x = (NUMBER_OF_FIBERS + block_size.x-1) / block_size.x;
     grid_size.y = (NUMBER_OF_FIBERS + block_size.y-1) / block_size.y;
+    grid_size.z = (NUMBER_OF_TERMS_IN_FORCE_EXPANSION + block_size.z-1) / block_size.z;
 
-    std::cout << "     [GPU]      : Assembling system 2D..." << std::endl;
-    assemble_system <<< grid_size, block_size >>> (
-                                                           #ifdef VALIDATE
-                                                               gpu_validation_,
-                                                           #endif //VALIDATE
-        gpu_current_positions_,
-        gpu_current_orientations_,
-        gpu_a_matrix_,
-        gpu_b_vector_
+    std::cout << "     [GPU]      : Assembling system 3D..." << std::endl;
+    assemble_system_3D <<< grid_size, block_size >>> (
+#ifdef VALIDATE
+      gpu_validation_,
+#endif //VALIDATE
+      gpu_current_positions_,
+      gpu_current_orientations_,
+      gpu_a_matrix_,
+      gpu_b_vector_
     );
 #endif
     performance_->stop("assemble_system");

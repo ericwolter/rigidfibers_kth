@@ -1,4 +1,4 @@
-# by default the final executable is next to the source file, to clearly 
+# by default the final executable is next to the source file, to clearly
 # separate the binary from the source lets put it into its own directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
@@ -33,7 +33,9 @@ set(HEADERS
 )
 
 set(KERNELS
-    kernels/assemble_system.cu
+    kernels/assemble_system_1D.cu
+    kernels/assemble_system_2D.cu
+    kernels/assemble_system_3D.cu
     kernels/compute_inner_integral_analytically.cu
     kernels/compute_inner_integral_numerically.cu
     kernels/constants.cu
@@ -71,4 +73,3 @@ TARGET_LINK_LIBRARIES(fibers ${LIBMAGMA_LIBRARY} ${LIBOPENBLAS_LIBRARY})
 # it is important that this comes AFTER target_link_libraries
 # no idea why
 CUDA_ADD_CUBLAS_TO_TARGET(fibers)
-

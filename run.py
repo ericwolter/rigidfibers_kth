@@ -68,8 +68,14 @@ def write_parameters(args, parameters):
                 cuda.write(u'#define BENCHMARK\n')
             if args.validate:
                 cuda.write(u'#define VALIDATE\n')
+
             if args.force1D:
                 cuda.write(u'#define FORCE_1D\n')
+            elif args.force2D:
+                cuda.write(u'#define FORCE_2D\n')
+            else:
+                cuda.write(u'#define FORCE_3D\n')
+
             if args.gmres:
                 cuda.write(u'#define GMRES\n')
             if args.magma:
@@ -148,7 +154,8 @@ parser.add_argument('config',metavar='CONFIG_FILE',type=str,help='the configurat
 parser.add_argument('fibers',metavar='FIBER_FILE',type=str,help='the fiber file containing the initial positions and orientations')
 parser.add_argument('--benchmark',action='store_true',help='an option to dump configuration file (default: False)')
 parser.add_argument('--validate',action='store_true',help='an option to validate results against reference implementation (default: False) (note: limits number of steps to 1)')
-parser.add_argument('--force1D',action='store_true',help='an option to force to execute kernels in 1D (default: False)')
+parser.add_argument('--force1D',action='store_true',help='an option to force to execute kernels in 1D (default: 3D)')
+parser.add_argument('--force2D',action='store_true',help='an option to force to execute kernels in 2D (default: 3D)')
 parser.add_argument('--gmres',action='store_true',help='an option to use GMRES solver from ViennaCL (default: False)')
 parser.add_argument('--magma',action='store_true',help='an option to use direct solver from MAGMA instead of iterative solver from ViennaCL (default: False)')
 
@@ -242,7 +249,7 @@ elif args.benchmark:
 
     results = {}
 
-    tests = tests[:30]
+    tests = tests[:5]
     tests.reverse()
 
     for idx,test in enumerate(tests):
