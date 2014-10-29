@@ -50,7 +50,7 @@ FNULL = open(os.devnull, 'w')
 
 results = {}
 
-tests = tests[:10]
+tests = tests[:30]
 tests.reverse()
 
 for idx,test in enumerate(tests):

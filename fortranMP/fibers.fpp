@@ -106,8 +106,6 @@ PROGRAM fibers
     DO i = 0, NUMBER_OF_FIBERS-1
 
       position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
-      PRINT '(*(F16.8))', real(i), position_i
-
       orientation_i = current_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
 
       DO j = 0, NUMBER_OF_FIBERS-1
@@ -185,10 +183,10 @@ PROGRAM fibers
               quadrature_weight = quadrature_weights(quadrature_index_i+1)
               legendre_polynomial = legendre_polynomials(quadrature_index_i+1, 0 + 1)
 
-              T = T + quadrature_weight * legendre_polynomial
+              PLUS_EQUALS(T,quadrature_weight * G(quadrature_index_i+1,:) * legendre_polynomial)
 
               IF (force_index_j == 0) THEN
-                TF = TF + quadrature_weight * legendre_polynomial
+                PLUS_EQUALS(TF, quadrature_weight * GF(quadrature_index_i+1,:) * legendre_polynomial)
               END IF
             END DO
 
@@ -232,10 +230,10 @@ PROGRAM fibers
                 quadrature_weight = quadrature_weights(quadrature_index_i+1)
                 legendre_polynomial = legendre_polynomials(quadrature_index_i+1, force_index_i + 1)
 
-                T = T + quadrature_weight * legendre_polynomial
+                PLUS_EQUALS(T,quadrature_weight * G(quadrature_index_i+1,:) * legendre_polynomial)
 
                 IF (force_index_j == 0) THEN
-                  TF = TF + quadrature_weight * legendre_polynomial
+                  PLUS_EQUALS(TF, quadrature_weight * GF(quadrature_index_i+1,:) * legendre_polynomial)
                 END IF
               END DO
 
@@ -279,11 +277,11 @@ PROGRAM fibers
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
 
-    OPEN(10,file="AMat.out");
-    DO i=1,TOTAL_NUMBER_OF_ROWS
-      WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
-    END DO
-    CLOSE(10)
+    !OPEN(10,file="AMat.out");
+    !DO i=1,TOTAL_NUMBER_OF_ROWS
+    !  WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
+    !END DO
+    !CLOSE(10)
 
   CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
   total_CPU_p = real(total_count2-total_count1)/total_count_rate

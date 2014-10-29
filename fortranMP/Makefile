@@ -20,7 +20,7 @@ FCFLAGS += -I/usr/include
 PROGRAMS = fibers
 
 # "make" builds all
-all: $(PROGRAMS)
+all: veryclean $(PROGRAMS)
 
 fibers.o: constants.incl
 

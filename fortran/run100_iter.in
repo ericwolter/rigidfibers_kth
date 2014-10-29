@@ -1,5 +1,5 @@
 2     !Label of run
-32 !Label of indata file XcT_init##
+736 !Label of indata file XcT_init##
 5     !Number of terms in the force expansion
 0.01  !Size of epsilon
 0.1   !Timestep

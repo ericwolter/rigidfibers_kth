@@ -159,6 +159,13 @@ args = parser.parse_args()
 # Run fibers
 #
 #####
+print "      _      _    _    __ _ _                 "
+print "  _ _(_)__ _(_)__| |  / _(_) |__  ___ _ _ ___ "
+print " | '_| / _` | / _` | |  _| | '_ \/ -_) '_(_-< "
+print " |_| |_\__, |_\__,_| |_| |_|_.__/\___|_| /__/ "
+print "       |___/                                  "
+print "                                              "
+
 if args.validate:
     parameters = read_parameters(args)
     write_parameters(args, parameters)
