@@ -3,12 +3,10 @@
 
 #include "../common.h"
 
-#define BENCHMARK
 #define FORCE_3D
-#define MAGMA
 
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (32)
+#define NUMBER_OF_FIBERS (100)
 #define TIMESTEP (0.1)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01f)

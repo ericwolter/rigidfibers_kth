@@ -8,7 +8,7 @@
 \usepackage{xfrac}     % nice fractions in body of text
 \usepackage{siunitx}   % typesets numbers with units
 \usepackage{mathtools} % extensions for amsmath
-\usepackage{minted}    % advanced code examples
+%\usepackage{minted}    % advanced code examples
 
 % Tables
 \usepackage{booktabs} % professionally looking tables
@@ -59,25 +59,45 @@
   y grid style={dashed},
   legend pos=north west,
 }
-\definecolor{set11}{cmyk}{.1 ,.9 ,.8 ,.0 }
-\definecolor{set12}{cmyk}{.8 ,.3 ,.0 ,.0 }
-\definecolor{set13}{cmyk}{.7 ,.0 ,.8 ,.0 }
-\definecolor{set14}{cmyk}{.4 ,.65,.0 ,.0 }
-\definecolor{set15}{cmyk}{.0 ,.5 ,1.0,.0 }
-\definecolor{set16}{cmyk}{.0 ,.0 ,.8 ,.0 }
-\definecolor{set17}{cmyk}{.35,.6 ,.8 ,.0 }
-\definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
-\definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
+\definecolor{set11}{RGB}{228,  26,  28}
+\definecolor{set12}{RGB}{ 55, 126, 184}
+\definecolor{set13}{RGB}{ 77, 175,  74}
+\definecolor{set14}{RGB}{152,  78, 163}
+\definecolor{set15}{RGB}{255, 127,   0}
+\definecolor{set16}{RGB}{255, 255,  51}
+\definecolor{set17}{RGB}{166,  86,  40}
+\definecolor{set18}{RGB}{247, 129, 191}
+\definecolor{set19}{RGB}{153, 153, 153}
 
-\definecolor{set11_light}{cmyk}{.0 ,.3 ,.2 ,.0 }
-\definecolor{set12_light}{cmyk}{.3 ,.1 ,.0 ,.0 }
-\definecolor{set13_light}{cmyk}{.2 ,.0 ,.2 ,.0 }
-\definecolor{set14_light}{cmyk}{.12 ,.17,.0 ,.0 }
-\definecolor{set15_light}{cmyk}{.0 ,.15 ,.3,.0 }
-\definecolor{set16_light}{cmyk}{.0 ,.0 ,.2 ,.0 }
-\definecolor{set17_light}{cmyk}{.1,.12 ,.2 ,.0 }
-\definecolor{set18_light}{cmyk}{.0 ,.15 ,.0 ,.0 }
-\definecolor{set19_light}{cmyk}{.0 ,.0 ,.0 ,.05 }
+\definecolor{set11_light}{RGB}{251, 180, 174}
+\definecolor{set12_light}{RGB}{179, 205, 227}
+\definecolor{set13_light}{RGB}{204, 235, 197}
+\definecolor{set14_light}{RGB}{222, 203, 228}
+\definecolor{set15_light}{RGB}{254, 217, 166}
+\definecolor{set16_light}{RGB}{255, 255, 204}
+\definecolor{set17_light}{RGB}{229, 216, 189}
+\definecolor{set18_light}{RGB}{253, 218, 236}
+\definecolor{set19_light}{RGB}{242, 242, 242}
+
+% \definecolor{set11}{cmyk}{.1 ,.9 ,.8 ,.0 }
+% \definecolor{set12}{cmyk}{.8 ,.3 ,.0 ,.0 }
+% \definecolor{set13}{cmyk}{.7 ,.0 ,.8 ,.0 }
+% \definecolor{set14}{cmyk}{.4 ,.65,.0 ,.0 }
+% \definecolor{set15}{cmyk}{.0 ,.5 ,1.0,.0 }
+% \definecolor{set16}{cmyk}{.0 ,.0 ,.8 ,.0 }
+% \definecolor{set17}{cmyk}{.35,.6 ,.8 ,.0 }
+% \definecolor{set18}{cmyk}{.0 ,.5 ,.0 ,.0 }
+% \definecolor{set19}{cmyk}{.0 ,.0 ,.0 ,.4 }
+%
+% \definecolor{set11_light}{cmyk}{.0 ,.3 ,.2 ,.0 }
+% \definecolor{set12_light}{cmyk}{.3 ,.1 ,.0 ,.0 }
+% \definecolor{set13_light}{cmyk}{.2 ,.0 ,.2 ,.0 }
+% \definecolor{set14_light}{cmyk}{.12 ,.17,.0 ,.0 }
+% \definecolor{set15_light}{cmyk}{.0 ,.15 ,.3,.0 }
+% \definecolor{set16_light}{cmyk}{.0 ,.0 ,.2 ,.0 }
+% \definecolor{set17_light}{cmyk}{.1,.12 ,.2 ,.0 }
+% \definecolor{set18_light}{cmyk}{.0 ,.15 ,.0 ,.0 }
+% \definecolor{set19_light}{cmyk}{.0 ,.0 ,.0 ,.05 }
 
 \usepackage{modifications}
 
@@ -216,28 +236,6 @@ inceptos hymenaeos.
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Assemble System (CUDA vs. Fortran),
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
-      xmin=0,xmax=700,
-      ymin=0,ymax=8
-      ]
-    \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/steps_fortran.csv};
-    \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_MATRIX} * 0.125] {benchmarks/steps_fortran_new.csv};
-    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/steps_magma.csv};
-
-    \legend{Assemble System (Fortran), Assemble System (Fortran - New), Assemble System (CUDA)}
-    \end{axis}
-    \setmathfont{XITS Math}
-  \end{tikzpicture}
-  \caption{Average time for assemble system step. Fortran and CUDA are averaged over 10 timesteps (1st excluded). Fortran New is only 1st timestep. Assuming linear scaling for Fortran.}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
-    \begin{axis}[
       title=Solve System (CUDA vs. Fortran),
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
@@ -267,6 +265,7 @@ inceptos hymenaeos.
       xmin=0,xmax=700,
       unbounded coords=discard,
       ]
+    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=1D] {\loadedtable};
     \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D] {\loadedtable};
     \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=3D] {\loadedtable};
     \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=3D2] {\loadedtable};
@@ -278,41 +277,49 @@ inceptos hymenaeos.
   \caption{Total time per timestep using the average over 10 timesteps. First timestep is excluded as warmup.}
 \end{figure}
 
+\begin{figure}
+  \centering
+  \begin{tikzpicture}
+    \setmathfont{FiraSans-Book.otf}
+    \begin{axis}[
+      title=Assemble System (CUDA vs. Fortran),
+      xlabel={number of fibers},
+      ylabel={simulation time (sec)},
+      xmin=0,xmax=700,
+      ymin=0,ymax=8
+      ]
+    \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/steps_fortran.csv};
+    \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_MATRIX} * 0.125] {benchmarks/steps_fortran_new.csv};
+    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/steps_magma.csv};
+
+    \legend{Assemble System (Fortran), Assemble System (Fortran - New), Assemble System (CUDA)}
+    \end{axis}
+    \setmathfont{XITS Math}
+  \end{tikzpicture}
+  \caption{Average time for assemble system step. Fortran and CUDA are averaged over 10 timesteps (1st excluded). Fortran New is only 1st timestep. Assuming linear scaling for Fortran.}
+\end{figure}
+
 \chapter{Theoretical Foundation}
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
-
-Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
-
-Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
-
-Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
-
-Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
-
 \chapter{CPU Implementation}
-
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed cursus ut arcu eget ultricies. Nam eu ex eget nisl feugiat faucibus vel non lorem. Cras condimentum laoreet turpis ac laoreet. In ipsum nunc, ornare in aliquet eu, congue a ipsum. Nulla scelerisque hendrerit dignissim. Mauris sit amet leo scelerisque, blandit urna sit amet, ullamcorper justo. Morbi sollicitudin pellentesque lorem, id pretium velit efficitur in. Quisque finibus ornare eros quis elementum. Morbi auctor dignissim imperdiet. Cras eget interdum turpis. Quisque sit amet lacus risus. In rhoncus bibendum turpis vel aliquet.
-
-Cras tempus dolor in nibh tristique dapibus. Nunc sollicitudin erat id purus pulvinar, eget eleifend nisl luctus. In sit amet felis nibh. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec consequat lacus risus, vel mattis eros venenatis at. In scelerisque, odio id molestie egestas, arcu metus tincidunt tortor, et varius dolor arcu ac quam. Donec ipsum quam, aliquam ac elit sit amet, elementum bibendum nisi. Vivamus pharetra lobortis arcu ut tincidunt. Fusce pellentesque metus quis augue pretium pretium a at ipsum. Nullam sit amet luctus sapien. Vivamus eget pellentesque risus. Mauris vitae nibh erat. Fusce id libero at ligula egestas pharetra in in odio.
-
-Nulla sed diam vitae urna maximus ornare. Integer id metus pharetra, ultricies nisi ut, molestie nisl. Ut elementum leo eget sem semper posuere. Cras ac cursus mi. Nam feugiat, ligula ut ultricies sollicitudin, nibh urna dapibus justo, ac condimentum dui lorem et nunc. Donec accumsan nisl maximus bibendum congue. In a placerat nisl. Praesent pharetra tincidunt velit, vel sagittis tortor laoreet a. Integer fringilla leo et commodo condimentum. Pellentesque ultricies nunc eleifend justo semper, at cursus velit commodo. Donec quis scelerisque mauris. Phasellus quis pretium leo. Praesent sit amet ipsum non risus ullamcorper accumsan sit amet sit amet eros.
-
-Quisque fringilla sem ut luctus aliquam. Praesent accumsan non eros at vestibulum. Aenean et massa non est viverra eleifend. Nullam consequat mi sed elit vestibulum, vel consectetur odio maximus. Maecenas a tortor sapien. Nam vel mattis risus, quis consequat nisl. Integer in elit tortor. Morbi feugiat non mi non molestie. Phasellus tempus purus purus, non gravida mauris vestibulum at. Nullam lobortis varius nisl eget consectetur. Nullam eu nisl ex. Praesent vitae vehicula erat. Nulla rutrum erat mi, in vestibulum lacus porta a.
-
-Suspendisse pretium, erat ac mattis bibendum, libero lectus eleifend leo, quis vulputate urna sapien ut purus. Mauris metus elit, tempus vel urna nec, ullamcorper ornare lacus. Aenean et ante gravida, vulputate nibh ultricies, ultricies metus. Fusce egestas accumsan dolor. Vestibulum elit velit, rutrum eu erat luctus, ornare aliquet tortor. Nam et nunc consectetur, gravida metus nec, eleifend elit. Curabitur vestibulum quam ut metus tempor, at mollis magna sollicitudin. Fusce bibendum, mi sed rhoncus sagittis, est arcu condimentum turpis, et accumsan sem tellus sit amet nulla. Nunc aliquam tellus id nisi commodo venenatis. Ut dapibus finibus aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque non semper turpis, nec bibendum lectus.
+\section{Discretization}
+\section{Timestepping}
 
 \chapter{GPU Implementation}
 \section{CUDA}
+\section{Kernels}
 \section{Optimizations}
+\subsection{Numerically vs. Analytically}
+\subsection{Grid Dimension}
+\subsection{Shared Memory}
 
 \chapter{Results}
-\section{CPU vs. GPU}
+\section{Fair comparison}
 \section{Fortran vs. CUDA}
+\section{Grid Dimension}
 \section{Scaling}
 
-\chapter{Conclusions}
+\chapter{Conclusion}
 
 \appendix
 \addappheadtotoc

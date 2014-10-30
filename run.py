@@ -249,7 +249,7 @@ elif args.benchmark:
 
     results = {}
 
-    tests = tests[:30]
+    tests = tests[:5]
     tests.reverse()
 
     for idx,test in enumerate(tests):
