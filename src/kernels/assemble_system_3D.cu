@@ -23,10 +23,10 @@ assemble_system_3D(
   if (i >= NUMBER_OF_FIBERS) return;
   if (j >= NUMBER_OF_FIBERS) return;
   if (force_index_j >= NUMBER_OF_TERMS_IN_FORCE_EXPANSION) return;
-
-  __shared__ float4 sp[16];
-
-  if(force_index_j)
+  //
+  // __shared__ float4 sp[16];
+  //
+  // if(force_index_j)
 
   const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
   const float d  = -c;

@@ -280,27 +280,27 @@ void Simulation::step(size_t current_timestep)
     dumpLinearSystem(current_timestep);
 #endif //VALIDATE
 
-//     solveSystem();
-// #ifdef VALIDATE
-//     dumpSolutionSystem(current_timestep);
-// #endif //VALIDATE
-//
-//     updateVelocities();
-// #ifdef VALIDATE
-//     dumpVelocities(current_timestep);
-// #endif //VALIDATE
-//
-//     updateFibers(current_timestep == 0);
-//
-//     DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
-//     DoubleSwap(float4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
-//
-//     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
-//     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
-//
-// #ifdef VALIDATE
-//     dumpFibers(current_timestep);
-// #endif //VALIDATE
+    solveSystem();
+#ifdef VALIDATE
+    dumpSolutionSystem(current_timestep);
+#endif //VALIDATE
+
+    updateVelocities();
+#ifdef VALIDATE
+    dumpVelocities(current_timestep);
+#endif //VALIDATE
+
+    updateFibers(current_timestep == 0);
+
+    DoubleSwap(float4*, gpu_previous_translational_velocities_, gpu_current_translational_velocities_);
+    DoubleSwap(float4*, gpu_previous_rotational_velocities_, gpu_current_rotational_velocities_);
+
+    TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
+    TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
+
+#ifdef VALIDATE
+    dumpFibers(current_timestep);
+#endif //VALIDATE
 
 #ifdef BENCHMARK
     performance_->exportMeasurements();

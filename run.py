@@ -227,23 +227,12 @@ if args.validate:
 
 elif args.benchmark:
 
-    tests = glob.glob("tests/*.in")
-
-    def atoi(text):
-        return int(text) if text.isdigit() else text
-
-    def natural_keys(text):
-        """
-        alist.sort(key=natural_keys) sorts in human order
-        http://nedbatchelder.com/blog/200712/human_sorting.html
-        """
-        return [atoi(c) for c in re.split('(\d+)', text)]
-
-    def extract_timestep(filename):
-        return re.search('_(\d+)\.', filename).groups()[0]
-
-    tests.sort(key=natural_keys)
-    #print tests[:30]
+    tests= []
+    for i in xrange(1,2048+1):
+        if i % 32 == 0:
+            tests.append(i)
+        elif i % 100 == 0:
+            tests.append(i)
 
     FNULL = open(os.devnull, 'w')
 
@@ -252,17 +241,11 @@ elif args.benchmark:
     tests = tests[:5]
     tests.reverse()
 
-    for idx,test in enumerate(tests):
+    for idx,number_of_fibers in enumerate(tests):
 
-        print '  [BENCHMARK]   : ' + test + ' ('+str(idx+1)+'/'+str(len(tests))+')'
+        print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
 
-        args.fibers = test
-        parameters = read_parameters(args)
-        number_of_fibers = parameters["number_of_fibers"]
-        write_parameters(args, parameters)
-        build_path = build(args)
-
-        iterations = 2
+        iterations = 4
         benchmark = []
 
         # allocate dict holding the row of data belonging to the current
@@ -274,8 +257,20 @@ elif args.benchmark:
         standard_error = 0.0
         relative_standard_error = sys.float_info.max
 
-        while relative_standard_error > 0.05:
+        while relative_standard_error > 0.1:
             for i in xrange(iterations):
+                print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
+
+
+                gen = subprocess.Popen(['python','tools/gen2.py', str(number_of_fibers)], stdout=FNULL)
+                if gen.wait():
+                    raise Exception("Error generating fibers")
+                scene = 'XcT_gen'+str(number_of_fibers)+'.in'
+                args.fibers = scene
+                parameters = read_parameters(args)
+                write_parameters(args, parameters)
+                build_path = build(args)
+
                 fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers], stdout=FNULL)
                 if fibers.wait():
                     FNULL.close()
@@ -295,6 +290,7 @@ elif args.benchmark:
 
                     benchmark.append(run)
                 os.remove(performance)
+                os.remove(scene)
 
             # reset the mean value for the different steps
             for run in benchmark:
@@ -317,8 +313,9 @@ elif args.benchmark:
 
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean
-
-            iterations = len(benchmark)
+            if relative_standard_error > 0.01:
+                iterations = len(benchmark)
+                print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
 
         results[number_of_fibers]['$TOTAL'] = sample_mean
 
