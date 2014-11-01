@@ -1,7 +1,8 @@
 #include "constants.incl"
 
 #define PLUS_EQUALS(A, B) A = A + B
-#define MINUS_EQUALS(A, B) A = A + B
+#define MINUS_EQUALS(A, B) A = A - B
+#define MULTIPLY_EQUALS(A, B) A = A * B
 
 PROGRAM fibers
   IMPLICIT NONE
@@ -40,7 +41,7 @@ PROGRAM fibers
 
   REAL*4,DIMENSION(6)::T
   REAL*4,DIMENSION(3)::Q
-  REAL*4,DIMENSION(3)::TF
+  REAL*4,DIMENSION(3)::TF, TFA0, TFA1, TFA1_TMP
   REAL*4::QF
 
   REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS, 6)::G
@@ -48,10 +49,14 @@ PROGRAM fibers
   REAL*4,DIMENSION(DIMENSIONS)::position_on_fiber_i,position_on_fiber_j,difference,difference2
   REAL*4::invDistance,invDistance3,invDistance5
   REAL*4,DIMENSION(6)::K
+  REAL*4,DIMENSION(DIMENSIONS)::force_on_fiber_j
 
   INTEGER::x_row_index,y_row_index,z_row_index
   INTEGER::x_col_index,y_col_index,z_col_index
   REAL*4::c,d,e,cc,D1,gamma
+
+  INTEGER,DIMENSION(TOTAL_NUMBER_OF_ROWS)::IPIV
+  INTEGER::INFO
 
   INTEGER::IDUMMY,ind
 
@@ -63,7 +68,7 @@ PROGRAM fibers
 
   a_matrix = 0.0
   b_vector = 0.0
-  external_force = (/ 0.0, 0.0, -1.0 /)
+  external_force = (/ 0.0, 0.0, -0.5 /)
 
   !--------------------------------------------------
   ! Load positions and orientations
@@ -168,9 +173,9 @@ PROGRAM fibers
                 PLUS_EQUALS(G(quadrature_index_i+1,5),quadrature_weight * K(5) * legendre_polynomial)
                 PLUS_EQUALS(G(quadrature_index_i+1,6),quadrature_weight * K(6) * legendre_polynomial)
 
-                PLUS_EQUALS(GF(quadrature_index_i+1,1),quadrature_weight*(K(1) * external_force(1) + K(4) * external_force(2) + K(5) * external_force(3)))
-                PLUS_EQUALS(GF(quadrature_index_i+1,2),quadrature_weight*(K(4) * external_force(1) + K(2) * external_force(2) + K(6) * external_force(3)))
-                PLUS_EQUALS(GF(quadrature_index_i+1,3),quadrature_weight*(K(5) * external_force(1) + K(6) * external_force(2) + K(3) * external_force(3)))
+                PLUS_EQUALS(GF(quadrature_index_i+1,1), quadrature_weight * (K(1) * external_force(1) + K(4) * external_force(2) + K(5) * external_force(3)))
+                PLUS_EQUALS(GF(quadrature_index_i+1,2), quadrature_weight * (K(4) * external_force(1) + K(2) * external_force(2) + K(6) * external_force(3)))
+                PLUS_EQUALS(GF(quadrature_index_i+1,3), quadrature_weight * (K(5) * external_force(1) + K(6) * external_force(2) + K(3) * external_force(3)))
 
               END DO
             END DO
@@ -218,6 +223,7 @@ PROGRAM fibers
               MINUS_EQUALS(b_vector(x_row_index), D1 * orientation_i(1) * QF)
               MINUS_EQUALS(b_vector(y_row_index), D1 * orientation_i(2) * QF)
               MINUS_EQUALS(b_vector(z_row_index), D1 * orientation_i(3) * QF)
+
             END IF
 
             DO force_index_i = 1, NUMBER_OF_TERMS_IN_FORCE_EXPANSION-1
@@ -266,7 +272,6 @@ PROGRAM fibers
                 MINUS_EQUALS(b_vector(y_row_index), gamma * (TF(2) - eigen(force_index_i+1) * orientation_i(2) * QF))
                 MINUS_EQUALS(b_vector(z_row_index), gamma * (TF(3) - eigen(force_index_i+1) * orientation_i(3) * QF))
               END IF
-
             END DO
           END DO
         END IF
@@ -277,11 +282,124 @@ PROGRAM fibers
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
 
-    !OPEN(10,file="AMat.out");
-    !DO i=1,TOTAL_NUMBER_OF_ROWS
-    !  WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
-    !END DO
-    !CLOSE(10)
+    OPEN(10,file="AMat.out");
+    DO i=1,TOTAL_NUMBER_OF_ROWS
+      WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
+    END DO
+    CLOSE(10)
+
+    OPEN(10,file="BVec.out");
+    DO i=1,TOTAL_NUMBER_OF_ROWS
+      WRITE(10,'(*(F16.8))') (b_vector(i))
+    END DO
+    CLOSE(10)
+
+    !--------------------------------------------------
+    ! 2. Solve System
+    !--------------------------------------------------
+    CALL SYSTEM_CLOCK(count1, count_rate, count_max)
+    CALL sgesv(TOTAL_NUMBER_OF_ROWS, 1, a_matrix, TOTAL_NUMBER_OF_ROWS, IPIV, b_vector, TOTAL_NUMBER_OF_ROWS, INFO)
+    CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+    CPU_p = real(count2-count1)/count_rate
+    PRINT *,"BENCHMARK:solve_system:", CPU_p
+
+    OPEN(10,file="XVec.out");
+    DO i=1,TOTAL_NUMBER_OF_ROWS
+      WRITE(10,'(*(F16.8))') (b_vector(i))
+    END DO
+    CLOSE(10)
+
+    !--------------------------------------------------
+    ! 3. Update System
+    !--------------------------------------------------
+    CALL SYSTEM_CLOCK(count1, count_rate, count_max)
+
+    DO i = 0, NUMBER_OF_FIBERS-1
+
+      position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
+      orientation_i = current_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
+
+      current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = 0.0
+      current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = 0.0
+
+      DO j = 0, NUMBER_OF_FIBERS-1
+
+        IF (i /= j) THEN
+
+          position_j = current_positions(j*DIMENSIONS + 1:j*DIMENSIONS + DIMENSIONS)
+          orientation_j = current_orientations(j*DIMENSIONS + 1:j*DIMENSIONS + DIMENSIONS)
+
+          DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
+
+            GF(quadrature_index_i+1,:) = 0.0
+
+            position_on_fiber_i = position_i + quadrature_points(quadrature_index_i+1) * orientation_i
+
+            DO quadrature_index_j = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
+              position_on_fiber_j = position_j + quadrature_points(quadrature_index_j+1) * orientation_j
+
+              difference = position_on_fiber_i - position_on_fiber_j
+              difference2 = difference**2
+
+              invDistance = 1.0/SQRT(difference2(1)+difference2(2)+difference2(3))
+              invDistance3 = invDistance * invDistance * invDistance
+              invDistance5 = invDistance3 * invDistance * invDistance
+
+              K(1) = invDistance + invDistance3 * difference2(1) + 2.0 * SLENDERNESS * SLENDERNESS * (invDistance3 - 3.0 * invDistance5 * difference2(1))
+              K(2) = invDistance + invDistance3 * difference2(2) + 2.0 * SLENDERNESS * SLENDERNESS * (invDistance3 - 3.0 * invDistance5 * difference2(2))
+              K(3) = invDistance + invDistance3 * difference2(3) + 2.0 * SLENDERNESS * SLENDERNESS * (invDistance3 - 3.0 * invDistance5 * difference2(3))
+              K(4) = invDistance3 * difference(1) * difference(2) + 2.0 * SLENDERNESS * SLENDERNESS * (-3.0) * invDistance5 * difference(1) * difference(2)
+              K(5) = invDistance3 * difference(1) * difference(3) + 2.0 * SLENDERNESS * SLENDERNESS * (-3.0) * invDistance5 * difference(1) * difference(3)
+              K(6) = invDistance3 * difference(2) * difference(3) + 2.0 * SLENDERNESS * SLENDERNESS * (-3.0) * invDistance5 * difference(2) * difference(3)
+
+              force_on_fiber_j = external_force
+              DO force_index_j = 0, NUMBER_OF_TERMS_IN_FORCE_EXPANSION-1
+                legendre_polynomial = legendre_polynomials(quadrature_index_j+1, force_index_j+1)
+
+                x_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 1
+                y_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 2
+                z_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 3
+
+                PLUS_EQUALS(force_on_fiber_j(1), b_vector(x_row_index) * legendre_polynomial)
+                PLUS_EQUALS(force_on_fiber_j(2), b_vector(x_row_index) * legendre_polynomial)
+                PLUS_EQUALS(force_on_fiber_j(3), b_vector(x_row_index) * legendre_polynomial)
+              END DO
+
+              quadrature_weight = quadrature_weights(quadrature_index_j+1)
+
+              PLUS_EQUALS(GF(quadrature_index_i+1,1), quadrature_weight * (K(1) * force_on_fiber_j(1) + K(4) * force_on_fiber_j(2) + K(5) * force_on_fiber_j(3)))
+              PLUS_EQUALS(GF(quadrature_index_i+1,2), quadrature_weight * (K(4) * force_on_fiber_j(1) + K(2) * force_on_fiber_j(2) + K(6) * force_on_fiber_j(3)))
+              PLUS_EQUALS(GF(quadrature_index_i+1,3), quadrature_weight * (K(5) * force_on_fiber_j(1) + K(6) * force_on_fiber_j(2) + K(3) * force_on_fiber_j(3)))
+            END DO
+          END DO
+
+          TFA0 = 0.0
+          TFA1 = 0.0
+
+          DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
+            quadrature_weight = quadrature_weights(quadrature_index_i+1)
+            legendre_polynomial = legendre_polynomials(quadrature_index_i+1, 0 + 1)
+
+            PLUS_EQUALS(TFA0, quadrature_weight * GF(quadrature_index_i+1,:))
+            PLUS_EQUALS(TFA1, quadrature_weight * GF(quadrature_index_i+1,:) * legendre_polynomial)
+          END DO
+
+          PLUS_EQUALS(current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), TFA0)
+
+          TFA1_TMP = TFA1 * orientation_i
+
+          PLUS_EQUALS(current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), TFA1 - (orientation_i * TFA1_TMP(1) + orientation_i * TFA1_TMP(2) + orientation_i * TFA1_TMP(3)))
+
+        END IF
+
+      END DO
+
+      MULTIPLY_EQUALS(current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), (0.5 / d))
+      MULTIPLY_EQUALS(current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), (1.5 / d))
+
+    END DO
+
+
 
   CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
   total_CPU_p = real(total_count2-total_count1)/total_count_rate

@@ -14,7 +14,7 @@ FCFLAGS = -O3 -ffast-math -funroll-loops --param max-unroll-times=4 -mtune=nativ
 FCFLAGS += -I/usr/include
 
 # libraries needed for linking, unused in the examples
-#LDFLAGS =
+LDFLAGS = -llapack -lblas
 
 # List of executables to be built within the package
 PROGRAMS = fibers
