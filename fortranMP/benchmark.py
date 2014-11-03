@@ -12,18 +12,37 @@ from decimal import Decimal
 def build(args):
     """Build code"""
 
-    build_path = '.'
+    build_path = 'build/'
+    try:
+            os.makedirs(build_path)
+    except OSError as exc:
+            if exc.errno == errno.EEXIST and os.path.isdir(build_path):
+                    pass
+            else:
+                    raise
 
     FNULL = open(os.devnull, 'w')
-    make = subprocess.Popen(['make', '-j8', 'veryclean'], cwd=build_path, stdout=FNULL)
-    if make.wait():
+    if args["benchmark"]:
+        cmake = subprocess.Popen(['cmake', '../'], cwd=build_path, stdout=FNULL)
+    else:
+        cmake = subprocess.Popen(['cmake', '../'], cwd=build_path)
+
+    if cmake.wait():
         FNULL.close()
-        raise Exception("Error building (make veryclean) the program")
-    make = subprocess.Popen(['make', '-j8'], cwd=build_path, stdout=FNULL)
+        raise Exception("Error building (cmake) the program")
+
+    if args["benchmark"]:
+        make = subprocess.Popen(['make', '-j8'], cwd=build_path, stdout=FNULL)
+    else:
+        make = subprocess.Popen(['make', '-j8'], cwd=build_path)
+
     if make.wait():
         FNULL.close()
         raise Exception("Error building (make) the program")
+
     FNULL.close()
+
+    return build_path
 
 #####
 #
@@ -31,38 +50,26 @@ def build(args):
 #
 #####
 
-tests = glob.glob("XcT_init*.in")
-
-def atoi(text):
-    return int(text) if text.isdigit() else text
-
-def natural_keys(text):
-    """
-    alist.sort(key=natural_keys) sorts in human order
-    http://nedbatchelder.com/blog/200712/human_sorting.html
-    """
-    return [atoi(c) for c in re.split('(\d+)', text)]
-
-def extract_timestep(filename):
-    return re.search('init(\d+)\.', filename).groups()[0]
-
-tests.sort(key=natural_keys)
-
 FNULL = open(os.devnull, 'w')
-
 results = {}
 
-tests = tests[:30]
+tests= []
+for i in xrange(1,2048+1):
+    if i % 32 == 0:
+        tests.append(i)
+    elif i % 100 == 0:
+        tests.append(i)
+
+tests = tests[:10]
 tests.reverse()
 
-for idx,test in enumerate(tests):
+for idx,number_of_fibers in enumerate(tests):
 
-    print '  [BENCHMARK]   : ' + test + ' ('+str(idx+1)+'/'+str(len(tests))+')'
+    print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
 
-    iterations = 2
+    iterations = 4
     benchmark = []
 
-    number_of_fibers = int(extract_timestep(test))
     run = open('constants.incl', 'r')
     rundata = run.read()
     run.close()
@@ -74,8 +81,6 @@ for idx,test in enumerate(tests):
     rundata = run.write(rundata)
     run.close()
 
-    build({})
-
     # allocate dict holding the row of data belonging to the current
     # number of fibers
     results[number_of_fibers] = {}
@@ -85,10 +90,18 @@ for idx,test in enumerate(tests):
     standard_error = 0.0
     relative_standard_error = sys.float_info.max
 
-    while relative_standard_error > 0.05:
+    while relative_standard_error > 0.1:
         for i in xrange(iterations):
-            run = open('constants.incl', 'r')
-            fibers = subprocess.Popen(['./fibers', test], stdout=subprocess.PIPE)
+            print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
+
+            gen = subprocess.Popen(['python','../tools/gen2.py', str(number_of_fibers)], stdout=FNULL)
+            if gen.wait():
+                raise Exception("Error generating fibers")
+            scene = 'XcT_gen'+str(number_of_fibers)+'.in'
+
+            build_path = build({"benchmark": True})
+
+            fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), scene], stdout=subprocess.PIPE)
 
             total = 0.0
             count = 0
@@ -112,13 +125,11 @@ for idx,test in enumerate(tests):
                 data[step] = sum(times)/len(times)
 
             benchmark.append(data)
+            os.remove(scene)
 
             if fibers.wait():
-                run.close()
                 FNULL.close()
                 raise Exception("Error running the program for benchmarking")
-
-            run.close()
 
         # reset the mean value for the different steps
         for run in benchmark:
@@ -145,8 +156,9 @@ for idx,test in enumerate(tests):
         else:
             relative_standard_error = standard_error / sample_mean
 
-        iterations = len(benchmark)
-
+        if relative_standard_error > 0.1:
+            iterations = len(benchmark)
+            print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
 
     results[number_of_fibers]['$TOTAL'] = sample_mean
 

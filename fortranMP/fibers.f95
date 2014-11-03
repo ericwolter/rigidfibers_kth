@@ -6,6 +6,7 @@
 #define DIVIDE_EQUALS(A, B) A = A / B
 
 PROGRAM fibers
+  USE omp_lib
   IMPLICIT NONE
 
   CHARACTER(LEN=256)::program_name, data_name
@@ -18,22 +19,22 @@ PROGRAM fibers
   !--------------------------------------------------
   ! Initalize Memory
   !--------------------------------------------------
-  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_positions, current_positions, next_positions
-  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_orientations, current_orientations, next_orientations
-  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_translational_velocities, current_translational_velocities
-  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_rotational_velocities, current_rotational_velocities
+  REAL*4,SAVE,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_positions, current_positions, next_positions
+  REAL*4,SAVE,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_orientations, current_orientations, next_orientations
+  REAL*4,SAVE,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_translational_velocities, current_translational_velocities
+  REAL*4,SAVE,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_rotational_velocities, current_rotational_velocities
 
-  REAL*4,DIMENSION(TOTAL_NUMBER_OF_ROWS,TOTAL_NUMBER_OF_ROWS)::a_matrix
-  REAL*4,DIMENSION(TOTAL_NUMBER_OF_ROWS)::b_vector
+  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_ROWS,TOTAL_NUMBER_OF_ROWS)::a_matrix
+  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_ROWS)::b_vector
 
-  REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_points
-  REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_weights
-  REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS,NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::legendre_polynomials
+  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_points
+  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_weights
+  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS,NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::legendre_polynomials
 
-  REAL*4,DIMENSION(NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::lambda
-  REAL*4,DIMENSION(NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::eigen
+  REAL*4,SAVE,DIMENSION(NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::lambda
+  REAL*4,SAVE,DIMENSION(NUMBER_OF_TERMS_IN_FORCE_EXPANSION)::eigen
 
-  REAL*4,DIMENSION(DIMENSIONS)::external_force
+  REAL*4,SAVE,DIMENSION(DIMENSIONS)::external_force
 
   INTEGER::i,j,force_index,force_index_i, force_index_j,quadrature_index_i,quadrature_index_j
   REAL*4,DIMENSION(DIMENSIONS)::position_i, orientation_i
@@ -56,7 +57,7 @@ PROGRAM fibers
   INTEGER::x_col_index,y_col_index,z_col_index
   REAL*4::c,d,e,cc,D1,gamma
 
-  INTEGER,DIMENSION(TOTAL_NUMBER_OF_ROWS)::IPIV
+  INTEGER,SAVE,DIMENSION(TOTAL_NUMBER_OF_ROWS)::IPIV
   INTEGER::INFO
 
   INTEGER::IDUMMY,ind
@@ -109,6 +110,8 @@ PROGRAM fibers
     CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
     b_vector = 0.0
+
+    !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(quadrature_points, quadrature_weights, legendre_polynomials, lambda, eigen, a_matrix, b_vector, external_force, c, d, e, cc, D1)
     DO i = 0, NUMBER_OF_FIBERS-1
 
       position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
@@ -278,22 +281,23 @@ PROGRAM fibers
         END IF
       END DO
     END DO
+    !$OMP END PARALLEL DO
 
     CALL SYSTEM_CLOCK(count2, count_rate, count_max)
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
 
-    OPEN(10,file="AMat.out");
-    DO i=1,TOTAL_NUMBER_OF_ROWS
-      WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
-    END DO
-    CLOSE(10)
-
-    OPEN(10,file="BVec.out");
-    DO i=1,TOTAL_NUMBER_OF_ROWS
-      WRITE(10,'(*(F16.8))') (b_vector(i))
-    END DO
-    CLOSE(10)
+    ! OPEN(10,file="AMat.out");
+    ! DO i=1,TOTAL_NUMBER_OF_ROWS
+    !   WRITE(10,'(*(F16.8))') (a_matrix(i,j),j=1,TOTAL_NUMBER_OF_ROWS)
+    ! END DO
+    ! CLOSE(10)
+    !
+    ! OPEN(10,file="BVec.out");
+    ! DO i=1,TOTAL_NUMBER_OF_ROWS
+    !   WRITE(10,'(*(F16.8))') (b_vector(i))
+    ! END DO
+    ! CLOSE(10)
 
     !--------------------------------------------------
     ! 2. Solve System
@@ -304,11 +308,11 @@ PROGRAM fibers
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:solve_system:", CPU_p
 
-    OPEN(10,file="XVec.out");
-    DO i=1,TOTAL_NUMBER_OF_ROWS
-      WRITE(10,'(*(F16.8))') (b_vector(i))
-    END DO
-    CLOSE(10)
+    ! OPEN(10,file="XVec.out");
+    ! DO i=1,TOTAL_NUMBER_OF_ROWS
+    !   WRITE(10,'(*(F16.8))') (b_vector(i))
+    ! END DO
+    ! CLOSE(10)
 
     !--------------------------------------------------
     ! 3. Update System
@@ -318,6 +322,7 @@ PROGRAM fibers
     !--------------------------------------------------
     CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
+    !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(quadrature_points, quadrature_weights, legendre_polynomials, lambda, eigen, current_translational_velocities, current_rotational_velocities, external_force, c, d, e, cc, D1)
     DO i = 0, NUMBER_OF_FIBERS-1
 
       position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
@@ -405,27 +410,29 @@ PROGRAM fibers
       MULTIPLY_EQUALS(current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), (1.5 / d))
 
     END DO
+    !$OMP END PARALLEL DO
 
     CALL SYSTEM_CLOCK(count2, count_rate, count_max)
     CPU_p = real(count2-count1)/count_rate
     PRINT *,"BENCHMARK:update_velocities:", CPU_p
 
-    OPEN(10,file="TRANSVel.out");
-    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
-     WRITE(10,'(*(F16.8))') (current_translational_velocities(i))
-    END DO
-    CLOSE(10)
-    OPEN(10,file="ROTVel.out");
-    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
-     WRITE(10,'(*(F16.8))') (current_rotational_velocities(i))
-    END DO
-    CLOSE(10)
+    ! OPEN(10,file="TRANSVel.out");
+    ! DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+    !  WRITE(10,'(*(F16.8))') (current_translational_velocities(i))
+    ! END DO
+    ! CLOSE(10)
+    ! OPEN(10,file="ROTVel.out");
+    ! DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+    !  WRITE(10,'(*(F16.8))') (current_rotational_velocities(i))
+    ! END DO
+    ! CLOSE(10)
 
     !--------------------------------------------------
     ! 3.2. Update Fibers
     !--------------------------------------------------
     CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
+    !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(i)
     DO i = 0, NUMBER_OF_FIBERS-1
       next_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = &
         current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) + TIMESTEP * current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
@@ -434,17 +441,18 @@ PROGRAM fibers
 
       DIVIDE_EQUALS(next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), SQRT(DOT_PRODUCT(next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS))))
     END DO
+    !$OMP END PARALLEL DO
 
-    OPEN(10,file="POS.out");
-    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
-      WRITE(10,'(*(F16.8))') (next_positions(i))
-    END DO
-    CLOSE(10)
-    OPEN(10,file="ORIENT.out");
-    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
-      WRITE(10,'(*(F16.8))') (next_orientations(i))
-    END DO
-    CLOSE(10)
+    ! OPEN(10,file="POS.out");
+    ! DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+    !   WRITE(10,'(*(F16.8))') (next_positions(i))
+    ! END DO
+    ! CLOSE(10)
+    ! OPEN(10,file="ORIENT.out");
+    ! DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+    !   WRITE(10,'(*(F16.8))') (next_orientations(i))
+    ! END DO
+    ! CLOSE(10)
 
     CALL SYSTEM_CLOCK(count2, count_rate, count_max)
     CPU_p = real(count2-count1)/count_rate
@@ -454,7 +462,6 @@ PROGRAM fibers
   total_CPU_p = real(total_count2-total_count1)/total_count_rate
   PRINT *,"BENCHMARK:$total:", total_CPU_p
 
-  PRINT *, "Hello World!",TOTAL_NUMBER_OF_ROWS
 END PROGRAM fibers
 
 SUBROUTINE precomputeLegendrePolynomials(quadrature_points, quadrature_weights, legendre_polynomials)
