@@ -12,37 +12,14 @@ from decimal import Decimal
 def build(args):
     """Build code"""
 
-    build_path = 'build/'
-    try:
-            os.makedirs(build_path)
-    except OSError as exc:
-            if exc.errno == errno.EEXIST and os.path.isdir(build_path):
-                    pass
-            else:
-                    raise
+    build_path = '.'
 
     FNULL = open(os.devnull, 'w')
-    if args["benchmark"]:
-        cmake = subprocess.Popen(['cmake', '../'], cwd=build_path, stdout=FNULL)
-    else:
-        cmake = subprocess.Popen(['cmake', '../'], cwd=build_path)
-
-    if cmake.wait():
-        FNULL.close()
-        raise Exception("Error building (cmake) the program")
-
-    if args["benchmark"]:
-        make = subprocess.Popen(['make', '-j8'], cwd=build_path, stdout=FNULL)
-    else:
-        make = subprocess.Popen(['make', '-j8'], cwd=build_path)
-
+    make = subprocess.Popen(['make', '-j8'], cwd=build_path, stdout=FNULL)
     if make.wait():
         FNULL.close()
         raise Exception("Error building (make) the program")
-
     FNULL.close()
-
-    return build_path
 
 #####
 #
@@ -50,34 +27,48 @@ def build(args):
 #
 #####
 
+build({})
+
+tests = glob.glob("XcT_init*.in")
+
+def atoi(text):
+    return int(text) if text.isdigit() else text
+
+def natural_keys(text):
+    """
+    alist.sort(key=natural_keys) sorts in human order
+    http://nedbatchelder.com/blog/200712/human_sorting.html
+    """
+    return [atoi(c) for c in re.split('(\d+)', text)]
+
+def extract_timestep(filename):
+    return re.search('init(\d+)\.', filename).groups()[0]
+
+tests.sort(key=natural_keys)
+
 FNULL = open(os.devnull, 'w')
+
 results = {}
 
-tests= []
-for i in xrange(1,2048+1):
-    if i % 32 == 0:
-        tests.append(i)
-    elif i % 100 == 0:
-        tests.append(i)
-
-tests = tests[:10]
+tests = tests[:30]
 tests.reverse()
 
-for idx,number_of_fibers in enumerate(tests):
+for idx,test in enumerate(tests):
 
-    print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
+    print '  [BENCHMARK]   : ' + test + ' ('+str(idx+1)+'/'+str(len(tests))+')'
 
-    iterations = 4
+    iterations = 2
     benchmark = []
 
-    run = open('constants.incl', 'r')
+    number_of_fibers = int(extract_timestep(test))
+    run = open('run100_iter.in', 'r')
     rundata = run.read()
     run.close()
 
     # replace
-    rundata = re.sub(r'#define NUMBER_OF_FIBERS \((\d+)\)',"#define NUMBER_OF_FIBERS ("+str(number_of_fibers)+")", rundata)
+    rundata = re.sub(r'(\d+)\s*!Label of indata file XcT_init##',str(number_of_fibers) + " !Label of indata file XcT_init##", rundata)
 
-    run = open('constants.incl', 'w')
+    run = open('run100_iter.in', 'w')
     rundata = run.write(rundata)
     run.close()
 
@@ -90,18 +81,11 @@ for idx,number_of_fibers in enumerate(tests):
     standard_error = 0.0
     relative_standard_error = sys.float_info.max
 
-    while relative_standard_error > 0.1:
+    while relative_standard_error > 0.05:
         for i in xrange(iterations):
-            print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
+            run = open('run100_iter.in', 'r')
+            fibers = subprocess.Popen('./ADVECT_FIBERS', stdin=run, stdout=subprocess.PIPE)
 
-            gen = subprocess.Popen(['python','../tools/gen2.py', str(number_of_fibers)], stdout=FNULL)
-            if gen.wait():
-                raise Exception("Error generating fibers")
-            scene = 'XcT_gen'+str(number_of_fibers)+'.in'
-
-            build_path = build({"benchmark": True})
-
-            fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), scene], stdout=subprocess.PIPE)
 
             total = 0.0
             count = 0
@@ -121,15 +105,17 @@ for idx,number_of_fibers in enumerate(tests):
 
             for step in data:
                 # ignore first timing as warmup
-                times = data[step]#[1:]
+                times = data[step][1:]
                 data[step] = sum(times)/len(times)
 
             benchmark.append(data)
-            os.remove(scene)
 
             if fibers.wait():
+                run.close()
                 FNULL.close()
                 raise Exception("Error running the program for benchmarking")
+
+            run.close()
 
         # reset the mean value for the different steps
         for run in benchmark:
@@ -151,14 +137,10 @@ for idx,number_of_fibers in enumerate(tests):
         sample_deviation = math.sqrt(sample_deviation)
 
         standard_error = sample_deviation / math.sqrt(len(benchmark))
-        if abs(sample_mean) < 1e-7:
-            relative_standard_error = 0.0
-        else:
-            relative_standard_error = standard_error / sample_mean
+        relative_standard_error = standard_error / sample_mean
 
-        if relative_standard_error > 0.1:
-            iterations = len(benchmark)
-            print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
+        iterations = len(benchmark)
+
 
     results[number_of_fibers]['$TOTAL'] = sample_mean
 
