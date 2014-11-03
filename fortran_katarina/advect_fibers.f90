@@ -27,11 +27,11 @@ PROGRAM ADVECT_FIBERS
   !     the gaussian quadrature is used for each interval INDEPENDENTLY.
   !     @todo Is there a name for this quadrature scheme?
   INTEGER NoQI
-  !me:  @todo ???  
+  !me:  @todo ???
   INTEGER nocc
 
-  !me:  REAL*8 is a double precision floating point type i.e. double in other 
-  !     languages the *8 comes from the number of bytes (here 8) that are used 
+  !me:  REAL*8 is a double precision floating point type i.e. double in other
+  !     languages the *8 comes from the number of bytes (here 8) that are used
   !     to store the number
 
   !me:  The slenderness parameter modelling how "thin"/slender the fiber is
@@ -54,7 +54,7 @@ PROGRAM ADVECT_FIBERS
 
   !me:  The position vectors of the fiber centers
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::XcVecs
-  !me:  The orientation of the fiber, i.e. the unit tangent vector  
+  !me:  The orientation of the fiber, i.e. the unit tangent vector
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::tVecs
   !me:  The linear velocity vectors of the fibers
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::VelVecs
@@ -71,11 +71,11 @@ PROGRAM ADVECT_FIBERS
   !me:  The legendre polynomials evaluated at the the quadrature points
   REAL*8,ALLOCATABLE,DIMENSION(:,:)::LvecMat
 
-  !me:  @todo The external forces acting on all fibers, e.g. gravity? 
+  !me:  @todo The external forces acting on all fibers, e.g. gravity?
   REAL*8,ALLOCATABLE,DIMENSION(:)::ExtForce
   !me:  @todo ???
   REAL*8,ALLOCATABLE,DIMENSION(:)::coeffvec
-  !me:  @todo Probably used as an initial guess for some kind of integration 
+  !me:  @todo Probably used as an initial guess for some kind of integration
   !     scheme
   REAL*8,ALLOCATABLE,DIMENSION(:)::init_guess
 
@@ -171,7 +171,7 @@ PROGRAM ADVECT_FIBERS
   !me:  @todo ???
   CHARACTER (LEN=25)::filein
   !me:  @todo ???
-  CHARACTER (LEN=25)::parfname  
+  CHARACTER (LEN=25)::parfname
 
   !me:  @todo ???
   REAL*8 lim
@@ -204,15 +204,15 @@ PROGRAM ADVECT_FIBERS
   READ (33,*) M
   PRINT *,"M= ",M,"."
   PRINT *,"Give no of terms in force expansion (N):"
-  READ *,N 
+  READ *,N
   PRINT *,"Give eeps:"
-  READ *,eeps 
+  READ *,eeps
   PRINT *,"Give dt:"
-  READ *,dt 
+  READ *,dt
   PRINT *,"Give number of time steps:"
-  READ *,no_ts 
+  READ *,no_ts
   PRINT *,"Give number of time steps between each save:"
-  READ *,save_ival 
+  READ *,save_ival
   PRINT *,"Give number of saves in each file:"
   READ *,no_saves_in_file
   PRINT*, "Give number of quad. intervals:"
@@ -263,7 +263,7 @@ PROGRAM ADVECT_FIBERS
   !     Answer it really appears to be simply gravity and for now at least IS
   !     the same for all fibers, as it is initalized only once and the same for
   !     each fiber. However that might be subject to change in the future. For
-  !     this is an easy way to save some memory.   
+  !     this is an easy way to save some memory.
   ALLOCATE(ExtForce(3*M))
   !me:  Allocate the coefficient vector with 3*N components per fiber.
   !     N here is the configurated number of terms used in the force expansion.
@@ -283,7 +283,7 @@ PROGRAM ADVECT_FIBERS
   ALLOCATE(tmod(3*M))
 
   !me:  Allocate the points and weights for the gaussian quadrature for all
-  !     subintervals 
+  !     subintervals
   ALLOCATE(pv(LQ),wv(LQ))
   !me:  Allocate legendre polynomial matrix where each row represents a
   !     quadrature point and each column entry the corresponding legendre
@@ -303,7 +303,7 @@ PROGRAM ADVECT_FIBERS
   one=1;
   two=2;
   three=3;
-  old=1; 
+  old=1;
   new=2;
 
   !me:  Fortran by default uses 1-based indexing.
@@ -330,32 +330,32 @@ PROGRAM ADVECT_FIBERS
   END DO
   CLOSE(33)
   PRINT *,"Read initial data from file. "
-  
+
   !! Set initial guess for iterative solver to zero
   DO j=1,3*M*N
      init_guess(j)=0.0d0
   END DO
-  
-  
+
+
   !! Normalize the tVecs
   DO i=1,M
      ind=(i-1)*3
-     
+
      tmod0(i)=sqrt(tVecs(ind+1,three)**2+tVecs(ind+2,three)**2+tVecs(ind+3,three)**2)
      tmod(ind+1)=tmod0(i)
      tmod(ind+2)=tmod0(i)
      tmod(ind+3)=tmod0(i)
   END DO
   tVecs(:,three)=tVecs(:,three)/tmod;
-  
-  
-  
-  
-  !!Computes the quadrature weights and 
+
+
+
+
+  !!Computes the quadrature weights and
   !! point to be used for numerical integration
   !! based on a three point Gauss quadrature. Section 4.2 in
   !! AKT-KG 2006
-  CALL quad_pts_and_wts(NoQI,pv,wv) 
+  CALL quad_pts_and_wts(NoQI,pv,wv)
 
 !  OPEN(10,file="quadrature_points.out");
 !  OPEN(30,file="quadrature_weights.out");
@@ -379,7 +379,7 @@ PROGRAM ADVECT_FIBERS
 !    END DO
 !    WRITE(70,*) ' '
 !  END DO
-  
+
   !=================================================================
   PRINT *,"=========== advect_fibers =============="
   PRINT *,"label= ", label,  "."
@@ -393,19 +393,19 @@ PROGRAM ADVECT_FIBERS
   PRINT*, NoQI
   CALL write_Rep_file(repfile,abbr,label,M,N,NoQI,eeps,&
        dt,int_an,no_ts,save_ival,no_saves_in_file);
-  
+
   parfname="pars"//trim(labstr)//"_.m"
   CALL write_Pars(parfname,label,M,N,eeps,&
        dt,no_ts,save_ival,no_saves_in_file);
-  
+
   t=0.0d0;
-  !!Need to save to file. 
-  
+  !!Need to save to file.
+
   pp=1
   filename=trim(abbr)//"1"
   filename2=trim(abbr2)//"1"
   filename3=trim(abbr3)//"1"
-  
+
   OPEN(10,file=trim(filename));
   OPEN(30,file=trim(filename2));
   OPEN(70,file=trim(filename3));
@@ -429,50 +429,50 @@ PROGRAM ADVECT_FIBERS
      WRITE(30,'(2F24.16)') 0.0;
      WRITE(30,'(2F24.16)') 0.0;
      WRITE(30,*) ' '
-     
+
   END DO
   nos=1
-  
+
   lim=5.0d0;
-  
-  
+
+
   !!================================================================================
-  !!Starting the time-stepping. 
+  !!Starting the time-stepping.
   !!===============================================================================
-  
+
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,no_ts
+  DO tt=1,1
       CALL SYSTEM_CLOCK(step_count1,step_count_rate,step_count_max);
     PRINT *,"time step no ",tt
      !! Compute the coefficient in the force expansion using Legendre polynomials
      !! Use either direct solver for the linear system (dir_solve==1) or GMRES
-     
+
      IF (dir_solve==1) THEN  !! Use direct solver
-        IF (int_an==1) THEN  !! Use analytical integration for inner integral 
+        IF (int_an==1) THEN  !! Use analytical integration for inner integral
                              !! in Eq. (23) and numerical for outer
            coeffvec=solve_coeffs_an(eeps,M,N,XcVecs(:,three),tVecs(:,three),ExtForce,LQ,pv,wv,LvecMat);
-           
+
         ELSE  !! Use only numerical quadrature
            coeffvec=solve_coeffs(eeps,M,N,XcVecs(:,three),tVecs(:,three),ExtForce,LQ,pv,wv,LvecMat);
-           
+
         END IF
      ELSE  !! Use GMRES
         IF (int_an==1) THEN
            coeffvec=solve_coeffs_an_iter(eeps,M,N,XcVecs(:,three),tVecs(:,three),ExtForce,LQ,pv,wv,LvecMat,&
                 restart,max_iters,tol,init_guess);
          ELSE
-            
+
             coeffvec=solve_coeffs_iter(eeps,M,N,XcVecs(:,three),tVecs(:,three),ExtForce,LQ,pv,wv,LvecMat,&
                  restart,max_iters,tol,init_guess)
          END IF
       END IF
 
       init_guess=coeffvec;
-      old=new; 
-      new=3-old; 
-      
+      old=new;
+      new=3-old;
+
       !! Compute velocitites i.e. the right hand sides in Eqns. (24) (25)
       IF (int_an==1) THEN
          CALL compute_velocities_an(eeps,M,N,LQ,pv,wv,LvecMat,&
@@ -493,42 +493,42 @@ PROGRAM ADVECT_FIBERS
       !     For the first loop a simple euler step is taken.
       !     @todo What is the reasoning behind choosing this particular
       !     integration scheme?
-      !     
+      !
       !     original_index -> new_index => used_columns -> target_column
       !     1,2,3 -> 2,3,1 => 3     -> 1
       !     2,3,1 -> 3,1,2 => 1,3   -> 2
       !     3,1,2 -> 1,2,3 => 2,1   -> 3
       !     1,2,3 -> 2,3,1 => 3,2   -> 1
-      
+
       !! Update postition and orientation by solving (24) and (25) in time
       CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
         !PRINT*, "1"
 
       IF (tt==1) THEN
-         !!first time step. 
+         !!first time step.
          XcVecs(:,three)=XcVecs(:,two)+dt*VelVecs(:,new);
          tVecs(:,three)=tVecs(:,two)+dt*RotVecs(:,new);
          PRINT *,"One first order ts."
-         
-      ELSE 
+
+      ELSE
          XcVecs(:,three)=4.0d0/3.0d0*XcVecs(:,two)-1.0d0/3.0d0*XcVecs(:,one)+&
               2.0d0/3.0d0*dt*(2.0d0*VelVecs(:,new)-VelVecs(:,old));
          tVecs(:,three)=4.0d0/3.0d0*tVecs(:,two)-1.0d0/3.0d0*tVecs(:,one)+&
               2.0d0/3.0d0*dt*(2.0d0*RotVecs(:,new)-RotVecs(:,old));
       END IF
-      
+
         !PRINT*, "2"
       !! Normalize, make orientation vectors have length one
       DO i=1,M
          ind=(i-1)*3
-         
+
          tmod0(i)=sqrt(tVecs(ind+1,three)**2+tVecs(ind+2,three)**2+tVecs(ind+3,three)**2)
          tmod(ind+1)=tmod0(i)
          tmod(ind+2)=tmod0(i)
          tmod(ind+3)=tmod0(i)
       END DO
-      
+
         !PRINT*, "3"
       !tmod0=sqrt(tVecs(1:3:3*M,three)**2+tVecs(2:3:3*M,three)**2+tVecs(3:3:3*M,three)**2);
       !PRINT*, "3.1"
@@ -540,7 +540,7 @@ PROGRAM ADVECT_FIBERS
       CPU_p = real(count2-count1)/count_rate
       PRINT *,"BENCHMARK:update_fibers:", CPU_p
 !      PRINT *,"Updating fibers took ",CPU_p," seconds."
-      
+
 !      OPEN(90,file="POS.out");
 !      DO i=1,3*M
 !        WRITE(90,'(*(F16.8))') (XcVecs(i,three))
@@ -554,11 +554,11 @@ PROGRAM ADVECT_FIBERS
 !      CLOSE(90)
 
 
-      
+
         !PRINT*, "4"
 
       t=t+dt;
-      
+
 !      IF (mod(tt,save_ival)==0) THEN
 !         !Time to save
 !         nos=nos+1;
@@ -596,7 +596,7 @@ PROGRAM ADVECT_FIBERS
 !     IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
 !        pp=pp+1;
 !        CALL int2str(filenostr,pp)
-        
+
 !        filename=trim(abbr)//filenostr
 !        filename2=trim(abbr2)//filenostr
 !        CLOSE(10)
@@ -613,14 +613,13 @@ PROGRAM ADVECT_FIBERS
     PRINT *,"BENCHMARK:$total:", CPU_p
 
   END DO
-  
-  
-  
+
+
+
   PRINT *,"DONE!"
   PRINT *,"M= ",M,", N= ",N
   CALL SYSTEM_CLOCK(count2,count_rate,count_max);
   CPU_p=real(count2-count1)/count_rate
 
-  PRINT *,"Taking ", no_ts," time steps took ",CPU_p," seconds." 
+  PRINT *,"Taking ", no_ts," time steps took ",CPU_p," seconds."
 END PROGRAM ADVECT_FIBERS
-
