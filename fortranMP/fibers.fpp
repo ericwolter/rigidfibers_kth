@@ -3,6 +3,7 @@
 #define PLUS_EQUALS(A, B) A = A + B
 #define MINUS_EQUALS(A, B) A = A - B
 #define MULTIPLY_EQUALS(A, B) A = A * B
+#define DIVIDE_EQUALS(A, B) A = A / B
 
 PROGRAM fibers
   IMPLICIT NONE
@@ -17,10 +18,10 @@ PROGRAM fibers
   !--------------------------------------------------
   ! Initalize Memory
   !--------------------------------------------------
-  REAL*4,DIMENSION(3*NUMBER_OF_FIBERS)::previous_positions, current_positions, next_positions
-  REAL*4,DIMENSION(3*NUMBER_OF_FIBERS)::previous_orientations, current_orientations, next_orientations
-  REAL*4,DIMENSION(3*NUMBER_OF_FIBERS)::previous_translational_velocities, current_translational_velocities
-  REAL*4,DIMENSION(3*NUMBER_OF_FIBERS)::previous_rotational_velocities, current_rotational_velocities
+  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_positions, current_positions, next_positions
+  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_orientations, current_orientations, next_orientations
+  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_translational_velocities, current_translational_velocities
+  REAL*4,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::previous_rotational_velocities, current_rotational_velocities
 
   REAL*4,DIMENSION(TOTAL_NUMBER_OF_ROWS,TOTAL_NUMBER_OF_ROWS)::a_matrix
   REAL*4,DIMENSION(TOTAL_NUMBER_OF_ROWS)::b_vector
@@ -46,7 +47,7 @@ PROGRAM fibers
 
   REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS, 6)::G
   REAL*4,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS, 3)::GF
-  REAL*4,DIMENSION(DIMENSIONS)::position_on_fiber_i,position_on_fiber_j,difference,difference2
+  REAL*4,DIMENSION(DIMENSIONS)::position_on_fiber_i,position_on_fiber_j,difference,difference2, oriented_force
   REAL*4::invDistance,invDistance3,invDistance5
   REAL*4,DIMENSION(6)::K
   REAL*4,DIMENSION(DIMENSIONS)::force_on_fiber_j
@@ -312,6 +313,9 @@ PROGRAM fibers
     !--------------------------------------------------
     ! 3. Update System
     !--------------------------------------------------
+    !--------------------------------------------------
+    ! 3.1. Update Velocity
+    !--------------------------------------------------
     CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 
     DO i = 0, NUMBER_OF_FIBERS-1
@@ -319,7 +323,8 @@ PROGRAM fibers
       position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
       orientation_i = current_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
 
-      current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = 0.0
+      oriented_force = sum(orientation_i * (2.0 * external_force)) * orientation_i;
+      current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = (d + 2.0) * 2.0 * external_force + (d - 2.0) * oriented_force
       current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = 0.0
 
       DO j = 0, NUMBER_OF_FIBERS-1
@@ -353,6 +358,7 @@ PROGRAM fibers
               K(6) = invDistance3 * difference(2) * difference(3) + 2.0 * SLENDERNESS * SLENDERNESS * (-3.0) * invDistance5 * difference(2) * difference(3)
 
               force_on_fiber_j = external_force
+
               DO force_index_j = 0, NUMBER_OF_TERMS_IN_FORCE_EXPANSION-1
                 legendre_polynomial = legendre_polynomials(quadrature_index_j+1, force_index_j+1)
 
@@ -361,8 +367,8 @@ PROGRAM fibers
                 z_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 3
 
                 PLUS_EQUALS(force_on_fiber_j(1), b_vector(x_row_index) * legendre_polynomial)
-                PLUS_EQUALS(force_on_fiber_j(2), b_vector(x_row_index) * legendre_polynomial)
-                PLUS_EQUALS(force_on_fiber_j(3), b_vector(x_row_index) * legendre_polynomial)
+                PLUS_EQUALS(force_on_fiber_j(2), b_vector(y_row_index) * legendre_polynomial)
+                PLUS_EQUALS(force_on_fiber_j(3), b_vector(z_row_index) * legendre_polynomial)
               END DO
 
               quadrature_weight = quadrature_weights(quadrature_index_j+1)
@@ -371,6 +377,7 @@ PROGRAM fibers
               PLUS_EQUALS(GF(quadrature_index_i+1,2), quadrature_weight * (K(4) * force_on_fiber_j(1) + K(2) * force_on_fiber_j(2) + K(6) * force_on_fiber_j(3)))
               PLUS_EQUALS(GF(quadrature_index_i+1,3), quadrature_weight * (K(5) * force_on_fiber_j(1) + K(6) * force_on_fiber_j(2) + K(3) * force_on_fiber_j(3)))
             END DO
+
           END DO
 
           TFA0 = 0.0
@@ -399,7 +406,49 @@ PROGRAM fibers
 
     END DO
 
+    CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+    CPU_p = real(count2-count1)/count_rate
+    PRINT *,"BENCHMARK:update_velocities:", CPU_p
 
+    OPEN(10,file="TRANSVel.out");
+    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+     WRITE(10,'(*(F16.8))') (current_translational_velocities(i))
+    END DO
+    CLOSE(10)
+    OPEN(10,file="ROTVel.out");
+    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+     WRITE(10,'(*(F16.8))') (current_rotational_velocities(i))
+    END DO
+    CLOSE(10)
+
+    !--------------------------------------------------
+    ! 3.2. Update Fibers
+    !--------------------------------------------------
+    CALL SYSTEM_CLOCK(count1, count_rate, count_max)
+
+    DO i = 0, NUMBER_OF_FIBERS-1
+      next_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = &
+        current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) + TIMESTEP * current_translational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
+      next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) = &
+        current_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS) + TIMESTEP * current_rotational_velocities(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
+
+      DIVIDE_EQUALS(next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), SQRT(DOT_PRODUCT(next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS), next_orientations(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS))))
+    END DO
+
+    OPEN(10,file="POS.out");
+    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+      WRITE(10,'(*(F16.8))') (next_positions(i))
+    END DO
+    CLOSE(10)
+    OPEN(10,file="ORIENT.out");
+    DO i=1,NUMBER_OF_FIBERS * DIMENSIONS
+      WRITE(10,'(*(F16.8))') (next_orientations(i))
+    END DO
+    CLOSE(10)
+
+    CALL SYSTEM_CLOCK(count2, count_rate, count_max)
+    CPU_p = real(count2-count1)/count_rate
+    PRINT *,"BENCHMARK:update_fibers:", CPU_p
 
   CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
   total_CPU_p = real(total_count2-total_count1)/total_count_rate
