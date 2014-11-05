@@ -9,8 +9,9 @@ cmake_minimum_required(VERSION 2.8)
 project(fibers)
 enable_language (Fortran)
 
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../lib/")
+
+find_package(OpenBlas REQUIRED)
 
 # by default the final executable is next to the source file, to clearly
 # separate the binary from the source lets put it into its own directory
@@ -27,11 +28,21 @@ set(SOURCES
 # defines all header code files
 set(HEADERS
   constants.incl
+  assemble_matrix.incl
+  compute_inner_integral_numerically.incl
+  update_velocities.incl
+  update_fibers_firststep.incl
+  update_fibers.incl
 )
 
 # add an executable/binary to the project
-add_executable(fibers ${SOURCES} ${HEADERS})
-target_link_libraries(fibers ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+add_executable(fibers ${SOURCES})
+
+# it is not necessary to include the headers here for cmake, however this way
+# they also appear in the file browser of different IDEs like Xcode/VisualStudio
+add_custom_target(fibers_files DEPENDS ${SOURCES} SOURCES ${HEADERS})
+
+target_link_libraries(fibers ${LIBOPENBLAS_LIBRARY})
 
 set_target_properties(fibers PROPERTIES
                       LINKER_LANGUAGE Fortran)

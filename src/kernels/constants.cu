@@ -5,7 +5,6 @@
 
 #define BENCHMARK
 #define FORCE_2D
-#define GMRES
 
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (32)

@@ -24,6 +24,9 @@ parser_fortran_benchmark = fortran_subparsers.add_parser('benchmark', help='benc
 # Fortran Run Command
 #--------------------------------------------------
 parser_fortran_run.set_defaults(func=FORTRAN.run)
+parser_fortran_run.set_defaults(run=True)
+parser_fortran_run.set_defaults(validate=False)
+parser_fortran_run.set_defaults(benchmark=False)
 parser_fortran_run.add_argument('configuration_file',type=str,help='the configuration file')
 parser_fortran_run.add_argument('fibers_file',type=str,help='the file containing the initial positions and orientations')
 parser_fortran_run.add_argument('--threads',type=int,help='the number of threads to use (default: OpenMP-default)')
@@ -40,6 +43,9 @@ fortran_run_algorithm_exclusive.add_argument('--analytical', action='store_true'
 # Fortran Validate Command
 #--------------------------------------------------
 parser_fortran_validate.set_defaults(func=FORTRAN.validate)
+parser_fortran_validate.set_defaults(run=False)
+parser_fortran_validate.set_defaults(validate=True)
+parser_fortran_validate.set_defaults(benchmark=False)
 parser_fortran_validate.add_argument('configuration_file',type=str,help='the configuration file')
 parser_fortran_validate.add_argument('fibers_file',type=str,help='the file containing the initial positions and orientations')
 parser_fortran_validate.add_argument('--threads',type=int,help='the number of threads to use (default: OpenMP-default)')
@@ -56,6 +62,10 @@ fortran_validate_algorithm_exclusive.add_argument('--analytical', action='store_
 # Fortran Benchmark Command
 #--------------------------------------------------
 parser_fortran_benchmark.set_defaults(func=FORTRAN.benchmark)
+parser_fortran_benchmark.set_defaults(run=False)
+parser_fortran_benchmark.set_defaults(validate=False)
+parser_fortran_benchmark.set_defaults(benchmark=True)
+parser_fortran_benchmark.add_argument('configuration_file',type=str,help='the configuration file')
 parser_fortran_benchmark.add_argument('--threads',type=int,help='the number of threads to use (default: OpenMP-default)')
 parser_fortran_benchmark.add_argument('--max_rse',type=float,help='the maximum relative standard error (default: 0.1)', default=0.1)
 fortran_benchmark_solvers = parser_fortran_benchmark.add_argument_group('supported solvers')
@@ -82,6 +92,9 @@ parser_cuda_benchmark = cuda_subparsers.add_parser('benchmark', help='benchmark 
 # CUDA Run Command
 #--------------------------------------------------
 parser_cuda_run.set_defaults(func=CUDA.run)
+parser_cuda_run.set_defaults(run=True)
+parser_cuda_run.set_defaults(validate=False)
+parser_cuda_run.set_defaults(benchmark=False)
 parser_cuda_run.add_argument('configuration_file',type=str,help='the configuration file')
 parser_cuda_run.add_argument('fibers_file',type=str,help='the file containing the initial positions and orientations')
 cuda_run_solvers = parser_cuda_run.add_argument_group('supported solvers')
@@ -103,6 +116,9 @@ cuda_run_dimension_exclusive.add_argument('--3D', action='store_true')
 # CUDA Validate Command
 #--------------------------------------------------
 parser_cuda_validate.set_defaults(func=CUDA.validate)
+parser_cuda_validate.set_defaults(run=False)
+parser_cuda_validate.set_defaults(validate=True)
+parser_cuda_validate.set_defaults(benchmark=False)
 parser_cuda_validate.add_argument('configuration_file',type=str,help='the configuration file')
 parser_cuda_validate.add_argument('fibers_file',type=str,help='the file containing the initial positions and orientations')
 cuda_validate_solvers = parser_cuda_validate.add_argument_group('supported solvers')
@@ -124,6 +140,10 @@ cuda_validate_dimension_exclusive.add_argument('--3D', action='store_true')
 # CUDA Benchmark Command
 #--------------------------------------------------
 parser_cuda_benchmark.set_defaults(func=CUDA.benchmark)
+parser_cuda_benchmark.set_defaults(run=False)
+parser_cuda_benchmark.set_defaults(validate=False)
+parser_cuda_benchmark.set_defaults(benchmark=True)
+parser_cuda_benchmark.add_argument('configuration_file',type=str,help='the configuration file')
 parser_cuda_benchmark.add_argument('--max_rse',type=float,help='the maximum relative standard error (default: 0.1)', default=0.1)
 cuda_benchmark_solvers = parser_cuda_benchmark.add_argument_group('supported solvers')
 cuda_benchmark_solver_exclusive = cuda_benchmark_solvers.add_mutually_exclusive_group(required=True)

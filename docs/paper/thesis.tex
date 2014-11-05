@@ -154,7 +154,6 @@ inceptos hymenaeos.
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
-    \pgfplotstableread{benchmarks/overall.csv}\loadedtable
     \begin{axis}[
       title=Overall,
       xlabel={number of fibers},
@@ -163,10 +162,10 @@ inceptos hymenaeos.
       xmin=0,xmax=700,
       unbounded coords=discard,
       ]
-    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=FortranMulti] {\loadedtable};
-    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_GMRES] {\loadedtable};
-    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=2D_BiCGStab] {\loadedtable};
-    \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=MAGMA] {\loadedtable};
+    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL} * 0.125] {benchmarks/steps_fortran.csv};
+    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/steps_2D_gmres.csv};
+    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/steps_2D_bicgstab.csv};
+    \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/steps_2D_magma.csv};
 
     \legend{Fortran Multi,GMRES, BiCGStab, MAGMA}
     \end{axis}
@@ -179,7 +178,7 @@ inceptos hymenaeos.
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
-    \pgfplotstableread{benchmarks/steps_magma.csv}\loadedtable
+    \pgfplotstableread{benchmarks/steps_2D_magma.csv}\loadedtable
     \begin{axis}[
       stack plots=y,
       area style,
@@ -243,7 +242,7 @@ inceptos hymenaeos.
       ymin=0,ymax=4.5,
       ]
     \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{SOLVE_SYSTEM} * 0.125] {benchmarks/steps_fortran.csv};
-    \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/steps_magma.csv};
+    \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/steps_2D_magma.csv};
 
     \legend{Solve System (Fortran), Solve System (CUDA - MAGMA)}
     \end{axis}
@@ -290,7 +289,7 @@ inceptos hymenaeos.
       ]
     \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/steps_fortran.csv};
     \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{ASSEMBLE_MATRIX} * 0.125] {benchmarks/steps_fortran_new.csv};
-    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/steps_magma.csv};
+    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/steps_2D_magma.csv};
 
     \legend{Assemble System (Fortran), Assemble System (Fortran - New), Assemble System (CUDA)}
     \end{axis}

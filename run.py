@@ -227,7 +227,7 @@ if args.validate:
 
 elif args.benchmark:
 
-    tests= []
+    tests = []
     for i in xrange(1,2048+1):
         if i % 32 == 0:
             tests.append(i)
@@ -238,8 +238,10 @@ elif args.benchmark:
 
     results = {}
 
-    tests = tests[:5]
+    tests = tests[:30]
     tests.reverse()
+
+    rse_limit = 0.1
 
     for idx,number_of_fibers in enumerate(tests):
 
@@ -257,7 +259,7 @@ elif args.benchmark:
         standard_error = 0.0
         relative_standard_error = sys.float_info.max
 
-        while relative_standard_error > 0.1:
+        while relative_standard_error > rse_limit:
             for i in xrange(iterations):
                 print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
 
@@ -266,6 +268,7 @@ elif args.benchmark:
                 if gen.wait():
                     raise Exception("Error generating fibers")
                 scene = 'XcT_gen'+str(number_of_fibers)+'.in'
+
                 args.fibers = scene
                 parameters = read_parameters(args)
                 write_parameters(args, parameters)
@@ -313,7 +316,7 @@ elif args.benchmark:
 
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean
-            if relative_standard_error > 0.01:
+            if relative_standard_error > rse_limit:
                 iterations = len(benchmark)
                 print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
 

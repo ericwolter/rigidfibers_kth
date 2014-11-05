@@ -4,6 +4,81 @@ import subprocess
 import math
 import re
 import csv
+import ConfigParser
+
+def read_parameters(args):
+    """Parsing  parameters configuration file"""
+
+    with io.open(args.configuration_file, 'r') as configuration_file:
+        config = ConfigParser.SafeConfigParser()
+        config.readfp(configuration_file)
+
+        parameters = {
+            # we only have 2 timesteps from the reference run so we can't validate
+            # more timesteps than that
+            "NUMBER_OF_TIMESTEPS": 2 if args.validate else config.getint("RUN","NUMBER_OF_TIMESTEPS"),
+            "SAVE_INTERVAL": config.getint("RUN","SAVE_INTERVAL"),
+            "TIMESTEP": config.getfloat("SIMULATION","TIMESTEP"),
+            "SLENDERNESS": config.getfloat("SIMULATION","SLENDERNESS"),
+            "NUMBER_OF_TERMS_IN_FORCE_EXPANSION": config.getint("SIMULATION","NUMBER_OF_TERMS_IN_FORCE_EXPANSION"),
+            "NUMBER_OF_QUADRATURE_INTERVALS": config.getint("SIMULATION","NUMBER_OF_QUADRATURE_INTERVALS"),
+            "NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL": config.getint("SIMULATION","NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL"),
+            "GMRES_RESTART": config.getint("GMRES","RESTART"),
+            "GMRES_MAX_ITERATIONS": config.getint("GMRES","MAX_ITERATIONS"),
+            "GMRES_TOLERANCE": config.getfloat("GMRES","TOLERANCE"),
+            "BICGSTAB_MAX_ITERATIONS": config.getint("BICGSTAB","MAX_ITERATIONS"),
+            "BICGSTAB_TOLERANCE": config.getfloat("BICGSTAB","TOLERANCE"),
+        }
+
+    # Determining number of fibers
+    with io.open(args.fibers_file,'r') as fibers:
+        parameters['NUMBER_OF_FIBERS'] = int(fibers.readline())
+
+    return parameters
+
+def write_parameters(args, parameters):
+    """writes parameters"""
+
+    constants_path = 'fortran/constants.incl'
+    with io.open(constants_path, 'w') as constants:
+            constants.write(u'#ifndef FIBERS_CONSTANTS_\n')
+            constants.write(u'#define FIBERS_CONSTANTS_\n')
+            constants.write(u'\n')
+
+            if args.benchmark:
+                constants.write(u'#define BENCHMARK\n')
+            elif args.validate:
+                constants.write(u'#define VALIDATE\n')
+
+            if args.direct:
+                constants.write(u'#define DIRECT\n')
+            elif args.gmres:
+                constants.write(u'#define GMRES\n')
+            constants.write(u'\n')
+
+            if args.numerical:
+                constants.write(u'#define NUMERICAL\n')
+            elif args.analytical:
+                constants.write(u'#define ANALYTICAL\n')
+            constants.write(u'\n')
+
+            constants.write(u'#define DIMENSIONS (3)\n')
+            constants.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['NUMBER_OF_FIBERS'])+')\n')
+            constants.write(u'#define TIMESTEP ('+str(parameters['TIMESTEP'])+')\n')
+            constants.write(u'#define NUMBER_OF_TIMESTEPS ('+str(parameters['NUMBER_OF_TIMESTEPS'])+')\n')
+            constants.write(u'#define SLENDERNESS ('+str(parameters['SLENDERNESS'])+')\n')
+            constants.write(u'#define NUMBER_OF_TERMS_IN_FORCE_EXPANSION ('+str(parameters['NUMBER_OF_TERMS_IN_FORCE_EXPANSION'])+')\n')
+            constants.write(u'#define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL ('+str(parameters['NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL'])+')\n')
+            constants.write(u'#define NUMBER_OF_QUADRATURE_INTERVALS ('+str(parameters['NUMBER_OF_QUADRATURE_INTERVALS'])+')\n')
+            constants.write(u'#define TOTAL_NUMBER_OF_QUADRATURE_POINTS (NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL * NUMBER_OF_QUADRATURE_INTERVALS)\n')
+            constants.write(u'\n')
+
+            constants.write(u'#define TOTAL_NUMBER_OF_ROWS (NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS)\n')
+            constants.write(u'\n')
+
+            constants.write(u'#endif\n')
+            constants.write(u'\n')
+            constants.flush()
 
 def build(args):
     """Build code"""
@@ -41,7 +116,10 @@ def build(args):
     return build_path
 
 def run(args):
+    parameters = read_parameters(args)
+    write_parameters(args, parameters)
     build_path = build(args)
+
     fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), args.fibers_file])
     if fibers.wait():
         raise Exception("Error running the program")
@@ -49,13 +127,59 @@ def run(args):
     print '**************************************************'
 
 def validate(args):
-    print "FORTRAN validate"
-    print args
+    parameters = read_parameters(args)
+    write_parameters(args, parameters)
+    build_path = build(args)
+
+    fibers = subprocess.Popen(["./fibers", '../../../'+args.fibers_file], cwd=os.path.join(build_path,'bin/'))
+    if fibers.wait():
+        raise Exception("Error running the program for validation")
+
+    for i in xrange(parameters['NUMBER_OF_TIMESTEPS']):
+        current_a_matrix_filename = os.path.join(build_path,'bin/'+str(i)+'_AMat.out')
+        reference_a_matrix_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_AMat.ref'
+        current_b_vector_filename = os.path.join(build_path,'bin/'+str(i)+'_BVec.out')
+        reference_b_vector_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_BVec.ref'
+        current_x_vector_filename = os.path.join(build_path,'bin/'+str(i)+'_XVec.out')
+        reference_x_vector_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_XVec.ref'
+
+        current_t_velocity_filename = os.path.join(build_path,'bin/'+str(i)+'_TRANSVel.out')
+        reference_t_velocity_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_TRANSVel.ref'
+        current_r_velocity_filename = os.path.join(build_path,'bin/'+str(i)+'_ROTVel.out')
+        reference_r_velocity_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_ROTVel.ref'
+
+        current_positions_filename = os.path.join(build_path,'bin/'+str(i)+'_POS.out')
+        reference_positions_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_POS.ref'
+        current_orientations_filename = os.path.join(build_path,'bin/'+str(i)+'_ORIENT.out')
+        reference_orientations_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_ORIENT.ref'
+
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
+        if validate.wait():
+            raise Exception("Error validating A matrix")
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
+        if validate.wait():
+            raise Exception("Error validating B vector")
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
+        if validate.wait():
+            raise Exception("Error validating X vector")
+
+        validate = subprocess.Popen(['python','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
+        if validate.wait():
+            raise Exception("Error validating translational velocity")
+        validate = subprocess.Popen(['python','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
+        if validate.wait():
+            raise Exception("Error validating rotational velocity")
+
+        validate = subprocess.Popen(['python','tools/validate.py', current_positions_filename, reference_positions_filename])
+        if validate.wait():
+            raise Exception("Error validating positions")
+        validate = subprocess.Popen(['python','tools/validate.py', current_orientations_filename, reference_orientations_filename])
+        if validate.wait():
+            raise Exception("Error validating orientations")
 
 def benchmark(args):
     FNULL = open(os.devnull, 'w')
     results = {}
-    src_path = 'fortran/'
 
     tests= []
     for i in xrange(1,2048+1):
@@ -64,7 +188,7 @@ def benchmark(args):
         elif i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:10]
+    tests = tests[:2]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
@@ -73,17 +197,6 @@ def benchmark(args):
 
         iterations = 4
         benchmark = []
-
-        run = open(os.path.join(src_path,'constants.incl'), 'r')
-        rundata = run.read()
-        run.close()
-
-        # replace
-        rundata = re.sub(r'#define NUMBER_OF_FIBERS \((\d+)\)',"#define NUMBER_OF_FIBERS ("+str(number_of_fibers)+")", rundata)
-
-        run = open(os.path.join(src_path,'constants.incl'), 'w')
-        rundata = run.write(rundata)
-        run.close()
 
         # allocate dict holding the row of data belonging to the current
         # number of fibers
@@ -103,6 +216,9 @@ def benchmark(args):
                     raise Exception("Error generating fibers")
                 scene = 'XcT_gen'+str(number_of_fibers)+'.in'
 
+                args.fibers_file = scene
+                parameters = read_parameters(args)
+                write_parameters(args, parameters)
                 build_path = build(args)
 
                 fibers = subprocess.Popen([os.path.join(build_path,'bin/fibers'), scene], stdout=subprocess.PIPE)

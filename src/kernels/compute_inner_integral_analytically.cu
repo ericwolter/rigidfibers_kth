@@ -148,7 +148,7 @@ void compute_G_analytic(
             //     printf("%d,%f\n", 28, i1n1);
             // }
             for (int n = 27; n > 1; --n)
-            {   
+            {
                 i1n0 = (n + 2.0f) / ((n + 1.0f) * c) * (
                            ((powf(s_upper, n + 1) * u_upper) / (n + 2.0f)) - ((powf(s_lower, n + 1) * u_lower) / (n + 2.0f))
                            + ((1.0f - 2.0f * (n + 2.0f)) / (2.0f * (n + 2.0f))) * b * i1n1 - i1n2);
