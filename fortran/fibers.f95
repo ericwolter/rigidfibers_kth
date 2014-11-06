@@ -158,7 +158,7 @@ PROGRAM fibers
 #if defined(BENCHMARK)
     CALL SYSTEM_CLOCK(count2, count_rate, count_max)
     CPU_p = real(count2-count1)/count_rate
-    PRINT *,"BENCHMARK:assemble_matrix:", CPU_p
+    PRINT *,"BENCHMARK:assemble_system:", CPU_p
 #endif
 
 #if defined(VALIDATE)

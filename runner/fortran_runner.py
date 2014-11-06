@@ -49,6 +49,7 @@ def write_parameters(args, parameters):
                 constants.write(u'#define BENCHMARK\n')
             elif args.validate:
                 constants.write(u'#define VALIDATE\n')
+            constants.write(u'\n')
 
             if args.direct:
                 constants.write(u'#define DIRECT\n')
@@ -188,7 +189,7 @@ def benchmark(args):
         elif i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:2]
+    tests = tests[:30]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):

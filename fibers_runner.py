@@ -108,9 +108,9 @@ cuda_run_algorithm_exclusive.add_argument('--numerical', action='store_true')
 cuda_run_algorithm_exclusive.add_argument('--analytical', action='store_true')
 cuda_run_dimensions = parser_cuda_run.add_argument_group('supported parallization dimensions')
 cuda_run_dimension_exclusive = cuda_run_dimensions.add_mutually_exclusive_group(required=True)
-cuda_run_dimension_exclusive.add_argument('--1D', action='store_true')
-cuda_run_dimension_exclusive.add_argument('--2D', action='store_true')
-cuda_run_dimension_exclusive.add_argument('--3D', action='store_true')
+cuda_run_dimension_exclusive.add_argument('--D1', action='store_true')
+cuda_run_dimension_exclusive.add_argument('--D2', action='store_true')
+cuda_run_dimension_exclusive.add_argument('--D3', action='store_true')
 
 #--------------------------------------------------
 # CUDA Validate Command
@@ -132,9 +132,9 @@ cuda_validate_algorithm_exclusive.add_argument('--numerical', action='store_true
 cuda_validate_algorithm_exclusive.add_argument('--analytical', action='store_true')
 cuda_validate_dimensions = parser_cuda_validate.add_argument_group('supported parallization dimensions')
 cuda_validate_dimension_exclusive = cuda_validate_dimensions.add_mutually_exclusive_group(required=True)
-cuda_validate_dimension_exclusive.add_argument('--1D', action='store_true')
-cuda_validate_dimension_exclusive.add_argument('--2D', action='store_true')
-cuda_validate_dimension_exclusive.add_argument('--3D', action='store_true')
+cuda_validate_dimension_exclusive.add_argument('--D1', action='store_true')
+cuda_validate_dimension_exclusive.add_argument('--D2', action='store_true')
+cuda_validate_dimension_exclusive.add_argument('--D3', action='store_true')
 
 #--------------------------------------------------
 # CUDA Benchmark Command
@@ -156,9 +156,9 @@ cuda_benchmark_algorithm_exclusive.add_argument('--numerical', action='store_tru
 cuda_benchmark_algorithm_exclusive.add_argument('--analytical', action='store_true')
 cuda_benchmark_dimensions = parser_cuda_benchmark.add_argument_group('supported parallization dimensions')
 cuda_benchmark_dimension_exclusive = cuda_benchmark_dimensions.add_mutually_exclusive_group(required=True)
-cuda_benchmark_dimension_exclusive.add_argument('--1D', action='store_true')
-cuda_benchmark_dimension_exclusive.add_argument('--2D', action='store_true')
-cuda_benchmark_dimension_exclusive.add_argument('--3D', action='store_true')
+cuda_benchmark_dimension_exclusive.add_argument('--D1', action='store_true')
+cuda_benchmark_dimension_exclusive.add_argument('--D2', action='store_true')
+cuda_benchmark_dimension_exclusive.add_argument('--D3', action='store_true')
 
 print "      _      _    _    __ _ _                 "
 print "  _ _(_)__ _(_)__| |  / _(_) |__  ___ _ _ ___ "

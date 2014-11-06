@@ -12,7 +12,7 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
   position_on_fiber_i = position_i + quadrature_points(quadrature_index_i+1) * orientation_i
 
   R0 = position_on_fiber_i - position_j
-  b = -2.0 * DOT_PRODUCT(R0, orientation_i)
+  b = -2.0 * DOT_PRODUCT(R0, orientation_j)
 
   l = DOT_PRODUCT(R0, R0)
   invL = 1.0 / l
@@ -27,8 +27,20 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
   u_upper = SQRT(s_upper * s_upper + b * s_upper + l)
   u_lower = SQRT(s_lower * s_lower + b * s_lower + l)
 
+  ! IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+  !   PRINT '(*(F32.16))', position_i(1), position_i(2), position_i(3)
+  !   PRINT '(*(F32.16))', orientation_i(1), orientation_i(2), orientation_i(3)
+  !   PRINT '(*(F32.16))', real(quadrature_index_i+1), quadrature_points(quadrature_index_i+1)
+  !   PRINT '(*(F32.16))', position_on_fiber_i(1), position_on_fiber_i(2), position_on_fiber_i(3)
+  !   PRINT '(*(F32.16))', position_j(1), position_j(2), position_j(3)
+  !   PRINT '(*(F32.16))', R0(1), R0(2), R0(3)
+  !   PRINT '(*(F32.16))', b
+  !   PRINT '(*(F32.16))', l
+  !   PRINT '(*(F32.16))', m
+  ! ENDIF
+
   I1(1) = LOG(ABS(2.0 * s_upper + b + 2.0 * u_upper)) - LOG(ABS(2.0 * s_lower + b + 2.0 * u_lower))
-  I1(2) = u_upper - u_lower + (-b / 2.0) * I1(1);
+  I1(2) = u_upper - u_lower + (-b / 2.0) * I1(1)
 
   I3(1) = merge( &
             (-2.0 / pown2(2.0 * s_upper + b)) - (-2.0 / pown2(2.0 * s_lower + b)), &
@@ -43,15 +55,21 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
 
   I5(2) = merge( &
             (-8.0 / (3.0 * pown3(2.0 * s_upper + b))) - (-8.0 / (3.0 * pown3(2.0 * s_lower + b))) - (b / 2.0) * I5(1), &
-            (-(b * s_upper + 2.0 * l) / (6.0 * m * pown3(u_upper))) - (-(b * s_lower + 2.0 * l) / (6.0 * m * pown3(u_lower))) - (b / (3.0 * d)) * I3(1), &
+            (-(b * s_upper + 2.0 * l) / (6.0 * m * pown3(u_upper))) - (-(b * s_lower + 2.0 * l) / (6.0 * m * pown3(u_lower))) - (b / (3.0 * m)) * I3(1), &
             m < 1e-7)
+
+!S(2) = -(b*se+2.0d0*c)/(6.0d0*d*ue**3.0d0)+(b*sb+2.0d0*c)/(6.0d0*d*ub**3.0d0)-b/(3.0d0*d)*J(1);
+  ! IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+  !    PRINT '(*(F32.16))', REAL(1), I5(1)
+  !    PRINT '(*(F32.16))', REAL(2), I5(2)
+  ! END IF
 
   IF (l < llimit) THEN
 
     pow_s_upper = s_upper;
     pow_s_lower = s_lower;
 
-    DO n = 2, f + 3
+    DO n = 2, f + 3 - 1
 
       I1(n+1) = (pow_s_upper * u_upper) / n - (pow_s_lower * u_lower) / n &
               + ((1.0 - 2.0 * n) * b) / (2.0 * n) * I1(n) - ((n - 1) * l) / n * I1(n-1)
@@ -62,6 +80,10 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
 
       MULTIPLY_EQUALS(pow_s_upper, s_upper)
       MULTIPLY_EQUALS(pow_s_lower, s_lower)
+
+      ! IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+      !    PRINT '(*(F32.16))', REAL(n+1), REAL(f), I5(n+1)
+      ! END IF
 
     END DO
   ELSE
@@ -104,6 +126,12 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
 
   END IF
 
+!   IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+! PRINT '(*(F16.6))', I1(1),I1(2),I1(3),I1(4),I1(5),I1(6),I1(7),I1(8)
+! PRINT '(*(F16.6))', I3(1),I3(2),I3(3),I3(4),I3(5),I3(6),I3(7),I3(8)
+! PRINT '(*(F16.6))', I5(1),I5(2),I5(3),I5(4),I5(5),I5(6),I5(7),I5(8)
+!   END IF
+
   IF (f == 0 .OR. f == 1) THEN
       L01 = I1(f + 1)
       L03 = I3(f + 1)
@@ -144,6 +172,12 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
       L15 = 0.125 * (63.0 * I5(f + 2) - 70.0 * I5(f) + 15.0 * I5(f - 2))
       L23 = 0.125 * (63.0 * I3(f + 3) - 70.0 * I3(f + 1) + 15.0 * I3(f - 1))
       L25 = 0.125 * (63.0 * I5(f + 3) - 70.0 * I5(f + 1) + 15.0 * I5(f - 1))
+      ! IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+      !    PRINT '(*(F16.6))', L01, L03, L05, L13, L15, L23, L25
+      !    PRINT '(*(F16.6))', real(f+1), I1(f + 1), I1(f - 1), I1(f - 3)
+      !    PRINT '(*(F16.6))', real(f+1), 0.125 *63.0 * I1(f + 1) - 0.125 *70.0 * I1(f - 1) + 0.125 *15.0 * I1(f - 3)
+      !    PRINT '(*(F16.6))', real(f+1), 0.125 * (63.0 * I1(f + 1) - 70.0 * I1(f - 1) + 15.0 * I1(f - 3))
+      ! END IF
   ELSE IF (f == 6) THEN
       L01 = 0.0625 * (231.0 * I1(f + 1) - 315.0 * I1(f - 1) + 105.0 * I1(f - 3) - 5.0 * I1(f - 5))
       L03 = 0.0625 * (231.0 * I3(f + 1) - 315.0 * I3(f - 1) + 105.0 * I3(f - 3) - 5.0 * I3(f - 5))
@@ -224,6 +258,10 @@ DO quadrature_index_i = 0, TOTAL_NUMBER_OF_QUADRATURE_POINTS-1
           - 3.0 * L05 * (R0(2) * R0(3)) &
           + 3.0 * L15 * (orientation_j(2) * R0(3) + R0(2) * orientation_j(3)) &
           - 3.0 * L25 * (orientation_j(2) * orientation_j(3)))
+
+  ! IF (i==89 .AND. j==21 .AND. force_index_j==4 .AND. quadrature_index_i==0) THEN
+  !   PRINT '(*(F16.6))', G(quadrature_index_i + 1,1), G(quadrature_index_i + 1,2), G(quadrature_index_i + 1,3), G(quadrature_index_i + 1,4), G(quadrature_index_i + 1,5), G(quadrature_index_i + 1,6)
+  ! END IF
 
   IF (force_index_j == 0) THEN
     L01 = I1(1)

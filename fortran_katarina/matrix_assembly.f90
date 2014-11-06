@@ -152,10 +152,6 @@ SUBROUTINE assemble_forces(M,N,LQ,LvecMat,ExtForce,coeffvec,&
       Fmaty(:,i)=Fmaty(:,i)+coeffvec(ind+2)*LvecMat(:,kk);
       Fmatz(:,i)=Fmatz(:,i)+coeffvec(ind+3)*LvecMat(:,kk);
 
-      IF (i==82) THEN
-        PRINT *, i, kk, coeffvec(ind+1), coeffvec(ind+2), coeffvec(ind+3)
-      END IF
-
     END DO
   END DO
 
@@ -552,14 +548,23 @@ SUBROUTINE assemble_matrix_an(eeps,M,N,XcVecs,tVecs,LQ,pv,wv,LvecMat,AMat);
              xbar=xc+pv(i)*ta;
 
 
-!             IF (filno==90 .AND. fno==22 .AND. l==5 .AND. i==13) THEN
-!              DEBUG=1
-!             ENDIF
+            IF (filno==90 .AND. fno==22 .AND. l==5 .AND. i==1) THEN
+             DEBUG=1
+            ENDIF
 
+            IF (DEBUG == 1) THEN
+              PRINT '(*(F32.16))', xc(1),xc(2),xc(3)
+              PRINT '(*(F32.16))', ta(1),ta(2),ta(3)
+              PRINT '(*(F32.16))', real(i), pv(i)
+            END IF
 
              Gmat(i,:)=G_compute_GQ_kg(xcb,tb,xbar,eeps,l, DEBUG);
 
-!             DEBUG=0;
+             IF (DEBUG == 1) THEN
+               PRINT '(*(F16.6))', Gmat(i,:)
+             END IF
+
+             DEBUG=0;
 
 
           END DO

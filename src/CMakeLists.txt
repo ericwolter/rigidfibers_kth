@@ -48,17 +48,10 @@ set(KERNELS
 )
 
 set(ADDONS
-    ../run.py
+    ../fibers_runner.py
     ../tools/validate.py
     ../tools/validate_mapping.py
-    ../tools/gen.py
-    ../fortran/benchmark.py
-    ../fortran/Int_analytical.f90
-    ../fortran/advect_fibers.f90
-    ../fortran/coeffs_and_vels.f90
-    ../fortran/matrix_assembly.f90
-    ../fortran/quadrature.f90
-    ../fortran/write_MATLAB.f90
+    ../tools/gen2.py
 )
 
 

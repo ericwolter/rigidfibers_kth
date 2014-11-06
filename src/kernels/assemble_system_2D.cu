@@ -111,7 +111,7 @@ assemble_system_2D(
     float TF3 = 0.0f;
     float QF;
 
-#ifdef USE_ANALYTICAL_INTEGRATION
+#ifdef ANALYTICAL
         compute_G_analytic(position_i, orientation_i, position_j, orientation_j, force_index_j, external_force, G, GF, i == 89 && j == 21);
 #else
         compute_G_numeric(position_i, orientation_i, position_j, orientation_j, force_index_j, external_force, G, GF, i == 9 && j == 88 && force_index_j == 1);

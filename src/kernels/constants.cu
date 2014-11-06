@@ -4,11 +4,16 @@
 #include "../common.h"
 
 #define BENCHMARK
+
 #define FORCE_2D
 
+#define GMRES
+
+#define ANALYTICAL
+
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (32)
-#define TIMESTEP (0.1)
+#define NUMBER_OF_FIBERS (160)
+#define TIMESTEP (0.1f)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01f)
 #define NUMBER_OF_TERMS_IN_FORCE_EXPANSION (5)
