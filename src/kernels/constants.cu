@@ -7,12 +7,12 @@
 
 #define FORCE_2D
 
-#define GMRES
+#define BICGSTAB
 
 #define ANALYTICAL
 
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (160)
+#define NUMBER_OF_FIBERS (32)
 #define TIMESTEP (0.1f)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01f)

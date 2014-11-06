@@ -212,14 +212,14 @@ def benchmark(args):
 
     results = {}
 
-    tests = tests[:30]
+    tests = tests[:15]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
 
         print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
 
-        iterations = 4
+        iterations = 3
         benchmark = []
 
         # allocate dict holding the row of data belonging to the current
