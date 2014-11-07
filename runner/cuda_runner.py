@@ -101,6 +101,7 @@ def write_parameters(args, parameters):
             constants.write(u'#endif //FIBERS_CONSTANTS_KERNEL_\n')
             constants.write(u'\n')
             constants.flush()
+            os.fsync(constants.fileno())
 
 def build(args):
     """Build code"""
@@ -252,7 +253,7 @@ def benchmark(args):
                     raise Exception("Error running the program for benchmarking")
                 performance = os.path.join(build_path,'bin/performance.out')
                 with io.open(performance) as performance_file:
-                    run = {'$TOTAL':0.0}
+                    run = {'total':0.0}
                     for idx,line in enumerate(performance_file):
                         if idx > 0: # ignore header
                             line = line.rstrip().split(',')
@@ -261,7 +262,7 @@ def benchmark(args):
                             step_value = float(line[1])
 
                             run[step_name] = step_value
-                            run['$TOTAL'] += step_value
+                            run['total'] += step_value
 
                     benchmark.append(run)
                 os.remove(performance)
@@ -272,12 +273,12 @@ def benchmark(args):
                 for step in run.keys():
                     results[number_of_fibers][step] = 0.0
 
-            run_sum = reduce(lambda memo, run: memo + run['$TOTAL'], benchmark, 0.0)
+            run_sum = reduce(lambda memo, run: memo + run['total'], benchmark, 0.0)
 
             sample_mean = run_sum/len(benchmark)
             sample_deviation = 0.0
             for idx, run in enumerate(benchmark):
-                sample_deviation += (run['$TOTAL'] - sample_mean)**2
+                sample_deviation += (run['total'] - sample_mean)**2
 
                 # calculate cumulative moving average
                 for step in run.keys():
@@ -285,6 +286,7 @@ def benchmark(args):
 
             sample_deviation /= len(benchmark)-1
             sample_deviation = math.sqrt(sample_deviation)
+            run['total_std']
 
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean
@@ -292,7 +294,8 @@ def benchmark(args):
                 iterations = len(benchmark)
                 print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
 
-        results[number_of_fibers]['$TOTAL'] = sample_mean
+        results[number_of_fibers]['total'] = sample_mean
+        results[number_of_fibers]['total_std'] = sample_deviation
 
     FNULL.close()
 

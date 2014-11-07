@@ -5,6 +5,7 @@ import math
 import re
 import csv
 import ConfigParser
+import shutil
 
 def read_parameters(args):
     """Parsing  parameters configuration file"""
@@ -41,50 +42,61 @@ def write_parameters(args, parameters):
 
     constants_path = 'fortran/constants.incl'
     with io.open(constants_path, 'w') as constants:
-            constants.write(u'#ifndef FIBERS_CONSTANTS_\n')
-            constants.write(u'#define FIBERS_CONSTANTS_\n')
-            constants.write(u'\n')
+        constants.write(u'#ifndef FIBERS_CONSTANTS_\n')
+        constants.write(u'#define FIBERS_CONSTANTS_\n')
+        constants.write(u'\n')
 
-            if args.benchmark:
-                constants.write(u'#define BENCHMARK\n')
-            elif args.validate:
-                constants.write(u'#define VALIDATE\n')
-            constants.write(u'\n')
+        if args.benchmark:
+            constants.write(u'#define BENCHMARK\n')
+        elif args.validate:
+            constants.write(u'#define VALIDATE\n')
+        constants.write(u'\n')
 
-            if args.direct:
-                constants.write(u'#define DIRECT\n')
-            elif args.gmres:
-                constants.write(u'#define GMRES\n')
-            constants.write(u'\n')
+        if args.direct:
+            constants.write(u'#define DIRECT\n')
+        elif args.gmres:
+            constants.write(u'#define GMRES\n')
+        constants.write(u'\n')
 
-            if args.numerical:
-                constants.write(u'#define NUMERICAL\n')
-            elif args.analytical:
-                constants.write(u'#define ANALYTICAL\n')
-            constants.write(u'\n')
+        if args.numerical:
+            constants.write(u'#define NUMERICAL\n')
+        elif args.analytical:
+            constants.write(u'#define ANALYTICAL\n')
+        constants.write(u'\n')
 
-            constants.write(u'#define DIMENSIONS (3)\n')
-            constants.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['NUMBER_OF_FIBERS'])+')\n')
-            constants.write(u'#define TIMESTEP ('+str(parameters['TIMESTEP'])+')\n')
-            constants.write(u'#define NUMBER_OF_TIMESTEPS ('+str(parameters['NUMBER_OF_TIMESTEPS'])+')\n')
-            constants.write(u'#define SLENDERNESS ('+str(parameters['SLENDERNESS'])+')\n')
-            constants.write(u'#define NUMBER_OF_TERMS_IN_FORCE_EXPANSION ('+str(parameters['NUMBER_OF_TERMS_IN_FORCE_EXPANSION'])+')\n')
-            constants.write(u'#define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL ('+str(parameters['NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL'])+')\n')
-            constants.write(u'#define NUMBER_OF_QUADRATURE_INTERVALS ('+str(parameters['NUMBER_OF_QUADRATURE_INTERVALS'])+')\n')
-            constants.write(u'#define TOTAL_NUMBER_OF_QUADRATURE_POINTS (NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL * NUMBER_OF_QUADRATURE_INTERVALS)\n')
-            constants.write(u'\n')
+        constants.write(u'#define DIMENSIONS (3)\n')
+        constants.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['NUMBER_OF_FIBERS'])+')\n')
+        constants.write(u'#define TIMESTEP ('+str(parameters['TIMESTEP'])+')\n')
+        constants.write(u'#define NUMBER_OF_TIMESTEPS ('+str(parameters['NUMBER_OF_TIMESTEPS'])+')\n')
+        constants.write(u'#define SLENDERNESS ('+str(parameters['SLENDERNESS'])+')\n')
+        constants.write(u'#define NUMBER_OF_TERMS_IN_FORCE_EXPANSION ('+str(parameters['NUMBER_OF_TERMS_IN_FORCE_EXPANSION'])+')\n')
+        constants.write(u'#define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL ('+str(parameters['NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL'])+')\n')
+        constants.write(u'#define NUMBER_OF_QUADRATURE_INTERVALS ('+str(parameters['NUMBER_OF_QUADRATURE_INTERVALS'])+')\n')
+        constants.write(u'#define TOTAL_NUMBER_OF_QUADRATURE_POINTS (NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL * NUMBER_OF_QUADRATURE_INTERVALS)\n')
+        constants.write(u'\n')
 
-            constants.write(u'#define TOTAL_NUMBER_OF_ROWS (NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS)\n')
-            constants.write(u'\n')
+        constants.write(u'#define TOTAL_NUMBER_OF_ROWS (NUMBER_OF_FIBERS * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS)\n')
+        constants.write(u'\n')
 
-            constants.write(u'#endif\n')
-            constants.write(u'\n')
-            constants.flush()
+        constants.write(u'#define GMRES_RESTART ('+str(parameters['GMRES_RESTART'])+')\n')
+        constants.write(u'#define GMRES_MAX_ITERATIONS ('+str(parameters['GMRES_MAX_ITERATIONS'])+')\n')
+        constants.write(u'#define GMRES_TOLERANCE ('+str(parameters['GMRES_TOLERANCE'])+')\n')
+
+        constants.write(u'#define GMRES_LWORK (GMRES_RESTART * GMRES_RESTART + GMRES_RESTART * (TOTAL_NUMBER_OF_ROWS + 5) + 5 * TOTAL_NUMBER_OF_ROWS + 2)\n')
+        constants.write(u'\n')
+
+        constants.write(u'#endif\n')
+        constants.write(u'\n')
+        constants.flush()
+        os.fsync(constants.fileno())
 
 def build(args):
     """Build code"""
 
     build_path = 'fortran/build/'
+
+    shutil.rmtree(build_path)
+
     try:
             os.makedirs(build_path)
     except OSError as exc:
@@ -154,27 +166,27 @@ def validate(args):
         current_orientations_filename = os.path.join(build_path,'bin/'+str(i)+'_ORIENT.out')
         reference_orientations_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_ORIENT.ref'
 
-        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
+        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
         if validate.wait():
             raise Exception("Error validating A matrix")
-        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
+        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
         if validate.wait():
             raise Exception("Error validating B vector")
-        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
+        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
         if validate.wait():
             raise Exception("Error validating X vector")
 
-        validate = subprocess.Popen(['python','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
+        validate = subprocess.Popen(['pypy','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
         if validate.wait():
             raise Exception("Error validating translational velocity")
-        validate = subprocess.Popen(['python','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
+        validate = subprocess.Popen(['pypy','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
         if validate.wait():
             raise Exception("Error validating rotational velocity")
 
-        validate = subprocess.Popen(['python','tools/validate.py', current_positions_filename, reference_positions_filename])
+        validate = subprocess.Popen(['pypy','tools/validate.py', current_positions_filename, reference_positions_filename])
         if validate.wait():
             raise Exception("Error validating positions")
-        validate = subprocess.Popen(['python','tools/validate.py', current_orientations_filename, reference_orientations_filename])
+        validate = subprocess.Popen(['pypy','tools/validate.py', current_orientations_filename, reference_orientations_filename])
         if validate.wait():
             raise Exception("Error validating orientations")
 
@@ -189,7 +201,7 @@ def benchmark(args):
         elif i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:30]
+    tests = tests[:2]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
@@ -242,11 +254,11 @@ def benchmark(args):
 
                 for step in data:
                     # ignore first timing as warmup
-                    times = data[step]#[1:]
+                    times = data[step][1:]
                     data[step] = sum(times)/len(times)
 
                 benchmark.append(data)
-                os.remove(scene)
+                #os.remove(scene)
 
                 if fibers.wait():
                     FNULL.close()
@@ -257,12 +269,12 @@ def benchmark(args):
                 for step in run.keys():
                     results[number_of_fibers][step] = 0.0
 
-            run_sum = reduce(lambda memo, run: memo + run['$TOTAL'], benchmark, 0.0)
+            run_sum = reduce(lambda memo, run: memo + run['TOTAL'], benchmark, 0.0)
 
             sample_mean = run_sum/len(benchmark)
             sample_deviation = 0.0
             for idx, run in enumerate(benchmark):
-                sample_deviation += (run['$TOTAL'] - sample_mean)**2
+                sample_deviation += (run['TOTAL'] - sample_mean)**2
 
                 # calculate cumulative moving average
                 for step in run.keys():
@@ -278,7 +290,8 @@ def benchmark(args):
                 iterations = len(benchmark)
                 print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)
 
-        results[number_of_fibers]['$TOTAL'] = sample_mean
+        results[number_of_fibers]['TOTAL'] = sample_mean
+        results[number_of_fibers]['TOTAL_STD'] = sample_deviation
 
     FNULL.close()
 

@@ -22,18 +22,22 @@ list(APPEND CMAKE_Fortran_FLAGS "-cpp -fopenmp -O3 -ffast-math -funroll-all-loop
 
 # defines all source code files
 set(SOURCES
+  constants.incl
   fibers.f95
+  sgmres.f
 )
 
 # defines all header code files
 set(HEADERS
-  constants.incl
   assemble_matrix.incl
+  solve_system.incl
   compute_inner_integral_numerically.incl
   update_velocities.incl
   update_fibers_firststep.incl
   update_fibers.incl
 )
+
+set_source_files_properties(sgmres.f PROPERTIES COMPILE_FLAGS -ffixed-form)
 
 # add an executable/binary to the project
 add_executable(fibers ${SOURCES})

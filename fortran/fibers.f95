@@ -74,6 +74,19 @@ PROGRAM fibers
   REAL*4::G11,G22,G33,G12,G13,G23
 #endif
 
+#if defined(GMRES)
+  INTEGER,DIMENSION(8)::icntl
+  REAL*4,DIMENSION(5)::cntl
+
+  REAL*4,DIMENSION(GMRES_LWORK)::work
+
+  INTEGER,DIMENSION(5)::irc
+
+  INTEGER::gmres_done
+  INTEGER,DIMENSION(3)::gmres_info
+  REAL*4,DIMENSION(2)::gmres_rinfo
+#endif
+
   INTEGER::x_row_index,y_row_index,z_row_index
   INTEGER::x_col_index,y_col_index,z_col_index
   REAL*4::c,d,e,cc,D1,gamma
@@ -182,7 +195,7 @@ PROGRAM fibers
     CALL SYSTEM_CLOCK(count1, count_rate, count_max)
 #endif
 
-    CALL sgesv(TOTAL_NUMBER_OF_ROWS, 1, a_matrix, TOTAL_NUMBER_OF_ROWS, IPIV, b_vector, TOTAL_NUMBER_OF_ROWS, INFO)
+#include "solve_system.incl"
 
 #if defined(BENCHMARK)
     CALL SYSTEM_CLOCK(count2, count_rate, count_max)
@@ -277,7 +290,7 @@ PROGRAM fibers
 #if defined(BENCHMARK)
     CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
     total_CPU_p = real(total_count2-total_count1)/total_count_rate
-    PRINT *,"BENCHMARK:$total:", total_CPU_p
+    PRINT *,"BENCHMARK:total:", total_CPU_p
 #endif
 
   END DO
