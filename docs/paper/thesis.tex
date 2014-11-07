@@ -180,35 +180,11 @@ inceptos hymenaeos.
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
-    \begin{axis}[
-      title=Overall,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
-      xmin=0,xmax=700,
-      ymin=0,ymax=11,
-      unbounded coords=discard,
-      ]
-    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/cuda_gmres_numerical_2D.csv};
-    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/cuda_gmres_analytical_2D.csv};
-    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/openmp_direct_numerical.csv};
-    \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/openmp_direct_analytical.csv};
-
-    \legend{CUDA (GMRES\, Numerical), CUDA (GMRES\, Analytical), OpenMP (Direct\, Numerical), OpenMP (Direct\, Analytical)}
-    \end{axis}
-    \setmathfont{XITS Math}
-  \end{tikzpicture}
-  \caption{Total time per timestep using the average over 10 timesteps. First timestep is excluded as warmup. Assuming linear scaling for Fortran.}
-\end{figure}
-
-\begin{figure}
-  \centering
-  \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \pgfplotstableread{benchmarks/cuda_magma_numerical_2D.csv}\loadedtable
     \begin{axis}[
       stack plots=y,
       area style,
-      title=Steps (CUDA),
+      title=Steps (CUDA Magma),
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
@@ -236,7 +212,7 @@ inceptos hymenaeos.
     \begin{axis}[
       stack plots=y,
       area style,
-      title=Steps (Fortran),
+      title=Steps (Fortran Original),
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
@@ -289,7 +265,7 @@ inceptos hymenaeos.
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Solve System (CUDA vs. Fortran),
+      title=Solve System Comparison,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
@@ -301,7 +277,7 @@ inceptos hymenaeos.
     \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system]  {benchmarks/cuda_magma_numerical_2D.csv};
     \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{SOLVE_SYSTEM}] {benchmarks/openmp_direct_numerical.csv};
 
-    \legend{Solve System (Fortran\, Original), Solve System (CUDA\, GMRES), Solve System (CUDA\, BiCGStab), Solve System (CUDA\, MAGMA), Solve System (OpenMP\, OpenBLAS)}
+    \legend{Solve System (Fortran\, Original\, GMRES), Solve System (CUDA\, GMRES), Solve System (CUDA\, BiCGStab), Solve System (CUDA\, MAGMA), Solve System (OpenMP\, OpenBLAS)}
     \end{axis}
     \setmathfont{XITS Math}
   \end{tikzpicture}
@@ -313,7 +289,7 @@ inceptos hymenaeos.
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Assemble System (CUDA vs. Fortran),
+      title=Assemble System Comparison,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       xmin=0,xmax=700,
@@ -321,10 +297,11 @@ inceptos hymenaeos.
       ]
     \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/katarina_gmres_analytical.csv};
     \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
-    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_numerical.csv};
-    \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_analytical.csv};
+    \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
+    \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_numerical.csv};
+    \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_analytical.csv};
 
-    \legend{Assemble System (Fortran\, Analytical), Assemble System (CUDA\, Numerical), Assemble System (OpenMP\, Numerical), Assemble System (OpenMP\, Analytical)}
+    \legend{Assemble System (Fortran\, Analytical), Assemble System (CUDA\, Numerical), Assemble System (CUDA\, Analytical), Assemble System (OpenMP\, Numerical), Assemble System (OpenMP\, Analytical)}
     \end{axis}
     \setmathfont{XITS Math}
   \end{tikzpicture}
