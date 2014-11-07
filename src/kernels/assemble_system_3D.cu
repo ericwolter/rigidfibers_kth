@@ -1,6 +1,8 @@
 #ifndef FIBERS_ASSEMBLE_SYSTEM_3D_KERNEL_
 #define FIBERS_ASSEMBLE_SYSTEM_3D_KERNEL_
 
+// #define SHARED_MEM
+
 #include "constants.cu"
 #include "compute_inner_integral_analytically.cu"
 #include "compute_inner_integral_numerically.cu"
@@ -23,19 +25,38 @@ assemble_system_3D(
   if (i >= NUMBER_OF_FIBERS) return;
   if (j >= NUMBER_OF_FIBERS) return;
   if (force_index_j >= NUMBER_OF_TERMS_IN_FORCE_EXPANSION) return;
-  //
-  // __shared__ float4 sp[16];
-  //
-  // if(force_index_j)
+
+#if defined(SHARED_MEM)
+  __shared__ float4 sp[16];
+  __shared__ float4 so[16];
+
+  if(force_index_j == 0) {
+    if(threadIdx.z == 0) {
+      sp[threadIdx.y*2+0] = positions[i];
+      so[threadIdx.y*2+0] = orientations[i];
+    }
+    if (threadIdx.y == 0) {
+      sp[threadIdx.z*2+1] = positions[j];
+      so[threadIdx.z*2+1] = orientations[j];
+    }
+  }
+  __syncthreads();
+  const float4 position_i = sp[threadIdx.y*2+0];
+  const float4 orientation_i = so[threadIdx.y*2+0];
+  const float4 position_j = sp[threadIdx.z*2+1];
+  const float4 orientation_j = so[threadIdx.z*2+1];
+#else
+  const float4 position_i = positions[i];
+  const float4 orientation_i = orientations[i];
+  const float4 position_j = positions[j];
+  const float4 orientation_j = orientations[j];
+#endif //SHARED_MEM
 
   const float c  = logf(SLENDERNESS * SLENDERNESS * M_E);
   const float d  = -c;
   const float e  = 2.0f;
   const float cc = 1.0f;
   const float D1 = 0.75f / (d - 2.0f * cc);
-
-  const float4 position_i = positions[i];
-  const float4 orientation_i = orientations[i];
 
   float4 external_force;
   external_force.x = 0.5f * 0.0f;
@@ -52,9 +73,6 @@ assemble_system_3D(
 
   float G[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 6];
   float GF[TOTAL_NUMBER_OF_QUADRATURE_POINTS * 3];
-
-  const float4 position_j = positions[j];
-  const float4 orientation_j = orientations[j];
 
   if(i==j) {
       // only need to set the diagonals to one the rest of the entries is only initialized to 0 in the very beginning

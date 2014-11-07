@@ -310,6 +310,7 @@ void Simulation::step(size_t current_timestep)
 void Simulation::assembleSystem()
 {
     performance_->start("assemble_system");
+    checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
 #if defined(FORCE_1D)
