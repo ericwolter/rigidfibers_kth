@@ -39,7 +39,7 @@
 #include "kernels/reset_velocities.cu"
 #include "kernels/update_fibers_firststep.cu"
 #include "kernels/update_fibers.cu"
-#include "kernels/eye_matrix.cu"
+#include "kernels/reset_system.cu"
 
 Simulation::Simulation(Configuration configuration)
 {
@@ -85,15 +85,7 @@ void Simulation::initializeGPUMemory()
     checkCuda(cudaMalloc(&gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMalloc(&gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
-    std::cout << "     [GPU]      : Resetting system..." << std::endl;
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
-
-    //performance_->start("eye_matrix");
-    //eye_matrix <<< (NUMBER_OF_FIBERS + 31) / 32, 32 >>> (gpu_a_matrix_);
-
-    //performance_->stop("eye_matrix");
-    //performance_->print("eye_matrix");
-
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 }
 
@@ -310,6 +302,7 @@ void Simulation::step(size_t current_timestep)
 void Simulation::assembleSystem()
 {
     performance_->start("assemble_system");
+
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 

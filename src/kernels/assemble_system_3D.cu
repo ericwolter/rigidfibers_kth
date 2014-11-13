@@ -85,9 +85,9 @@ assemble_system_3D(
       y_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 1;
       z_column_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + force_index_j * DIMENSIONS + 2;
 
-      a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
-      a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
-      a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
+      a_matrix[x_row_index + x_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
+      a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
+      a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = 1;
 
 #ifdef VALIDATE
                     validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;

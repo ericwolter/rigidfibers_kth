@@ -39,7 +39,7 @@ set(KERNELS
     kernels/compute_inner_integral_analytically.cu
     kernels/compute_inner_integral_numerically.cu
     kernels/constants.cu
-    kernels/eye_matrix.cu
+    kernels/reset_system.cu
     kernels/update_fibers.cu
     kernels/update_fibers_firststep.cu
     kernels/update_velocities_1D.cu

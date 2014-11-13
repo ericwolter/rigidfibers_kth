@@ -40,6 +40,7 @@ if sys.argv[1]:
     N = int(sys.argv[1])
 
 MIN_DISTANCE = 0.2
+MIN_DISTANCE2 = MIN_DISTANCE * MIN_DISTANCE
 AVG_DISTANCE = MIN_DISTANCE * 1.7 #0.4
 
 DIM_X = (N-1)**(1.0/3) * AVG_DISTANCE
@@ -94,12 +95,11 @@ while not optimal:
 
             p_j = f[j]
             dist = (p_i[0] - p_j[0])**2 + (p_i[1] - p_j[1])**2 + (p_i[2] - p_j[2])**2
-            dist = math.sqrt(dist)
 
             if dist < nearest_dist:
                 nearest_dist = dist
 
-        if nearest_dist < MIN_DISTANCE:
+        if nearest_dist < MIN_DISTANCE2:
             p_i[0] += random.uniform(-STEP,STEP)
             p_i[1] += random.uniform(-STEP,STEP)
             p_i[2] += random.uniform(-STEP,STEP)
@@ -127,8 +127,3 @@ for i in xrange(N):
     export.write('\t'.join(t) + '\n')
 
 export.close()
-
-
-
-
-

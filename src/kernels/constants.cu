@@ -7,9 +7,9 @@
 
 #define FORCE_2D
 
-#define BICGSTAB
+#define MAGMA
 
-#define ANALYTICAL
+#define NUMERICAL
 
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (32)

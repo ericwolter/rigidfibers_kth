@@ -1,4 +1,4 @@
-!$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(quadrature_points, quadrature_weights, legendre_polynomials, lambda, eigen, current_positions, current_orientations, current_translational_velocities, current_rotational_velocities, b_vector, external_force, c, d, e, cc, D1)
+!$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(quadrature_points, quadrature_weights, legendre_polynomials, lambda, eigen, current_positions, current_orientations, current_translational_velocities, current_rotational_velocities, x_vector, external_force, c, d, e, cc, D1)
 DO i = 0, NUMBER_OF_FIBERS-1
 
   position_i = current_positions(i*DIMENSIONS + 1:i*DIMENSIONS + DIMENSIONS)
@@ -47,9 +47,9 @@ DO i = 0, NUMBER_OF_FIBERS-1
             y_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 2
             z_row_index = j * NUMBER_OF_TERMS_IN_FORCE_EXPANSION * DIMENSIONS + DIMENSIONS * force_index_j + 3
 
-            PLUS_EQUALS(force_on_fiber_j(1), b_vector(x_row_index) * legendre_polynomial)
-            PLUS_EQUALS(force_on_fiber_j(2), b_vector(y_row_index) * legendre_polynomial)
-            PLUS_EQUALS(force_on_fiber_j(3), b_vector(z_row_index) * legendre_polynomial)
+            PLUS_EQUALS(force_on_fiber_j(1), x_vector(x_row_index) * legendre_polynomial)
+            PLUS_EQUALS(force_on_fiber_j(2), x_vector(y_row_index) * legendre_polynomial)
+            PLUS_EQUALS(force_on_fiber_j(3), x_vector(z_row_index) * legendre_polynomial)
           END DO
 
           quadrature_weight = quadrature_weights(quadrature_index_j+1)

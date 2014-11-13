@@ -213,14 +213,14 @@ def benchmark(args):
 
     results = {}
 
-    tests = tests[:15]
+    tests = tests[:30]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
 
         print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
 
-        iterations = 3
+        iterations = 4
         benchmark = []
 
         # allocate dict holding the row of data belonging to the current
@@ -237,7 +237,7 @@ def benchmark(args):
                 print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
 
 
-                gen = subprocess.Popen(['python','tools/gen2.py', str(number_of_fibers)], stdout=FNULL)
+                gen = subprocess.Popen(['./tools/gen', str(number_of_fibers)], stdout=FNULL)
                 if gen.wait():
                     raise Exception("Error generating fibers")
                 scene = 'XcT_gen'+str(number_of_fibers)+'.in'
@@ -286,7 +286,6 @@ def benchmark(args):
 
             sample_deviation /= len(benchmark)-1
             sample_deviation = math.sqrt(sample_deviation)
-            run['total_std']
 
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean

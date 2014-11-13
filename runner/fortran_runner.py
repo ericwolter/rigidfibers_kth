@@ -201,7 +201,7 @@ def benchmark(args):
         elif i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:2]
+    tests = tests[:10]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
@@ -224,7 +224,7 @@ def benchmark(args):
             for i in xrange(iterations):
                 print '                : iteration ('+str(i+1)+'/'+str(iterations)+')'
 
-                gen = subprocess.Popen(['python','tools/gen2.py', str(number_of_fibers)], stdout=FNULL)
+                gen = subprocess.Popen(['./tools/gen', str(number_of_fibers)], stdout=FNULL)
                 if gen.wait():
                     raise Exception("Error generating fibers")
                 scene = 'XcT_gen'+str(number_of_fibers)+'.in'
@@ -258,7 +258,7 @@ def benchmark(args):
                     data[step] = sum(times)/len(times)
 
                 benchmark.append(data)
-                #os.remove(scene)
+                os.remove(scene)
 
                 if fibers.wait():
                     FNULL.close()
