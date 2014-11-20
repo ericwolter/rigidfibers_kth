@@ -68,6 +68,8 @@ private:
 
     float *gpu_a_matrix_;
     float *gpu_b_vector_;
+    float *gpu_x_vector_;
+    float *gpu_tmp_vector_;
 
 #ifdef VALIDATE
     int *gpu_validation_;

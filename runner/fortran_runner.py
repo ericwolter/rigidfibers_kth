@@ -201,7 +201,7 @@ def benchmark(args):
         elif i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:10]
+    tests = tests[:30]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):

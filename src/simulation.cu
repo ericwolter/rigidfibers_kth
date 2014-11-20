@@ -84,9 +84,12 @@ void Simulation::initializeGPUMemory()
 
     checkCuda(cudaMalloc(&gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMalloc(&gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+    checkCuda(cudaMalloc(&gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+    checkCuda(cudaMalloc(&gpu_tmp_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 
     checkCuda(cudaMemset(gpu_a_matrix_, 0, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * sizeof(float)));
     checkCuda(cudaMemset(gpu_b_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
+    checkCuda(cudaMemset(gpu_x_vector_, 0, TOTAL_NUMBER_OF_ROWS * sizeof(float)));
 }
 
 void Simulation::writeFiberStateToDevice()
@@ -374,6 +377,7 @@ void Simulation::solveSystem()
     performance_->start("solve_system");
 
     magma_sgesv_gpu(TOTAL_NUMBER_OF_ROWS, 1, gpu_a_matrix_, TOTAL_NUMBER_OF_ROWS, ipiv, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS, &info);
+    gpu_x_vector_ = gpu_b_vector_
 
     std::cout << "     [GPU]      : Info    : " << info << std::endl;
 
@@ -394,9 +398,18 @@ void Simulation::solveSystem()
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS,
                                     TOTAL_NUMBER_OF_ROWS, 0, 1, TOTAL_NUMBER_OF_ROWS);
     viennacl::vector<float> b_vector_vienna(gpu_b_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
+    // viennacl::vector<float> x_vector_vienna(gpu_x_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
+    // viennacl::vector<float> tmp_vector_vienna(gpu_tmp_vector_, viennacl::CUDA_MEMORY, TOTAL_NUMBER_OF_ROWS);
 
     performance_->start("solve_system");
+
+    // initial guess
+    // TODO
+    // tmp_vector_vienna = viennacl::linalg::prod(a_matrix_vienna, x_vector_vienna);
+    // b_vector_vienna -= tmp_vector_vienna;
+
     b_vector_vienna = viennacl::linalg::solve(a_matrix_vienna, b_vector_vienna, custom_solver);
+    // x_vector_vienna += b_vector_vienna;
 
     performance_->stop("solve_system");
     performance_->print("solve_system");
@@ -631,7 +644,7 @@ void Simulation::dumpSolutionSystem(size_t current_timestep)
 {
     float *x_vector = new float[TOTAL_NUMBER_OF_ROWS];
 
-    checkCuda(cudaMemcpy(x_vector, gpu_b_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(x_vector, gpu_x_vector_, TOTAL_NUMBER_OF_ROWS * sizeof(float), cudaMemcpyDeviceToHost));
 
     std::string executablePath = Resources::getExecutablePath();
 

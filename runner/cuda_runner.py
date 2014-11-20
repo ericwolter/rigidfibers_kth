@@ -231,6 +231,7 @@ def benchmark(args):
         sample_deviation = 0.0
         standard_error = 0.0
         relative_standard_error = sys.float_info.max
+        args.max_rse = 0.2
 
         while relative_standard_error > args.max_rse:
             for i in xrange(iterations):

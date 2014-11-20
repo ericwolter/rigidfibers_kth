@@ -162,12 +162,12 @@ inceptos hymenaeos.
       ymin=0,ymax=16,
       unbounded coords=discard,
       ]
-    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL} * 0.125] {benchmarks/katarina_gmres_analytical.csv};
-    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/cuda_gmres_numerical_2D.csv};
-    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/cuda_bicgstab_numerical_2D.csv};
-    \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=$TOTAL]  {benchmarks/cuda_magma_numerical_2D.csv};
-    \addplot[set15,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/openmp_direct_numerical.csv};
-    \addplot[set16,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{$TOTAL}] {benchmarks/openmp_direct_analytical.csv};
+    \addplot[set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{TOTAL} * 0.125] {benchmarks/katarina_gmres_analytical.csv};
+    \addplot[set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=total]  {benchmarks/cuda_gmres_numerical_2D.csv};
+    \addplot[set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=total]  {benchmarks/cuda_bicgstab_numerical_2D.csv};
+    % \addplot[set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=total]  {benchmarks/cuda_magma_numerical_2D.csv};
+    % \addplot[set15,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_numerical.csv};
+    % \addplot[set16,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
 
     \legend{Fortran (Original\, Linear Scaling), CUDA (GMRES\, Numerical\, 2D), CUDA (BiCGStab\, Numerical\, 2D), CUDA (MAGMA\, Numerical\, 2D), OpenMP (Direct\, Numerical), OpenMP (Direct\, Analytical)}
     \end{axis}
@@ -246,7 +246,7 @@ inceptos hymenaeos.
       xmin=0,xmax=700,
       ymin=0,ymax=9,
       ]
-    \addplot[color=set11, fill=set11_light, very thick] table[x=X,y=ASSEMBLE_MATRIX] {\loadedtable} \closedcycle;
+    \addplot[color=set11, fill=set11_light, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {\loadedtable} \closedcycle;
     \addplot[color=set12, fill=set12_light, very thick] table[x=X,y=SOLVE_SYSTEM] {\loadedtable} \closedcycle;
     % update_fibers is so small it just causes ugly undefined jagginess of the lines
     % so we just add it to update velocities and rename both to update system
@@ -275,7 +275,7 @@ inceptos hymenaeos.
     \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system]  {benchmarks/cuda_gmres_numerical_2D.csv};
     \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system]  {benchmarks/cuda_bicgstab_numerical_2D.csv};
     \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system]  {benchmarks/cuda_magma_numerical_2D.csv};
-    \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=\thisrow{SOLVE_SYSTEM}] {benchmarks/openmp_direct_numerical.csv};
+    \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
 
     \legend{Solve System (Fortran\, Original\, GMRES), Solve System (CUDA\, GMRES), Solve System (CUDA\, BiCGStab), Solve System (CUDA\, MAGMA), Solve System (OpenMP\, OpenBLAS)}
     \end{axis}
@@ -298,8 +298,8 @@ inceptos hymenaeos.
     \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y expr=(\thisrow{ASSEMBLE_MATRIX} + \thisrow{ASSEMBLE_RHS}) * 0.125] {benchmarks/katarina_gmres_analytical.csv};
     \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
     \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
-    \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_numerical.csv};
-    \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_MATRIX] {benchmarks/openmp_direct_analytical.csv};
+    \addplot[color=set14,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
+    \addplot[color=set15,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_analytical.csv};
 
     \legend{Assemble System (Fortran\, Analytical), Assemble System (CUDA\, Numerical), Assemble System (CUDA\, Analytical), Assemble System (OpenMP\, Numerical), Assemble System (OpenMP\, Analytical)}
     \end{axis}
