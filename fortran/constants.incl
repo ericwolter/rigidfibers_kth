@@ -3,12 +3,12 @@
 
 #define BENCHMARK
 
-#define GMRES
+#define DIRECT
 
-#define ANALYTICAL
+#define NUMERICAL
 
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (32)
+#define NUMBER_OF_FIBERS (736)
 #define TIMESTEP (0.1)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01)

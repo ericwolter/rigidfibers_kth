@@ -7,7 +7,7 @@
 
 #define FORCE_2D
 
-#define GMRES
+#define MAGMA
 
 #define NUMERICAL
 

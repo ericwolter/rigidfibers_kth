@@ -1,12 +1,10 @@
 #if defined(DIRECT)
 
 CALL sgesv(TOTAL_NUMBER_OF_ROWS, 1, a_matrix, TOTAL_NUMBER_OF_ROWS, IPIV, b_vector, TOTAL_NUMBER_OF_ROWS, INFO)
-x_vector = b_vector
 
 #elif defined(GMRES)
 
 work=0.0d0
-work(1:TOTAL_NUMBER_OF_ROWS)=x_vector
 work(TOTAL_NUMBER_OF_ROWS+1:2*TOTAL_NUMBER_OF_ROWS)=b_vector
 
 CALL init_sgmres(icntl,cntl)
@@ -44,6 +42,6 @@ ELSE IF (gmres_info(1)==0) THEN
    PRINT*,"With a backward error of: ", gmres_rinfo(2)
 END IF
 
-x_vector=work(1:TOTAL_NUMBER_OF_ROWS)
+b_vector=work(1:TOTAL_NUMBER_OF_ROWS)
 
 #endif
