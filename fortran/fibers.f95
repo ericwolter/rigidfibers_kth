@@ -21,19 +21,18 @@ PROGRAM fibers
   !--------------------------------------------------
   ! Initalize Memory
   !--------------------------------------------------
-  REAL*4,SAVE,TARGET,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::t_previous_positions, t_current_positions, t_next_positions
-  REAL*4,SAVE,TARGET,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::t_previous_orientations, t_current_orientations, t_next_orientations
-  REAL*4,SAVE,TARGET,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::t_previous_translational_velocities, t_current_translational_velocities
-  REAL*4,SAVE,TARGET,DIMENSION(DIMENSIONS*NUMBER_OF_FIBERS)::t_previous_rotational_velocities, t_current_rotational_velocities
+  REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_positions, t_current_positions, t_next_positions
+  REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_orientations, t_current_orientations, t_next_orientations
+  REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_translational_velocities, t_current_translational_velocities
+  REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_rotational_velocities, t_current_rotational_velocities
 
   REAL*4,POINTER::previous_positions(:),current_positions(:),next_positions(:)
   REAL*4,POINTER::previous_orientations(:),current_orientations(:),next_orientations(:)
   REAL*4,POINTER::previous_translational_velocities(:),current_translational_velocities(:)
   REAL*4,POINTER::previous_rotational_velocities(:),current_rotational_velocities(:)
-  REAL*4,POINTER::temp_pointer(:)
 
-  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_ROWS,TOTAL_NUMBER_OF_ROWS)::a_matrix
-  REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_ROWS)::b_vector
+  REAL*4,ALLOCATABLE,DIMENSION(:,:)::a_matrix
+  REAL*4,ALLOCATABLE,DIMENSION(:)::b_vector
 
   REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_points
   REAL*4,SAVE,DIMENSION(TOTAL_NUMBER_OF_QUADRATURE_POINTS)::quadrature_weights
@@ -98,6 +97,23 @@ PROGRAM fibers
 
   INTEGER::current_timestep
   CHARACTER(len=8)::str_timestep
+
+  ALLOCATE( t_previous_positions(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_current_positions(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_next_positions(DIMENSIONS*NUMBER_OF_FIBERS))
+
+  ALLOCATE( t_previous_orientations(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_current_orientations(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_next_orientations(DIMENSIONS*NUMBER_OF_FIBERS))
+
+  ALLOCATE( t_previous_translational_velocities(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_current_translational_velocities(DIMENSIONS*NUMBER_OF_FIBERS))
+
+  ALLOCATE( t_previous_rotational_velocities(DIMENSIONS*NUMBER_OF_FIBERS))
+  ALLOCATE( t_current_rotational_velocities(DIMENSIONS*NUMBER_OF_FIBERS))
+
+  ALLOCATE( a_matrix(TOTAL_NUMBER_OF_ROWS,TOTAL_NUMBER_OF_ROWS))
+  ALLOCATE( b_vector(TOTAL_NUMBER_OF_ROWS))
 
   previous_positions => t_previous_positions
   current_positions => t_current_positions
