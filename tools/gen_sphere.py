@@ -9,11 +9,11 @@ sys.argv = sys.argv[1:]
 if len(sys.argv) >= 1 and sys.argv[0]:
     N = int(sys.argv[0])
 
-FIBER_LENGTH = 1.5
+FIBER_LENGTH = 2
 if len(sys.argv) >= 2 and sys.argv[1]:
     FIBER_LENGTH = float(sys.argv[1])
 
-RADIUS = 2 * FIBER_LENGTH
+RADIUS = 1.5 * FIBER_LENGTH
 RADIUS_2 = RADIUS * RADIUS
 
 DIM_X = RADIUS
