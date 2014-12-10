@@ -196,19 +196,19 @@ def benchmark(args):
 
     tests= []
     for i in xrange(1,2000+1):
-        if i % 32 == 0:
-            tests.append(i)
-        elif i % 100 == 0:
+        #if i % 256 == 0:
+        #    tests.append(i)
+        if i % 100 == 0:
             tests.append(i)
 
-    tests = tests[:3]
+    #tests = tests[:5]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
 
         print '  [BENCHMARK]   : ' + str(number_of_fibers) + ' fibers ('+str(idx+1)+'/'+str(len(tests))+')'
 
-        iterations = 4
+        iterations = 2
         benchmark = []
 
         # allocate dict holding the row of data belonging to the current

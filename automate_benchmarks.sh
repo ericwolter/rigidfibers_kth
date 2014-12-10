@@ -11,13 +11,13 @@ set -x
 
 # Direct Solver
 # -------------
-rm -f results.csv
-./fibers_runner.py fortran benchmark --direct --numerical tests/config.ini
-cp -f results.csv docs/paper/benchmarks/openmp_direct_numerical.csv
+#rm -f results.csv
+#./fibers_runner.py fortran benchmark --direct --numerical tests/config.ini
+#cp -f results.csv docs/paper/benchmarks/openmp_direct_numerical.csv
 
-rm -f results.csv
-./fibers_runner.py fortran benchmark --direct --analytical tests/config.ini
-cp -f results.csv docs/paper/benchmarks/openmp_direct_analytical.csv
+#rm -f results.csv
+#./fibers_runner.py fortran benchmark --direct --analytical tests/config.ini
+#cp -f results.csv docs/paper/benchmarks/openmp_direct_analytical.csv
 
 # GMRES
 # -------------
