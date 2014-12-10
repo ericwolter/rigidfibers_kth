@@ -802,8 +802,8 @@ To get a better understanding of the kind of results the rigid simulation yields
       xmin=0,xmax=2000,
       unbounded coords=discard,
       ]
-      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks_gpu/cuda_bicgstab_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks_gpu/cuda_bicgstab_analytical_2D.csv};
+      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
+      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
 
       \legend{Numerical, Analytical}
     \end{axis}
@@ -831,9 +831,9 @@ To get a better understanding of the kind of results the rigid simulation yields
       xmin=0,xmax=2000,
       unbounded coords=discard,
       ]
-      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks_gpu/cuda_magma_numerical_1D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks_gpu/cuda_magma_numerical_2D.csv};
-      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks_gpu/cuda_magma_numerical_3D.csv};
+      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_1D.csv};
+      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
+      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_3D.csv};
 
     \legend{1D, 2D, 3D}
     \end{axis}
@@ -878,9 +878,9 @@ To get a better understanding of the kind of results the rigid simulation yields
       xmin=0,xmax=2000,
       unbounded coords=discard,
       ]
-      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks_gpu/cuda_magma_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks_gpu/cuda_bicgstab_numerical_2D.csv};
-      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks_gpu/cuda_gmres_numerical_2D.csv};
+      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_magma_numerical_2D.csv};
+      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
+      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_gmres_numerical_2D.csv};
 
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
@@ -905,7 +905,7 @@ To get a better understanding of the kind of results the rigid simulation yields
       unbounded coords=discard,
       ]
 
-      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks_gpu/cuda_magma_numerical_2D.csv};
+      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_magma_numerical_2D.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
 
       \legend{CUDA, OpenMP}
