@@ -69,3 +69,5 @@ cp -f results.csv docs/paper/benchmarks/cuda_magma_numerical_3D.csv
 #rm -f results.csv
 #./fibers_runner.py cuda benchmark --bicgstab --analytical --D2 tests/config.ini
 #cp -f results.csv docs/paper/benchmarks/cuda_bicgstab_analytical_2D.csv
+
+rm -f results.csv

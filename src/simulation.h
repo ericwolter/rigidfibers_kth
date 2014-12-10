@@ -86,6 +86,8 @@ private:
     void updateVelocities();
     void updateFibers(bool first_timestep);
 
+    void saveFibers(size_t current_timestep);
+
     void dumpLinearSystem(size_t current_timestep);
     void dumpSolutionSystem(size_t current_timestep);
     void dumpFibers(size_t current_timestep);

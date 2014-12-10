@@ -3,9 +3,8 @@
 
 #include "../common.h"
 
-#define BENCHMARK
 
-#define FORCE_3D
+#define FORCE_2D
 
 #define MAGMA
 

@@ -67,8 +67,6 @@ assemble_system_2D(
         a_matrix[y_row_index + y_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
         a_matrix[z_row_index + z_column_index * TOTAL_NUMBER_OF_ROWS] = 1.0f;
 
-        printf("%d,%d: \n", i, j);
-
 #ifdef VALIDATE
         validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 0] = i;
         validation[x_row_index * 6 + x_column_index * TOTAL_NUMBER_OF_ROWS * 6 + 1] = j;

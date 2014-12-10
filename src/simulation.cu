@@ -290,6 +290,8 @@ void Simulation::step(size_t current_timestep)
     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
+    saveFibers(current_timestep);
+
 #ifdef VALIDATE
     dumpFibers(current_timestep);
 #endif //VALIDATE
@@ -495,6 +497,45 @@ void Simulation::updateFibers(bool first_timestep)
     performance_->stop("update_fibers");
     performance_->print("update_fibers");
 }
+
+void Simulation::saveFibers(size_t current_timestep)
+{
+  float4 *p = new float4[NUMBER_OF_FIBERS];
+  float4 *o = new float4[NUMBER_OF_FIBERS];
+
+  checkCuda(cudaMemcpy(p, gpu_current_positions_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+  checkCuda(cudaMemcpy(o, gpu_current_orientations_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+
+  std::string executablePath = Resources::getExecutablePath();
+
+  std::stringstream output_path;
+  output_path << executablePath << "/XcT_res_" << (current_timestep+1) << ".out";
+
+  std::ofstream output_file;
+
+  output_file.open (output_path.str().c_str());
+
+  output_file << NUMBER_OF_FIBERS << std::endl;
+  output_file << std::fixed << std::setprecision(8);
+
+  for (size_t row_index = 0; row_index < NUMBER_OF_FIBERS; ++row_index)
+  {
+    float4 p_value = p[row_index];
+    float4 o_value = o[row_index];
+
+    output_file << p_value.x << " ";
+    output_file << p_value.y << " ";
+    output_file << p_value.z << std::endl;
+    output_file << o_value.x << " ";
+    output_file << o_value.y << " ";
+    output_file << o_value.z << std::endl;
+  }
+  output_file.close();
+
+  delete[] p;
+  delete[] o;
+}
+
 
 void Simulation::dumpFibers(size_t current_timestep)
 {
