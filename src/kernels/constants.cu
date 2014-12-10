@@ -5,14 +5,14 @@
 
 #define BENCHMARK
 
-#define FORCE_2D
+#define FORCE_3D
 
-#define BICGSTAB
+#define MAGMA
 
-#define ANALYTICAL
+#define NUMERICAL
 
 #define DIMENSIONS (3)
-#define NUMBER_OF_FIBERS (32)
+#define NUMBER_OF_FIBERS (100)
 #define TIMESTEP (0.1f)
 #define NUMBER_OF_TIMESTEPS (10)
 #define SLENDERNESS (0.01f)

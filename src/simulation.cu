@@ -339,8 +339,8 @@ void Simulation::assembleSystem()
 #else
     dim3 block_size;
     block_size.x = NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
-    block_size.y = 8;
-    block_size.z = 8;
+    block_size.y = 4;
+    block_size.z = 4;
 
     dim3 grid_size;
     grid_size.x = (NUMBER_OF_TERMS_IN_FORCE_EXPANSION + block_size.x-1) / block_size.x;
@@ -357,6 +357,12 @@ void Simulation::assembleSystem()
       gpu_a_matrix_,
       gpu_b_vector_
     );
+    {
+    cudaError_t cudaerr = cudaDeviceSynchronize();
+    if (cudaerr != cudaSuccess)
+      printf("kernel launch failed with error \"%s\".\n",
+      cudaGetErrorString(cudaerr));
+    }
 #endif
     performance_->stop("assemble_system");
     performance_->print("assemble_system");

@@ -166,27 +166,27 @@ def validate(args):
         current_orientations_filename = os.path.join(build_path,'bin/'+str(i)+'_ORIENT.out')
         reference_orientations_filename = 'tests/reference/100_numeric_direct/'+str(i)+'_ORIENT.ref'
 
-        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_a_matrix_filename, 'tests/reference/reference.map', reference_a_matrix_filename])
         if validate.wait():
             raise Exception("Error validating A matrix")
-        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_b_vector_filename, 'tests/reference/reference.map', reference_b_vector_filename])
         if validate.wait():
             raise Exception("Error validating B vector")
-        validate = subprocess.Popen(['pypy','tools/validate_mapping.py', 'tests/reference/reference.map', current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
+        validate = subprocess.Popen(['python','tools/validate_mapping.py', 'tests/reference/reference.map', current_x_vector_filename, 'tests/reference/reference.map', reference_x_vector_filename])
         if validate.wait():
             raise Exception("Error validating X vector")
 
-        validate = subprocess.Popen(['pypy','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
+        validate = subprocess.Popen(['python','tools/validate.py', current_t_velocity_filename, reference_t_velocity_filename])
         if validate.wait():
             raise Exception("Error validating translational velocity")
-        validate = subprocess.Popen(['pypy','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
+        validate = subprocess.Popen(['python','tools/validate.py', current_r_velocity_filename, reference_r_velocity_filename])
         if validate.wait():
             raise Exception("Error validating rotational velocity")
 
-        validate = subprocess.Popen(['pypy','tools/validate.py', current_positions_filename, reference_positions_filename])
+        validate = subprocess.Popen(['python','tools/validate.py', current_positions_filename, reference_positions_filename])
         if validate.wait():
             raise Exception("Error validating positions")
-        validate = subprocess.Popen(['pypy','tools/validate.py', current_orientations_filename, reference_orientations_filename])
+        validate = subprocess.Popen(['python','tools/validate.py', current_orientations_filename, reference_orientations_filename])
         if validate.wait():
             raise Exception("Error validating orientations")
 

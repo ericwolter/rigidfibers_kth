@@ -204,9 +204,9 @@ def validate(args):
 def benchmark(args):
     tests = []
     for i in xrange(1,2000+1):
-        if i % 32 == 0:
-            tests.append(i)
-        elif i % 100 == 0:
+        #if i % 32 == 0:
+        #    tests.append(i)
+        if i % 100 == 0:
             tests.append(i)
 
     FNULL = open(os.devnull, 'w')

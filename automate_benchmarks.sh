@@ -21,13 +21,13 @@ set -x
 
 # GMRES
 # -------------
-rm -f results.csv
-./fibers_runner.py fortran benchmark --gmres --numerical tests/config.ini
-cp -f results.csv docs/paper/benchmarks/openmp_gmres_numerical.csv
+#rm -f results.csv
+#./fibers_runner.py fortran benchmark --gmres --numerical tests/config.ini
+#cp -f results.csv docs/paper/benchmarks/openmp_gmres_numerical.csv
 
-rm -f results.csv
-./fibers_runner.py fortran benchmark --gmres --analytical tests/config.ini
-cp -f results.csv docs/paper/benchmarks/openmp_gmres_analytical.csv
+#rm -f results.csv
+#./fibers_runner.py fortran benchmark --gmres --analytical tests/config.ini
+#cp -f results.csv docs/paper/benchmarks/openmp_gmres_analytical.csv
 
 # CUDA
 # ====
@@ -46,9 +46,9 @@ cp -f results.csv docs/paper/benchmarks/openmp_gmres_analytical.csv
 #./fibers_runner.py cuda benchmark --magma --numerical --D1 tests/config.ini
 #cp -f results.csv docs/paper/benchmarks/cuda_magma_numerical_1D.csv
 
-#rm -f results.csv
-#./fibers_runner.py cuda benchmark --magma --numerical --D3 tests/config.ini
-#cp -f results.csv docs/paper/benchmarks/cuda_magma_numerical_3D.csv
+rm -f results.csv
+./fibers_runner.py cuda benchmark --magma --numerical --D3 tests/config.ini
+cp -f results.csv docs/paper/benchmarks/cuda_magma_numerical_3D.csv
 
 # GMRES
 # -------------
