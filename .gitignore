@@ -17,6 +17,11 @@ VelRotData*
 Coeffvec*
 fort.*
 
+# matlab
+matlab/input/
+matlab/output/
+matlab/anim/
+
 # binary output
 ADVECT_FIBERS
 
