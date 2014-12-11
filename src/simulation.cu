@@ -509,7 +509,7 @@ void Simulation::saveFibers(size_t current_timestep)
   std::string executablePath = Resources::getExecutablePath();
 
   std::stringstream output_path;
-  output_path << executablePath << "/XcT_res_" << (current_timestep+1) << ".out";
+  output_path << executablePath << "/XcT_res_" << std::setfill('0') << std::setw(5) << (current_timestep+1) << ".out";
 
   std::ofstream output_file;
 
