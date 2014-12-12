@@ -120,37 +120,6 @@
 \pagestyle{empty}
 
 \maketitle
-\selectlanguage{english}
-\begin{abstract}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
-purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
-ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
-rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
-nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
-aptent taciti sociosqu ad litora torquent per conubia nostra, per
-inceptos hymenaeos.
-\end{abstract}
-
-\clearpage
-
-
-\begin{foreignabstract}{swedish}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
-purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
-ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
-rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
-nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
-aptent taciti sociosqu ad litora torquent per conubia nostra, per
-inceptos hymenaeos.
-\end{foreignabstract}
-
-\clearpage
-
-\tableofcontents*
-
-\clearpage
-
-\listoflistings
 
 \mainmatter
 \pagestyle{newchap}
@@ -166,63 +135,6 @@ In this chapter I will present the required theoretical foundation of the physic
 I will begin by introducing the Stokes flow and its foundatmental solutions as they apply to slender bodies. Afterwards I will focus on the implications this has and how the flow properties can be calulated for the special case of rigid fibers.
 
 \section{Stokes flow and Stokeslet}
-The fluids involved in the rigid fiber simulation are characterized by three properties which allow the general Naviar-Stokes Equations to be immensly simplified.
-\begin{enumerate}
-  \item{\textit{Newtonian fluid} — The viscosity $\mu$ of the fluid does not depend on the stress.}
-  \item{\textit{Incompressible flow} — The density of the fluid does not change.}
-  \item{\textit{Low Reynolds number $Re \ll 1$} — The fluid velocities are very slow and/or the viscosity is very large.}
-\end{enumerate}
-
-Given these constraints and special case of very low Reynolds numbers the general Naviar-Stokes Equations can be linearized to the Stokes Equations
-
-\begin{equation}
-\label{eq:stokes_equations}
-\begin{aligned}
-    grad(p) - \mu \Delta \mathbf{u} &= \mathbf{f} \quad &\text{in} \quad \Omega \text{,}\\
-    div(\mathbf{u}) &= 0 \quad &\text{in} \quad \Omega \text{,}
-\end{aligned}
-\end{equation}
-
-where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$.
-The constant $\mu$ is the viscosity of the fluid.
-
-The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally the equations are time indepdent and time depedence is only reintroduced by boundary conditions. Thus given the boundary conditions the structure of the flow is can be calculated.
-
-By taking advantage of the linearity of the Stokes equations, which implies the existence of a Green's function, and introducing boundary conditions so called fundamental solutions can be found. First no-slip conditions on the surface of the slender bodies are defined as
-\begin{equation}
-  \label{eq:boundary_condition_surface}
-  \mathbf{u} = \mathbf{u}_\Gamma  \quad \text{on} \quad  \Gamma \text{,}
-\end{equation}
-where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus forcing the fluid to have zero velocity relative to the surface boundary.
-
-Furthermore the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
-
-\begin{equation}
-  \label{eq:boundary_condition_background}
-  \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{.}
-\end{equation}
-Next the force term in \eqref{eq:stokes_equations} is replaced by a point force acting at the origin $\mathbf{x}_0$
-\begin{equation}
-  \label{eq:stokes_equations_point}
-  \begin{aligned}
-    grad(p) - \mu \Delta \mathbf{u} &= \mathbf{F} \cdot \delta(\mathbf{x} - \mathbf{x}_0) \text{,}\\
-    div(\mathbf{u}) &= 0 \text{,}
-  \end{aligned}
-\end{equation}
-where $\delta(\mathbf{x} - \mathbf{x}_0)$ is Dirac delta function. Solving these equations for the velocity field $\mathbf{u}(\mathbf{x})$ yields the fundamental solution
-\begin{equation}
-  \label{eq:stokeslet}
-  \begin{aligned}
-    \mathbf{u}(\mathbf{x}) &= \mathbf{S}(\mathbf{x}-\mathbf{x}_0) \text{,}\\
-    \mathbf{S}(\mathbf{r}) &= \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|} + \frac{rr}{|r|^3}\right) \text{,}
-  \end{aligned}
-\end{equation}
-where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identy tensor. Additionally we will later need to higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so called doublet is defined as
-\begin{equation}
-  \label{eq:doublet}
-  \mathbf{D}(\mathbf{r}) = \frac{1}{2} \Delta\mathbf{S}(\mathbf{r}) = \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|^3} - \frac{3rr}{|r|^5}\right) \text{.}
-\end{equation}
-
 \section{Slender bodies}
 \section{Rigid fibers}
 \subsection{Nondimensionalization}
@@ -244,6 +156,7 @@ I will begin by presenting the employed time stepping approach. This is followed
 \subsection{Numeric Integration}
 \subsection{Analytic Integration}
 \section{Linear system}
+
 
 \chapter{Parallel Implementation}
 In the previous chapter the implementation of the numerical simulation was discussed. It discussed various implementation details which have to be considered to arrive at the most efficent and performant implementation.
@@ -443,159 +356,18 @@ Each of the parallized substeps are now discussed in more detail. I will discuss
 
 \paragraph{Assemble System}
 
-\begin{listing}
-  \centering
-  \begin{minted}[mathescape,
-    linenos,
-    numbersep=5pt,
-    fontsize=\footnotesize,
-    frame=lines,
-    framesep=2mm]{c}
-__global__ void AssembleSystem1D(
-  in float *positions,
-  in float *orientations,
-  out float *a_matrix,
-  out float *b_vector)
-{
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (i >= NUMBER_OF_FIBERS) return;
-
-  for (int j = 0; j < NUMBER_OF_FIBERS ++j)
-  {
-    for (int force_index_j = 0; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
-    {
-      computeInnerIntegral(...);
-
-      for (int force_index_i = 0; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
-      {
-        // Only 1D thread block
-        // Each thread updates unique memory locations, thus
-        // no need for atomics
-        setMatrix(...)
-        setVector(...)
-      }
-    }
-  }
-}
-  \end{minted}
-  \caption{Pseudocode for the assemble system step with a 1D thread block.}
-  \label{lst:pseudo_assemble_system}
-\end{listing}
-
-The \emph{Assemble System} kernel is the most important step of the algorithm. Its goal is to build the matrix and vector in memory for the linear system of equations in the form of $A*x = b$. Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the assemble system step. This means the code is parallized for each fiber and each thread calculates the contributions to this fiber form all other fibers. Looking at the matrix each thread is thus responsible for $3*M$ rows of the matrix.
-
-The kernel requires two inputs, the current position of the each fibers and its orientation. Using these combined with the equations outlined in chapter~\ref{cha:theoretical_foundation} and chapter~\ref{serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
-
 \paragraph{Solve System}
-As this thesis does not aim to implement generic linear solvers, this step is treated as a black box. During the previous \emph{Assemble System} kernel two arrays containing the matrix and right hand side of the linear system have been computed. These two arrays are now passed to the respective function of the library containing the linear solver. This is the MAGMA library in case of the direct solver and the ViennaCL library in case of the two tested iterative solvers BiCGStab and GMRES. Both libraries are able to directly use the already allocated memory regions and no additional allocations have to be performed. In order to conserve memory space the resulting solution vector is stored in the same memory location as the $b$-vector and is passed on to the the subsequent steps.
 
 \paragraph{Update Velocities}
 
-\begin{listing}
-  \centering
-  \begin{minted}[mathescape,
-    linenos,
-    numbersep=5pt,
-    fontsize=\footnotesize,
-    frame=lines,
-    framesep=2mm]{c}
-__global__ void UpdateVelocities2D(...)
-{
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  const int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (i >= NUMBER_OF_FIBERS) return;
-  if (j >= NUMBER_OF_FIBERS) return;
-  if (i==j) return;
-
-  for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
-  {
-    for (int quadrature_index_j = 0; quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_j)
-    {
-      force = computeForce(coefficents, ...)
-      computeDeltaVelocities(force)
-    }
-  }
-
-  // 2D thread block
-  // Each thread responsible for an interaction pair, thus
-  // result is written to the same memory location
-  // Using atomics to avoid conflicts
-  atomicAdd(&(translational_velocities[i].x), delta_translational_velocity.x);
-  atomicAdd(&(translational_velocities[i].y), delta_translational_velocity.y);
-  atomicAdd(&(translational_velocities[i].z), delta_translational_velocity.z);
-
-  atomicAdd(&(rotational_velocities[i].x), delta_rotational_velocity.x);
-  atomicAdd(&(rotational_velocities[i].y), delta_rotational_velocity.y);
-  atomicAdd(&(rotational_velocities[i].z), delta_rotational_velocity.z);
-}
-  \end{minted}
-  \caption{Pseudocode for the updating velocities simulation step.}
-  \label{lst:pseudo_update_velocities}
-\end{listing}
-
-After solving the linear system the solution coefficents are used to update the velocities of the fibers. The \emph{Update Velocities} kernel accumulates the excerted forces for all fibers and updates both the translational as well as the rotational velocities simultaneously. In this particular instance the 2D thread block version of the kernel is illustrated in listing~\ref{lst:pseudo_update_velocities}. This means each individual kernel invocation is responsible for a single pair of fiber interaction. Under the normal assumption that kernel invocations are not allowed to write to the same memory location this would result in undefined behaviour and incorret results for the velocities.
-
-Fortunately CUDA provides a mechanism to circumvent this issue. By using so called atomic function CUDA streamlines and serializes the memory access. Thus the atomicAdd function accumulates different velocity contributions to a fiber from all the other fibers. This ensures that each update to the memory location is handled in a serial manner, guararenteeing the correct value in memory for each. Of course this implies a potential performance degradation, however newer GPUs with new CUDA version have been very well optimized to only have a minimal negligible impact. Benchmarking for the fibers simulation show that using a 2D thread block and the associated performance increases for outweight the potential performance hit of using atomics.
-
 \paragraph{Update Fibers}
 
-\begin{listing}
-  \centering
-  \begin{minted}[mathescape,
-    linenos,
-    numbersep=5pt,
-    fontsize=\footnotesize,
-    frame=lines,
-    framesep=2mm]{c}
-__global__ void UpdateFibers()
-{
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-  if (i >= NUMBER_OF_FIBERS) return;
-
-  next_positions[i] = 4/3 * current_positions[i]
-    - 1/3 * previous_positions[i]
-    + 2/3 * TIMESTEP
-      * (2 * current_translational_velocities[i] - previous_translational_velocities[i]))
-
-  next_orientations[i] = 4/3 * current_orientations[i]
-    - 1/3 * previous_orientations[i]
-    + 2/3 * TIMESTEP
-      * (2 * current_rotational_velocities[i] - current_rotational_velocities[i]))
-
-  normalize(next_orientations)
-}
-  \end{minted}
-  \caption{Pseudocode for the updating fibers simulation step.}
-  \label{lst:pseudo_update_fibers}
-\end{listing}
-
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As seen later in the results in chapter ?? this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and additional has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
-
 \subsection{Optimizations}
-
-\begin{itemize}
-\item Great care taken to optimize code through development
-\item Small code-level optimizations, allocating variables, unneceassy copy operations
-\item More advanced optimizaiton loop consolidation, loop unrolling
-\item Contionous use of benchmark suite to avoid regressions
-\item Many optimizations are both applicable to CPU and GPU
-\item However some result in very different result
-\item Introduce optimizations
-\item Performance results later in results section
-\end{itemize}
 
 \subsubsection{Numeric vs. Analytic Integration}
 \subsubsection{Shared Memory}
 \subsubsection{Thread Block Dimension}
 \section{OpenMP}
-
-- Fairer comparison between CPU and GPU -> parallized CPU implementation
-- What is OpenMP
-- Porting process
-- No difference for parallization dimension
 
 \chapter{Results}
 The last chapter introduced the parallel implementation of the numerical simulation. It introduced the concept of general purpose computing on modern GPUs as well as giving a practical overview of the implementation of the algorithm using nVidia CUDA framework and possible optimiziations to take advantage of the unique properties of the GPU architecture.
