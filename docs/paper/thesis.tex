@@ -635,30 +635,46 @@ Before examining the different performance metrics and optimizations we will fir
 \subsection{Numerical precision}
 \subsection{Sphere simulation}
 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.2\textwidth]{img/sphere_00100.png}
+  \caption{t=100}
+  \label{fig:sphere_simulation}
+\end{figure}
+
 \section{Methodology}
 
 The methodology used for the benchmark suite is the same for all presented benchmarks. This ensure comparable results and fairest comparison possible.
 
 \subsection{Hardware}
 
-All benchmarks were run on a the same workstation with specifications listed in table~\ref{tab:workstation}
+All benchmarks were run on a the same workstation with specifications listed in table XX.
 
-\begin{tabulary}[l | l]
-Component | Name \\
-Operating System | Ubuntu Linux 12.04 LTS
-CPU | Intel Core i7 4770
-Memory | 16GB DDR3
-GPU | Nvidia GTX 970 4GB
-CUDA Version | CUDA 6.5.xxxx
-\caption{Benchmark workstation specification.}
-\label{tab:workstation}
+
+\begin{center}
+\begin{tabulary}{0.7\textwidth}{LL}
+  \toprule
+  \multicolumn{2}{c}{Workstation} \\
+  \midrule
+  Processor & Intel Core i7 4770 \\
+  Graphics & Nvidia GTX 970 4GB \\
+  RAM & 16GB DDR3 \\
+  Operating System & Ubuntu Linux 12.04 LTS \\
+  CUDA Driver & CUDA 6.5.xxxx \\
+  \bottomrule
+  \label{tab:workstation}
 \end{tabulary}
+\end{center}
 
-\subsection{Benchmark setup}
+\subsection{Benchmark scheme}
 
-The main goal of the benchmark setup system was to generate statistical significant and reproducable performance numbers. To ensure this all benchmarks for both the GPU and the CPU were run using the exact same scheme. In order to obtaining the timings the builtin CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM_CLOCK} function was used respectively.
+The main goal of the benchmark system was to generate statistical significant and reproducable performance numbers. To ensure this all benchmarks for both the GPU and the CPU were run using the exact same scheme. In order to obtaining the timings the builtin CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM\_CLOCK} function was used respectively.
 
-For all different benchmarks timing were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For
+For all different benchmarks timings were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For each seperate number of fibers a number of iterations are run to obtain the average over multiple runs. For each iteration a completely new and random initial fiber configuration is generated with the current number of fibers. In order to exclude illegal configurations where fibers overlap and intersect an additional correction pass is done over the fibers to ensure a minimal and average distance between all fibers. For the configrations in this thesis the minimal distance was always set to $0.2$ and the average to $0.4$ respectively.
+
+Using this semi-random generation the rigid fiber simulation is run for exactly $10$ timesteps. To avoid remaining outliers in the configuration causing potentially large variation in the timings especially for iterative solvers the first timestep is excluded from the timing and instead used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ timesteps.
+
+In order to ensure a stasticial sgnificant result the number of iterations is not fixed, instead it is determined dynamically based on the relative standard error of the already collected timing for the particular number of fibers. Beginning with a minimum of number iterations the relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specificed threshold the number of iterations is doubled and run again. The benchmark suite uses a minimum of $4$ iterations to obtain the initial timings if the relative standard error is not below a threshold of $20\%$ an additional $4$ iterations are run to bring the total to $8$. This process repeats until the threshold is satisfied and more reliable benchmark timings have been obtained. This algorithm is illustrated using pseudocode in listing~\ref{lst:pseudo_benchmark}.
 
 \begin{listing}
   \centering
@@ -676,7 +692,7 @@ for(int N = 100; N <= 2000; N += 100)
     for(int i = 0; i < iterations; ++i)
     {
       generateRandomInitialFiberConfiguration();
-      run();
+      run(10); // execute 10 timesteps
       collectTimings();
     }
 
@@ -692,9 +708,18 @@ for(int N = 100; N <= 2000; N += 100)
 
   reportTimings();
 }
+  \end{minted}
+  \caption{Pseudocode for benchmark scheme.}
+  \label{lst:pseudo_benchmark}
+\end{listing}
 
 \section{Optimizations}
+
+We now look at the performance results for the different optimizations previously outlined in section~\ref{sec:implementation_optimization}. Where applicable the results will be compared between the OpenMP and CUDA version of the algorithm.
+
 \subsection{Numeric vs. Analytic Integration}
+
+The first benchmark tests the performance of the two different approaches to compute the inner integral. It can be solved either numerically or analytically. Figure~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation the parallel version of the analytic integration is always faster than the numeric integration.
 
 \begin{figure}
   \centering
@@ -716,7 +741,10 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of assemble system step for integration of inner integral.}
+  \label{fig:openmp_num_vs_anal}
 \end{figure}
+
+However the picture is more interesting when we look at the same graph for the CUDA implementation in figure~\ref{fig:cuda_num_vs_anal}. Here the results are reversed. The numeric integration out performs the analytical integration by an larger margin increasing with the number of fibers.
 
 \begin{figure}
   \centering
@@ -738,7 +766,26 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of assemble system step for integration of inner integral.}
+  \label{fig:cuda_num_vs_anal}
 \end{figure}
+
+This reason for this result lies in the way work is scheduled and executing on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means each line of code is executed for each thread in parallel. However if the code encounteres a branch in the execution path like a simple \emph{if} statement the threads diverge. First all threads for which the condition hold true execute while the other threads have to wait. Only after that can the threads with the false condition execute while the other threads are not used. Finally after all divergent paths have been executed the code continous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code.
+
+To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in in section~\ref{sec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
+
+\begin{center}
+  \begin{tabulary}{0.7\textwidth}{LR}
+    \toprule
+    Algorithm & warp\_execution\_efficiency \\
+    \midrule
+    Numerical & $99.01\%$ \\
+    Analytical & $53.79\%$ \\
+    \bottomrule
+    \label{tab:branch_divergence}
+  \end{tabulary}
+\end{center}
+
+On one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of time only half of threads actually perform work while the other half is just waiting. This results in the observered performance difference. Closer inspection of the source code reveal that the design constant and the resulting branching as described in section~\ref{sec:analytical_integration} is responsible for the divergence. The constant determines a if a different computation is performed in case fibers are very close together. Unfortunately in order to ensure numeric stability this workaround is unavoidable.
 
 \subsection{Shared Memory}
 
@@ -746,6 +793,8 @@ for(int N = 100; N <= 2000; N += 100)
 - Assemble System is not Compute Bound not Memory Bound. The transfer times are dwarfed by the compute time
 
 \subsection{Thread Block Dimension}
+
+The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used overhead caused by an increased amout of memory writes to the same location and thus the need for potential slow atomics.
 
 \begin{figure}
   \centering
@@ -768,16 +817,37 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of assemble system step for different thread block dimensions.}
+  \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
+The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transationcs that had to be performed. As can be seen in table~\ref{tab:atomic_transationcs} the required atomic transactions are almost two times larger in the 3D case for the Sphere example from section~\ref{sec:example_sphere}.
+
+\begin{center}
+  \begin{tabulary}{0.7\textwidth}{LR}
+    \toprule
+    Algorithm & atomic\_transactions \\
+    \midrule
+    2D & $1269325$ \\
+    3D & $2350670$ \\
+    \bottomrule
+    \label{tab:atomic_transactions}
+  \end{tabulary}
+\end{center}
+
+The one-dimensional approach is also slower than either two-dimensional or three-dimensional. However it appears to scale linearly whereas the other two scale exponentially. It can already be observed that 1D becomes faster than 3D for close to $2000$ fibers. Unfortunately the hardware of the workstation does not have enough memory to simulate more fibers. So for this particular hardware setup two-dimensional thread blocks are the fastest option.
+
 \section{Linear Solvers}
+
+Next we compare the performance for different linear solvers. We explored two different types of solver. The first type is a direct solver of the linear equations which is both implemented for OpenMP as well as the CUDA implementation. The second type are iterative solvers. Unfortunately we can't take advantage of the main advantage of iterative solvers to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system is an increasingly large part of the overall runtime. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
+
+On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallized. For GMRES we used the single precision Fortran implmentation from Frayssé et al. which takes extensive advantage of the underyling BLAS functions parallized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests. The benchmark results for this thesis are illustrated in figure~\ref{fig:bench_openmp_solvers}.
 
 \begin{figure}
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Fortran Linear Solver,
+      title=OpenMP Linear Solver,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
       ymin=0,ymax=180,
@@ -792,7 +862,12 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different Fortran solvers.}
+  \label{fig:bench_openmp_solvers}
 \end{figure}
+
+Up until around $500$ fibers GMRES is indeed faster than as reported by the original authors. However after that the direct solver starts to perform much better, being close to two times faster. Additionally it can be seen that the iterative GMRES solver is fluctuation widely owing to the fact that the performance is highly dependent on the particular tested initial fiber configuration. As the direct solver always performs the same number of computations it doesn't suffer from this. Furthermore the direct solver has the advantage to always calculate the exact result excluding numerical precision as compared to the close solution iterative solvers provide.
+
+On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in figure~\ref{fig:bench_cuda_solvers}.
 
 \begin{figure}
   \centering
@@ -815,10 +890,18 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different GPU linear solvers.}
+  \label{fig:bench_cuda_solvers}
 \end{figure}
 
+The same fact that the direct solver is faster than the iterative solvers holds true for the GPU. However compared to the CPU solvers the difference between the performance of the direct solver against the iterative solvers is even more pronounced. At close to $2000$ fibers the direct solver is about three to four times faster than either GMRES or BiCGStab. Looking at the two difference between the two iterative solvers BiCGStab is slightly faster than GMRES, whether this is an inherent property of the algorithm or simply a more performant implementation is not clear. Either way the direct solver is the clear winner and also has the advantage to provide exact solutions.
+
 \section{Comparing CPU and GPU performance}
-\section{Fortran vs. CUDA}
+
+The final benchmark compares the CPU and GPU performance. How to do a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature. The underlying archictures of the to approaches are completely different and thus not really comparable. Some try to extrapolate relative performance from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account, however because of integrate hardware details this approach is also not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus.
+
+Exploring this question in more detail is out of the scope of this thesis. In order to come as close as possible given these complexities and constraints we used both a current CPU and GPU considered as a balanced system at the time of writing. Additionally we implemented the parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore the final benchmark for each uses the fastest possible algorithm variant as determined by all previously performed benchmarks to compare the best variant for each architecture.
+
+The results for average time required to take a single timestep is illustraded in figure~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. The linear system is solved by the direct solver provided by OpenBLAS. For CUDA we used the numerical integration and the thread block diemsion was chosen to be two-dimensional. The direct solver for MAGMA is used to solve the linear system.
 
 \begin{figure}
   \centering
@@ -841,7 +924,12 @@ for(int N = 100; N <= 2000; N += 100)
     \setmathfont{XITS Math}
   \end{tikzpicture}
   \caption{Benchmark of overall timestep for both OpenMP and CUDA.}
+  \label{fig:overall}
 \end{figure}
+
+The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. CUDA maintains a relative performance of $~15\times$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
+
+We acknowledge that these numbers and performance increase is not necessarily fair. A different CPU and GPU combintation from the one used in this thesis might perform differently. However the relative performance should stay roughly the same. In the end what really matters, for the researcher working with rigid fibers, is the time it takes to simulate large system on the workstation available to him or her. No need to wait for computing time at a computing cluster but instead simple and fast iterations using a workstation. The observed performance increase of $15\times$ is a difference between a whole day of waiting for the simulation results and a quick $1.5$ hour result during the day. 
 
 \chapter{Conclusion}
 
