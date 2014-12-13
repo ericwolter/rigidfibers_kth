@@ -572,30 +572,56 @@ __global__ void UpdateFibers()
   \label{lst:pseudo_update_fibers}
 \end{listing}
 
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As seen later in the results in chapter ?? this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and additional has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
+The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As seen later in the results in chapter~\ref{cha:results} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and additional has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
 
 \subsection{Optimizations}
 
-\begin{itemize}
-\item Great care taken to optimize code through development
-\item Small code-level optimizations, allocating variables, unneceassy copy operations
-\item More advanced optimizaiton loop consolidation, loop unrolling
-\item Contionous use of benchmark suite to avoid regressions
-\item Many optimizations are both applicable to CPU and GPU
-\item However some result in very different result
-\item Introduce optimizations
-\item Performance results later in results section
-\end{itemize}
+During the developement of the parallel GPU simulation great care was taken to continously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
+
+Additionally more advanced optimization like rearranging calculations inside loops to avoid executing redundant calculations and consolidating multiple loops into one. Finally techniques such as loop unrolling and faster math functions where also tested and included.
+
+Throughout the optimization phase the benchmark suite was run after each step. This ensures that optimizations where only included if they had a measureably impact on the overall performance of the simulation. Moreover in this way potential performance regressions could be identified early and be avoided.
+
+Many optimizations performed during this process are applicable to both the CPU and GPU and show performance improvements for both. However some optimizations or algorithm variantions have a either a different effect or are uniquely suited and related to the GPU hardware. For this thesis we will look into three general different optimizations in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:results}
 
 \subsubsection{Numeric vs. Analytic Integration}
+The first optimization was already part of the original serial implementation as described in section~\ref{sec:}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred by being faster but more importantly also being more accurate.
+
+However for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accurary. The implementation is dependent on design variable ensuring numerically stable results for very close fibers. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. So in order to explore the performance implications of both approaches on GPU especially compared against CPU is of great interest.
+
 \subsubsection{Shared Memory}
+
+As the described in section~\ref{} CUDA code is subject to a highly specilizated memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. This access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally local memory can be shared among a CUDA thread block and potentially save time by avoiding to constantly access the slow global memory.
+
+In order to test this shared memory was implemented and tested with the \emph{Assemble System} step, the most performance critical kernel written for the fiber simulation. To understand the idea imagine the 2D thread block implementation of the kernel. Each thread block is responsible for many pairs of fiber interactions, e.g. fibers $[1,8]$ each interacting with fibers $[9,16]$. In total these are $8 \times 8 = 64$ interactions. Each kernel invocation is responsible for one pair and has to load the position and orientation for the two interacting fibers. However on closer inspection it is obvious that one does not need to load each fiber every time. As soon as fiber $1$ has been loaded into shared memory in can be reused for all the interactions with fibers $9$ throught $16$ avoiding the unnecessary and slow access to global memory.
+
+How this affects performance however is not always easy to tell, as various factors can influence the result. If the loaded data is small enough the various memory caches can hide to increased costs of accessing global memory. Also while the first threads in a thread block load the data from global to shared memory all other threads in this thread block have to wait for their data to become available. This is especially true if the overall kernel has to execute many calculations and the required time for computations effectively hides the memory loading time as CUDA is able to simply switch to the next thread block and continue executing it. In this case the performance penatly only occurs at the very beginning and end, and has only a negible impact on the overall performance.
+
+However in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. This is especially true because CPUs don't have an equivalent fast and comparatively large memory space. It is therefore an interesting optimization to explore and benchmark.
+
 \subsubsection{Thread Block Dimension}
+
+There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regards to optimally taking advantage of the specific underlying GPU architecture which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics cards can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
+
+For this thesis we looked at the Thread Block dimension in particular and how choosing a different approach to parallizing affects the performance, again with a focus on the \emph{Assemble System} step as the most performance critical step. However the results were then also transferred to the \emph{Update Velocities} step.
+
+The most straight forward approach is to simply parallize the algorithm with regards to a single fiber. This means each kernel invocation is responsible for calculating all the interactions for this fibers with all other fibers. In this way a single kernel is responsible for multiple rows of the resulting linear system matrix. Additionally this approach does not have any memory access conflict as each kernel only writes to the memory location belong to its unique fiber. The potential disadvantage for a one-dimensioanal thread block however is that the resulting code can be more resource intensive for each single kernel and potentially hinder to performance on each multiprocessor.
+
+For a two-dimensional thread block each kernel invocation is responible for a pair of fibers interacting. While this decrease the needed resources it also required atomics which can potential slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are the a further extension of the two-dimensional thread block, as now each kernel invocation is responsible for not the complete interaction but only the interaction resulting from a specific point from the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
+
+How exactly each decision for the thread-block dimension affects performance is not clear. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm.
+
 \section{OpenMP}
 
-- Fairer comparison between CPU and GPU -> parallized CPU implementation
+The goal of this thesis is to implement a high performant rigid fiber simulation on the GPU using CUDA. However in order to better understand to what degree this goal was achieved it would be nice to have comparison. The original serial implementation is not an ideal candidate has it does differ in a number of ways. First of all its purely serial not even taking advantage of todays multicore CPUs. Furthermore it was implemented in double precision and first practical restrictions on consumer CUDA GPUs are only really well suited for single precision, for this reason the CUDA is only single precision. Finally the primary focus of the original Fortran implementation was a correctly implemented algorithm and not performance.
+
+For these reasons and in order to have a fairer comparsion of the performance differences of the GPU and CPU implementation a completely new and rewritten parallel CPU simulation was also implemented. For the parallization the OpenMP library was chosen.
+
 - What is OpenMP
-- Porting process
-- No difference for parallization dimension
+
+After having implemented a parallel algorithm for the GPU the conversion to the OpenMP-based CPU implementation was relatively straightforward. Almost all optimizations for the GPU implementation where also applied to the new CPU code. In order to parallize the BLAS functions required for the linear solver the already included OpenBLAS library was chosen. OpenBLAS is both open-source and highly optimized and automatically parallizes BLAS functions using pthreads across all available CPU cores. In contrast to the GPU implementation is only parallized in one-dimension, so each core calculates the iteractions for one fiber with all other fibers, or put differently all matrix rows belong to one fiber. As the underlying number of independently threads is much lower on CPUs, different parallization dimension didn't have an impact during testing.
+
+The end results of the practical implementation for this thesis is a highly optimized CUDA implementation for Nvidia GPUs and additionally a parallized and optimized Fortran OpenMP implementation for CPUs. The next chapter will now look at a number of performance metrics and compare them between the GPU and CPU.
 
 \chapter{Results}
 The last chapter introduced the parallel implementation of the numerical simulation. It introduced the concept of general purpose computing on modern GPUs as well as giving a practical overview of the implementation of the algorithm using nVidia CUDA framework and possible optimiziations to take advantage of the unique properties of the GPU architecture.
@@ -603,12 +629,70 @@ The last chapter introduced the parallel implementation of the numerical simulat
 Using all the available implementations of the algorithm this chapter will showcase a multitude of different result and benchmarks performed. This is done to illustrate the achieved performance increases on the GPU over the original serial CPU implementation and the parallel OpenMP implementation.
 
 \section{Examples}
+
+Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and at the expected physical results. The second example illustrates a real world example which illustrates an interesting phyiscal phenomen. Both a run with the fastest CUDA algorithm implemented in the thesis.
+
 \subsection{Numerical precision}
 \subsection{Sphere simulation}
 
 \section{Methodology}
+
+The methodology used for the benchmark suite is the same for all presented benchmarks. This ensure comparable results and fairest comparison possible.
+
 \subsection{Hardware}
+
+All benchmarks were run on a the same workstation with specifications listed in table~\ref{tab:workstation}
+
+\begin{tabulary}[l | l]
+Component | Name \\
+Operating System | Ubuntu Linux 12.04 LTS
+CPU | Intel Core i7 4770
+Memory | 16GB DDR3
+GPU | Nvidia GTX 970 4GB
+CUDA Version | CUDA 6.5.xxxx
+\caption{Benchmark workstation specification.}
+\label{tab:workstation}
+\end{tabulary}
+
 \subsection{Benchmark setup}
+
+The main goal of the benchmark setup system was to generate statistical significant and reproducable performance numbers. To ensure this all benchmarks for both the GPU and the CPU were run using the exact same scheme. In order to obtaining the timings the builtin CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM_CLOCK} function was used respectively.
+
+For all different benchmarks timing were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For
+
+\begin{listing}
+  \centering
+  \begin{minted}[mathescape,
+    linenos,
+    numbersep=5pt,
+    fontsize=\footnotesize,
+    frame=lines,
+    framesep=2mm]{c}
+for(int N = 100; N <= 2000; N += 100)
+{
+  int iterations = 4;
+  while (iterations <= MAX_ITER)
+  {
+    for(int i = 0; i < iterations; ++i)
+    {
+      generateRandomInitialFiberConfiguration();
+      run();
+      collectTimings();
+    }
+
+    rse = calculateRelativeStandardError();
+
+    if (rse <= 0.2)
+    {
+      break;
+    }
+
+    iterations *= 2
+  }
+
+  reportTimings();
+}
+
 \section{Optimizations}
 \subsection{Numeric vs. Analytic Integration}
 
