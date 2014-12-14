@@ -186,16 +186,16 @@ Given these constraints and special case of very low Reynolds numbers the genera
 where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$.
 The constant $\mu$ is the viscosity of the fluid.
 
-The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally the equations are time indepdent and time depedence is only reintroduced by boundary conditions. Thus given the boundary conditions the structure of the flow is can be calculated.
+The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally, the equations are time independent and time depedence is only reintroduced by boundary conditions. Thus given the boundary conditions the structure of the flow can be calculated.
 
-By taking advantage of the linearity of the Stokes equations, which implies the existence of a Green's function, and introducing boundary conditions so called fundamental solutions can be found. First no-slip conditions on the surface of the slender bodies are defined as
+By taking advantage of the linearity of the Stokes equations, which implies the existence of a Green's function, and introducing boundary conditions so-called fundamental solutions can be found. First no-slip conditions on the surface of the slender bodies are defined as
 \begin{equation}
   \label{eq:boundary_condition_surface}
   \mathbf{u} = \mathbf{u}_\Gamma  \quad \text{on} \quad  \Gamma \text{,}
 \end{equation}
 where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus forcing the fluid to have zero velocity relative to the surface boundary.
 
-Furthermore the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
+Furthermore, the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
 
 \begin{equation}
   \label{eq:boundary_condition_background}
@@ -217,7 +217,7 @@ where $\delta(\mathbf{x} - \mathbf{x}_0)$ is Dirac delta function. Solving these
     \mathbf{S}(\mathbf{r}) &= \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|} + \frac{rr}{|r|^3}\right) \text{,}
   \end{aligned}
 \end{equation}
-where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identy tensor. Additionally we will later need to higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so called doublet is defined as
+where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identity tensor. Additionally, we will later need higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so-called doublet is defined as
 \begin{equation}
   \label{eq:doublet}
   \mathbf{D}(\mathbf{r}) = \frac{1}{2} \Delta\mathbf{S}(\mathbf{r}) = \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|^3} - \frac{3rr}{|r|^5}\right) \text{.}
@@ -240,7 +240,10 @@ Using this background we will now introduce the approach used for the numeric si
 We will begin by presenting the employed time stepping approach. This is followed by a discussion about the different ways the integrals can be solved for the various quadrature points. The final section will illustrate the structure of the resulting final linear system and the briefly introduce the employed solvers.
 
 \section{Time stepping}
+\label{sec:time_stepping}
+
 \section{Quadrature}
+\label{sec:quadrature}
 \subsection{Numeric Integration}
 \subsection{Analytic Integration}
 \section{Linear system}
@@ -271,6 +274,7 @@ Choosing between OpenCL and CUDA is the first decision to be made when starting 
 For this thesis I chose to go with Nvidia's CUDA framework mainly because of the available hardware both at the workstation computers as well as at the local computing cluster. Additionally this project does not need the cross-platform capability as the main focus is on pure performance in a highly specialized setup and simulation scenario. The application will not be widely distributed and only used for internal purposes.
 
 \section{CUDA}
+\label{sec:CUDA}
 The CUDA stands for Compute Unified Device Architecture and was introduced by Nvidia in 2006 as a general purpose parallel computing platform. It leverages the highly parallel architecture of modern Nvidia GPUs to solve many different computational problems, which can lead to potentially large performance improvements compared to traditional CPUs.
 
 The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accerlated library and simply using the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java and Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. figure~\ref{fig:cuda_overview} illustrated the different components of the overall CUDA platform.
@@ -388,24 +392,26 @@ The rigid fiber simulation developed as part of this thesis is only loosely base
 
 The development was done exclusively on a Linux workstation running Ubuntu as this will also be the exact same runtime environment used in the later experimental usage of the resulting application. The build system for compiling and linking the final application was CMake. It was chosen because it is widely used open-source and cross-platform build system, which allowing for easy integration of the various required libraries in a well documented and straightforward manner.
 
-Under the hood the build system uses Nvidia's CUDA platform tools and to compile the code. For this Nvidia includes \emph{nvcc}, an LLVM-based CUDA compiler capable of compiling C/C++ code combined with CUDA specific extensions. In addition to the CUDA libraries the application also requires support libraries for the different linear solvers. The two main libraries are \emph{MAGMA} for the direct solver and \emph{ViennaCL} for the iterative solvers. Both will be introduced briefly now.
+Under the hood the build system uses Nvidia's CUDA platform tools to compile the code. For this Nvidia includes \emph{nvcc}, an LLVM-based CUDA compiler capable of compiling C/C++ code together with the CUDA specific extensions. In addition to the CUDA platform, the application also requires support libraries for the different linear solvers. The two main libraries are \emph{MAGMA} for the direct solver and \emph{ViennaCL} for the iterative solvers. Both will be introduced briefly now.
 
 \paragraph{MAGMA / CuBLAS / OpenBLAS}
-The MAGMA project provides the implementation for the direct solver used during this thesis. This dense linear algebra library provides features similar to standard LAPACK functions but for multicore architectures. It also provides features to support hybrid algorithms across multiple different archictures, however these features where not explored in this thesis. Instead the focus was on a high performant single GPU implementation of a direct linear system solver.
+The MAGMA project contributes the implementation for the direct solver used in this thesis. This dense linear algebra library provides features similar to standard LAPACK functions but for multicore architectures. It also has features to support hybrid algorithms to run code across multiple GPUs or CPUs at the same time, however these features were not explored in this thesis. Instead the focus was on a high performant single GPU implementation of a direct linear system solver.
 
-MAGMA provides the interfaces for various high-level languages, however the underlying math functions utilize the platform specific implementations of the BLAS levels. For CUDA this is provided directly by Nvidia in the form of the CuBLAS libraries. Additionally MAGMA tries to be as fast as possible which sometimes means integrating CPU based algorithm where it makes sense. Thus a CPU based BLAS implementation is also needed. For this I chose the OpenBLAS library which is the most up to date and high performant library available outside the very expensive Intel MKL library. OpenBLAS takes full advantage of multicore systems using pthreads and is also used for the comparison of Fortran CPU implementation against the CUDA GPU implementation
+MAGMA provides the interfaces for various high-level languages, however the underlying math functions utilize the platform specific implementations of the BLAS levels. For CUDA this is implemented directly by Nvidia in the form of the CuBLAS libraries. Additionally, MAGMA tries to be as fast as possible which sometimes means integrating CPU based algorithm where it is has performance advantages. Thus a CPU based BLAS implementation is also needed. For this the OpenBLAS library was chosen which is the most up-to-date and high performant library available outside the very expensive Intel MKL library. OpenBLAS takes full advantage of multicore systems using pthreads and is also used for the comparison of Fortran CPU implementation against the CUDA GPU implementation
 
 \paragraph{ViennaCL}
-ViennaCL is an open-source linear algebra library developed at the Universiy of Vienna. The library provides an abstraction layer across many different parallization methods in order to provide consistent and easy to use support for BLAS level 1-3 and iterative solvers. This unique feature allows the developer to easily switch between different backends for parallelization. Currentely the library support OpenMP, OpenCL and most importantanly for this thesis CUDA.
+ViennaCL is an open-source linear algebra library developed at the Universiy of Vienna. The library provides an abstraction layer across many different parallelization methods in order to facilitate consistent and easy to use support for BLAS level 1-3 and iterative solvers. This unique feature allows the developer to easily switch between different backends for parallelization. Currentely, the library supports OpenMP, OpenCL and most importantly for this thesis - CUDA.
 
-While mostly focussed on sparse matrices for the implemented iterative solvers, ViennaCL also support solving dense matrices using a variety of different iterative solvers. As the rigid fiber simulation exclusive relies on dense matrices this makes it an ideal candidate for benchmarking. For this thesis both the BiCGStab as well as the GMRES iterative solvers where used and tested.
+ViennaCLs focus is on solving sparse matrices with the implemented iterative solvers. However, it also has basic support for solving dense matrices using a variety of different iterative solvers. As the rigid fiber simulation exclusively relies on dense matrices this makes it an ideal candidate for benchmarking. For this thesis both the BiCGStab as well as the GMRES iterative solvers where used and tested.
 
-In order to faciliate easier usage of application both during development and later real-world usage a Python wrapper script is also available. The script completely automates the building process and dynamically customizes the application code to support three different modes of operation. The first is a simple \emph{run} mode which simply takes the supplied parameters and executes the simulation. The second mode is \emph{validate}, it allows for a fully automated way to test and validate different algorithm variantions against a known correct simulation run. This includes automatically computing the error as well as the error location in the matrix allowing for easier debugging of changes. The last mode is \emph{benchmark} which run the supplied parameters through a series of iterations collecting and aggregating timings for each simulation step as well as the total time.
+In order to faciliate easier usage of the application both during development and later real-world usage a Python wrapper script is also available. The script completely automates the building process and dynamically customizes the application code to support three different modes of operation. The first is a simple \emph{run} mode which takes the supplied parameters and executes the simulation. The second mode is \emph{validate}, it allows for a fully automated way to test and validate different algorithm variations against a known correct simulation run. This includes automatically computing the error as well as the error location in the matrix allowing for easier debugging of changes. The last mode is \emph{benchmark} which runs the supplied parameters through a series of iterations collecting and aggregating timings for each simulation step as well as the total time.
 
-Unified interface for OpenMP and CUDA -> OpenMP only introduced later?!? -> Is that really important any way?
+\begin{itemize}
+\item Unified interface for OpenMP and CUDA -> OpenMP only introduced later... -> Is that really important any way?
+\end{itemize}
 
 \subsection{Kernels}
-The overall parallel algorithm is very similar to the serial version, however each simulation step is seperated into different kernels. Each kernel is invocate in a serial manner, this means CUDA guarantess that all data modified in a kernel is available before the next kernel is executed. These kernels are than distributed across the GPU. All calculations are done using single precision floating point numbers, as Nvidia limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for algorithm is illustrated in listing~\ref{lst:pseudo_parallel_algorithm}.
+The overall parallel algorithm is very similar to the serial version, however, each simulation step is seperated into different kernels. Each kernel is invoked in a serial manner, this means CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as Nvidia limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all timesteps and for each step the four main algorithm substeps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — are run on the GPU.
 
 \begin{listing}
   \centering
@@ -419,7 +425,7 @@ int main()
 {
   // Parsing algorithm parameters and initial fiber positions
   readParameters();
-  readSetup();
+  readFiberConfiguration();
   allocateGPUMemory();
   ...
 
@@ -437,9 +443,9 @@ int main()
   \label{lst:pseudo_parallel_algorithm}
 \end{listing}
 
-The application requires two general configuration files as an input. The first file is referred to as the parameters file which contains the different configuration variables and constant used throughout the algorithm. These include for example the number and size of the timesteps as well as the number of force expansion terms and number of quadrature points. Additionally this file is also used to
+The application requires two general configuration files as an input. The first file is referred to as the parameters file which contains the different configuration variables and constants used throughout the algorithm. These include, for example the number and size of the timesteps as well as the number of force expansion terms and number of quadrature points. Additionally, this file is also used to configure the iterative solvers like specifiying the number of restarts for GMRES or the solution tolerance for BiCGStab and GMRES.
 
-Each of the parallized substeps are now discussed in more detail. I will discuss the purpose of each kernel as well as the required input and outputs.
+Each of the parallelized substeps are now discussed in more detail. The purpose of each kernel as well as the required input and outputs.
 
 \paragraph{Assemble System}
 
@@ -483,12 +489,12 @@ __global__ void AssembleSystem1D(
   \label{lst:pseudo_assemble_system}
 \end{listing}
 
-The \emph{Assemble System} kernel is the most important step of the algorithm. Its goal is to build the matrix and vector in memory for the linear system of equations in the form of $A*x = b$. Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the assemble system step. This means the code is parallized for each fiber and each thread calculates the contributions to this fiber form all other fibers. Looking at the matrix each thread is thus responsible for $3*M$ rows of the matrix.
+The \emph{Assemble System} kernel is the most important step of the algorithm. Its goal is to build the matrix and vector in memory for the linear system of equations in the form of $A*x = b$. Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the assemble system step. This means the code is parallelized for each fiber and each thread calculates the contributions to this fiber from all other fibers. Looking at the matrix each thread is thus responsible for $3*M$ rows of the matrix.
 
-The kernel requires two inputs, the current position of the each fibers and its orientation. Using these combined with the equations outlined in chapter~\ref{cha:theoretical_foundation} and chapter~\ref{serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
+The kernel requires two inputs, the current position of each fiber and its orientation. Using these combined with the equations outlined in chapter~\ref{cha:theoretical_foundation} and chapter~\ref{cha:serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
 
 \paragraph{Solve System}
-As this thesis does not aim to implement generic linear solvers, this step is treated as a black box. During the previous \emph{Assemble System} kernel two arrays containing the matrix and right hand side of the linear system have been computed. These two arrays are now passed to the respective function of the library containing the linear solver. This is the MAGMA library in case of the direct solver and the ViennaCL library in case of the two tested iterative solvers BiCGStab and GMRES. Both libraries are able to directly use the already allocated memory regions and no additional allocations have to be performed. In order to conserve memory space the resulting solution vector is stored in the same memory location as the $b$-vector and is passed on to the the subsequent steps.
+As this thesis does not aim to implement generic linear solvers, this step is treated as a black box. During the previous \emph{Assemble System} kernel two arrays containing the matrix and right hand side of the linear system have been computed. These two arrays are now passed to the respective function of the library containing the linear solver. This is the MAGMA library in case of the direct solver and the ViennaCL library in case of the two tested iterative solvers BiCGStab and GMRES. Both libraries are able to directly use the already allocated memory regions and no additional allocations have to be performed. In order to conserve memory space the resulting solution vector is stored in the same memory location as the $b$-vector and is passed on to the subsequent steps.
 
 \paragraph{Update Velocities}
 
@@ -535,9 +541,9 @@ __global__ void UpdateVelocities2D(...)
   \label{lst:pseudo_update_velocities}
 \end{listing}
 
-After solving the linear system the solution coefficents are used to update the velocities of the fibers. The \emph{Update Velocities} kernel accumulates the excerted forces for all fibers and updates both the translational as well as the rotational velocities simultaneously. In this particular instance the 2D thread block version of the kernel is illustrated in listing~\ref{lst:pseudo_update_velocities}. This means each individual kernel invocation is responsible for a single pair of fiber interaction. Under the normal assumption that kernel invocations are not allowed to write to the same memory location this would result in undefined behaviour and incorret results for the velocities.
+After solving the linear system the solution coefficents are used to update the velocities of the fibers. The \emph{Update Velocities} kernel accumulates the exerted forces for all fibers and updates both the translational as well as the rotational velocities simultaneously. In this particular instance the 2D thread block version of the kernel is illustrated in listing~\ref{lst:pseudo_update_velocities}. This means each individual kernel invocation is responsible for a single pair of fiber interaction. Under the normal assumption that kernel invocations are not allowed to write to the same memory location since this would result in undefined behaviour and incorrect results for the velocities.
 
-Fortunately CUDA provides a mechanism to circumvent this issue. By using so called atomic function CUDA streamlines and serializes the memory access. Thus the atomicAdd function accumulates different velocity contributions to a fiber from all the other fibers. This ensures that each update to the memory location is handled in a serial manner, guararenteeing the correct value in memory for each. Of course this implies a potential performance degradation, however newer GPUs with new CUDA version have been very well optimized to only have a minimal negligible impact. Benchmarking for the fibers simulation show that using a 2D thread block and the associated performance increases for outweight the potential performance hit of using atomics.
+Fortunately CUDA provides a mechanism to circumvent this issue. By using so-called atomic function CUDA streamlines and serializes the memory access. Thus the atomicAdd function accumulates different velocity contributions to a fiber from all the other fibers. This ensures that each update to the memory location is handled in a serial manner, guaranteeing the correct value in memory for each. Of course this implies a potential performance degradation, however, newer GPUs with new CUDA version have been very well optimized to only have a minimal negligible impact. Benchmarking for the fibers simulation shows that using a 2D thread block and the associated performance increases far outweight the potential performance hit of using atomics.
 
 \paragraph{Update Fibers}
 
@@ -572,109 +578,128 @@ __global__ void UpdateFibers()
   \label{lst:pseudo_update_fibers}
 \end{listing}
 
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As seen later in the results in chapter~\ref{cha:results} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and additional has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
+The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As will be seen later in the results in chapter~\ref{cha:results} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
 
 \subsection{Optimizations}
+\label{subsec:optimizations}
 
-During the developement of the parallel GPU simulation great care was taken to continously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
+During the development of the parallel GPU simulation great care was taken to continuously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
 
-Additionally more advanced optimization like rearranging calculations inside loops to avoid executing redundant calculations and consolidating multiple loops into one. Finally techniques such as loop unrolling and faster math functions where also tested and included.
+Additionally, more advanced optimization were made like rearranging calculations inside loops to avoid executing redundant calculations and consolidating multiple loops into one. Finally, techniques such as loop unrolling and faster math functions where also tested and included.
 
-Throughout the optimization phase the benchmark suite was run after each step. This ensures that optimizations where only included if they had a measureably impact on the overall performance of the simulation. Moreover in this way potential performance regressions could be identified early and be avoided.
+Throughout the optimization phase the benchmark suite was run after each step. This ensures that optimizations were only included if they had a measureably impact on the overall performance of the simulation. Moreover, in this way potential performance regressions could be identified early and be avoided.
 
-Many optimizations performed during this process are applicable to both the CPU and GPU and show performance improvements for both. However some optimizations or algorithm variantions have a either a different effect or are uniquely suited and related to the GPU hardware. For this thesis we will look into three general different optimizations in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:results}
+Many optimizations performed during this process are applicable to both the CPU and GPU and show performance improvements for both. However, some optimizations or algorithm variations have either a different effect or are uniquely suited and related to the GPU hardware. For this thesis we will look into three general different optimizations in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:results}.
 
 \subsubsection{Numeric vs. Analytic Integration}
-The first optimization was already part of the original serial implementation as described in section~\ref{sec:}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred by being faster but more importantly also being more accurate.
+\label{subsubsec:numeric_analytic}
+The first optimization was already part of the original serial implementation as described in section~\label{sec:quadrature}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate.
 
-However for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accurary. The implementation is dependent on design variable ensuring numerically stable results for very close fibers. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. So in order to explore the performance implications of both approaches on GPU especially compared against CPU is of great interest.
+However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. The implementation is dependent on a design variable which uses a slightly different code to calculate the integral for very close fibers in order to avoid numerical instabilities. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. Exploring the performance implications of both approaches on the GPU is thus of great interest, and especially how it compares against the same algorithm running on the CPU.
 
 \subsubsection{Shared Memory}
 
-As the described in section~\ref{} CUDA code is subject to a highly specilizated memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. This access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally local memory can be shared among a CUDA thread block and potentially save time by avoiding to constantly access the slow global memory.
+As the described in section~\ref{sec:CUDA} CUDA code is subject to a highly specialized memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. The access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally, local memory can be shared among a CUDA thread block and potentially save time by avoiding to constantly access the slow global memory.
 
-In order to test this shared memory was implemented and tested with the \emph{Assemble System} step, the most performance critical kernel written for the fiber simulation. To understand the idea imagine the 2D thread block implementation of the kernel. Each thread block is responsible for many pairs of fiber interactions, e.g. fibers $[1,8]$ each interacting with fibers $[9,16]$. In total these are $8 \times 8 = 64$ interactions. Each kernel invocation is responsible for one pair and has to load the position and orientation for the two interacting fibers. However on closer inspection it is obvious that one does not need to load each fiber every time. As soon as fiber $1$ has been loaded into shared memory in can be reused for all the interactions with fibers $9$ throught $16$ avoiding the unnecessary and slow access to global memory.
+In order to test this, shared memory was implemented and tested with the \emph{Assemble System} step, the most performance critical kernel written for the fiber simulation. To understand the idea, imagine the 2D thread block implementation of the kernel. Each thread block is responsible for many pairs of fiber interactions, e.g. fibers $[1,8]$ each interacting with fibers $[9,16]$. In total, these are $8 \times 8 = 64$ interactions. Each kernel invocation is responsible for one pair and has to load the position and orientation for the two interacting fibers. However, on closer inspection it is obvious that one does not need to load each fiber every time. As soon as fiber $1$ has been loaded into shared memory it can be reused for all the interactions with fibers $9$ through $16$ avoiding the unnecessary and slow access to global memory.
 
-How this affects performance however is not always easy to tell, as various factors can influence the result. If the loaded data is small enough the various memory caches can hide to increased costs of accessing global memory. Also while the first threads in a thread block load the data from global to shared memory all other threads in this thread block have to wait for their data to become available. This is especially true if the overall kernel has to execute many calculations and the required time for computations effectively hides the memory loading time as CUDA is able to simply switch to the next thread block and continue executing it. In this case the performance penatly only occurs at the very beginning and end, and has only a negible impact on the overall performance.
+How this affects performance, however, is not always easy to tell, as various factors can influence the result. If the loaded data is small enough, the various memory caches can hide to increased costs of accessing global memory. Also while the first threads in a thread block load the data from global to shared memory, all other threads in this thread block have to wait for their data to become available. This has a particular large impact when the overall kernel has to execute many calculations and the required time for computations effectively hides the memory loading time. CUDA is than able to seamlessly and very efficiently switch to the next thread block and continue executing it. In this case the performance penalty only occurs at the very beginning and end, and has only a negligible impact on the overall performance.
 
-However in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. This is especially true because CPUs don't have an equivalent fast and comparatively large memory space. It is therefore an interesting optimization to explore and benchmark.
+However, in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. Especially when comparing the performance against CPUs, as they don't have an equivalent fast and comparatively large memory space. It is therefore an interesting optimization to explore and benchmark.
 
 \subsubsection{Thread Block Dimension}
 
-There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regards to optimally taking advantage of the specific underlying GPU architecture which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics cards can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
+There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regards to optimally taking advantage of the specific underlying GPU architecture, which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics cards can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
 
-For this thesis we looked at the Thread Block dimension in particular and how choosing a different approach to parallizing affects the performance, again with a focus on the \emph{Assemble System} step as the most performance critical step. However the results were then also transferred to the \emph{Update Velocities} step.
+For this thesis we looked at the Thread Block dimension in particular and how choosing a different approach of parallelizing affects the performance. Doing so, the focus was on the \emph{Assemble System} step, which is the most performance critical step. However, the results were then also transferred to the \emph{Update Velocities} step.
 
-The most straight forward approach is to simply parallize the algorithm with regards to a single fiber. This means each kernel invocation is responsible for calculating all the interactions for this fibers with all other fibers. In this way a single kernel is responsible for multiple rows of the resulting linear system matrix. Additionally this approach does not have any memory access conflict as each kernel only writes to the memory location belong to its unique fiber. The potential disadvantage for a one-dimensioanal thread block however is that the resulting code can be more resource intensive for each single kernel and potentially hinder to performance on each multiprocessor.
+The most straight forward approach is to simply parallelize the algorithm with regards to a single fiber. This means each kernel invocation is responsible for calculating all the interactions for this fibers with all other fibers. In this way a single kernel is responsible for multiple rows of the resulting linear system matrix. Additionally, this approach does not have any memory access conflict as each kernel only writes to the memory location belonging to its unique fiber. The potential disadvantage for a one-dimensional thread block, however, is that the resulting code can be more resource intensive for each single kernel and potentially hinder the performance on each multiprocessor.
 
-For a two-dimensional thread block each kernel invocation is responible for a pair of fibers interacting. While this decrease the needed resources it also required atomics which can potential slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are the a further extension of the two-dimensional thread block, as now each kernel invocation is responsible for not the complete interaction but only the interaction resulting from a specific point from the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
+For a two-dimensional thread block each kernel invocation is responsible for a pair of fibers interacting. While this decreases the necesseary resources, it also required atomics which can potential slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are a further extension of the two-dimensional thread block, as now each kernel invocation is responsible not for the complete interaction but only the interaction resulting from a specific point from the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
 
 How exactly each decision for the thread-block dimension affects performance is not clear. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm.
 
 \section{OpenMP}
 
-The goal of this thesis is to implement a high performant rigid fiber simulation on the GPU using CUDA. However in order to better understand to what degree this goal was achieved it would be nice to have comparison. The original serial implementation is not an ideal candidate has it does differ in a number of ways. First of all its purely serial not even taking advantage of todays multicore CPUs. Furthermore it was implemented in double precision and first practical restrictions on consumer CUDA GPUs are only really well suited for single precision, for this reason the CUDA is only single precision. Finally the primary focus of the original Fortran implementation was a correctly implemented algorithm and not performance.
+The goal of this thesis is to implement a high performant rigid fiber simulation on the GPU using CUDA. In order to better understand to what degree this goal was achieved, it is crucial to have a comparison. The original serial implementation is not an ideal candidate as it does differ in a number of ways. First of all, its purely serial and doesn't take advantage of todays multicore CPUs. Furthermore, it was implemented in double precision and because of arbitrary restrictions Nvidia places on its consumer GPUs they are only really well suited for single precision. That is why the CUDA implementation is strictly single precision. Finally, the primary focus of the original Fortran implementation was a correctly implemented algorithm and not performance.
 
-For these reasons and in order to have a fairer comparsion of the performance differences of the GPU and CPU implementation a completely new and rewritten parallel CPU simulation was also implemented. For the parallization the OpenMP library was chosen.
+For these reasons and in order to have a fairer comparsion of the performance differences between the GPU and CPU implementation, a completely new and rewritten parallel CPU simulation was also implemented. For the parallelization on the CPU the OpenMP library was chosen.
 
-- What is OpenMP
+After having implemented a parallel algorithm for the GPU, the conversion to the OpenMP-based CPU implementation was relatively straightforward. All optimizations done for the GPU implementation were also applied to the new CPU code when applicable. In order to parallelize the BLAS functions required for the linear solver the already included OpenBLAS library was chosen. OpenBLAS is an open-source and highly optimized library and automatically parallelizes BLAS functions using pthreads across all available CPU cores. In contrast to the GPU implementation, the OpenMP version is only parallelized in one-dimension. This means that each core calculates the interactions for one fiber with all other fibers or put differently all matrix rows belong to one fiber. As the underlying number of independant threads is much lower on CPUs, different parallelization dimensions didn't have an impact during testing.
 
-After having implemented a parallel algorithm for the GPU the conversion to the OpenMP-based CPU implementation was relatively straightforward. Almost all optimizations for the GPU implementation where also applied to the new CPU code. In order to parallize the BLAS functions required for the linear solver the already included OpenBLAS library was chosen. OpenBLAS is both open-source and highly optimized and automatically parallizes BLAS functions using pthreads across all available CPU cores. In contrast to the GPU implementation is only parallized in one-dimension, so each core calculates the iteractions for one fiber with all other fibers, or put differently all matrix rows belong to one fiber. As the underlying number of independently threads is much lower on CPUs, different parallization dimension didn't have an impact during testing.
-
-The end results of the practical implementation for this thesis is a highly optimized CUDA implementation for Nvidia GPUs and additionally a parallized and optimized Fortran OpenMP implementation for CPUs. The next chapter will now look at a number of performance metrics and compare them between the GPU and CPU.
+The end results of the practical implementation for this thesis is a highly optimized CUDA implementation for Nvidia GPUs and additionally a parallelized and optimized Fortran OpenMP implementation for CPUs. The next chapter will now look at a number of performance metrics and compare them between the GPU and CPU.
 
 \chapter{Results}
-The last chapter introduced the parallel implementation of the numerical simulation. It introduced the concept of general purpose computing on modern GPUs as well as giving a practical overview of the implementation of the algorithm using nVidia CUDA framework and possible optimiziations to take advantage of the unique properties of the GPU architecture.
+\label{cha:results}
 
-Using all the available implementations of the algorithm this chapter will showcase a multitude of different result and benchmarks performed. This is done to illustrate the achieved performance increases on the GPU over the original serial CPU implementation and the parallel OpenMP implementation.
+The last chapter introduced the parallel implementation of the numerical simulation. It presented the concept of general purpose computing on modern GPUs. This was followed with a practical overview of the implementation of the algorithm using Nvidia's CUDA framework. Additionally, possible optimiziations to take advantage of the unique properties of the GPU architecture were outlined.
+
+Using all the available implementations of the algorithm this chapter will showcase a multitude of different results and benchmarks performed. This is done to illustrate the achieved performance increases on the GPU over the original serial CPU implementation and the parallel OpenMP implementation.
 
 \section{Examples}
 
-Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and at the expected physical results. The second example illustrates a real world example which illustrates an interesting phyiscal phenomen. Both a run with the fastest CUDA algorithm implemented in the thesis.
+Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both a run with the fastest CUDA algorithm implemented in the thesis.
 
 \subsection{Numerical precision}
 \subsection{Sphere simulation}
+\label{subsec:example_sphere}
 
 \begin{figure}
-  \centering
-  \includegraphics[width=0.2\textwidth]{img/sphere_00100.png}
-  \caption{t=100}
+  \begin{subfigure}[h]{0.33\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00000.png}
+    \caption{$t=0$}\label{fig:sphere_simulation_1a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.33\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00100.png}
+    \caption{$t=100$}\label{fig:sphere_simulation_1a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.33\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00285.png}
+    \caption{$t=285$}\label{fig:sphere_simulation_1a}
+  \end{subfigure}
+  \caption{Visualization Sphere Simulation}
   \label{fig:sphere_simulation}
 \end{figure}
 
 \section{Methodology}
 
-The methodology used for the benchmark suite is the same for all presented benchmarks. This ensure comparable results and fairest comparison possible.
+The methodology used for the benchmark suite is the same for all presented benchmarks. This ensures comparable results and fairest comparison possible.
 
 \subsection{Hardware}
 
-All benchmarks were run on a the same workstation with specifications listed in table XX.
+All benchmarks were run on the same workstation with specifications listed in table~\ref{tab:workstation}. The components were chosen to provide a balanced system.
+This was done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
 
-
-\begin{center}
-\begin{tabulary}{0.7\textwidth}{LL}
-  \toprule
-  \multicolumn{2}{c}{Workstation} \\
-  \midrule
-  Processor & Intel Core i7 4770 \\
-  Graphics & Nvidia GTX 970 4GB \\
-  RAM & 16GB DDR3 \\
-  Operating System & Ubuntu Linux 12.04 LTS \\
-  CUDA Driver & CUDA 6.5.xxxx \\
-  \bottomrule
-  \label{tab:workstation}
-\end{tabulary}
+\begin{table}[h]
+  \begin{center}
+  \begin{tabulary}{0.7\textwidth}{LL}
+    \toprule
+    \multicolumn{2}{c}{Workstation} \\
+    \midrule
+    Processor & Intel Core i7 4770 \\
+    Graphics & Nvidia GTX 970 4GB \\
+    RAM & 16GB DDR3 \\
+    Operating System & Ubuntu Linux 12.04 LTS \\
+    CUDA Driver & CUDA 6.5.xxxx \\
+    \bottomrule
+  \end{tabulary}
 \end{center}
+\caption{Benchmark system hardware specification}
+\label{tab:workstation}
+\end{table}
 
 \subsection{Benchmark scheme}
 
-The main goal of the benchmark system was to generate statistical significant and reproducable performance numbers. To ensure this all benchmarks for both the GPU and the CPU were run using the exact same scheme. In order to obtaining the timings the builtin CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM\_CLOCK} function was used respectively.
+The main goal of the benchmark system was to generate statistical significant and reproducible performance numbers. To ensure this, all benchmarks for both the GPU and the CPU were run using the exact same scheme like the number of iterations and stop criteria. In order to obtain the timings, the built-in CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM\_CLOCK} function was used respectively.
 
 For all different benchmarks timings were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For each seperate number of fibers a number of iterations are run to obtain the average over multiple runs. For each iteration a completely new and random initial fiber configuration is generated with the current number of fibers. In order to exclude illegal configurations where fibers overlap and intersect an additional correction pass is done over the fibers to ensure a minimal and average distance between all fibers. For the configrations in this thesis the minimal distance was always set to $0.2$ and the average to $0.4$ respectively.
 
-Using this semi-random generation the rigid fiber simulation is run for exactly $10$ timesteps. To avoid remaining outliers in the configuration causing potentially large variation in the timings especially for iterative solvers the first timestep is excluded from the timing and instead used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ timesteps.
+Using this semi-random generation the rigid fiber simulation is run for exactly $10$ timesteps. To avoid remaining outliers in the configuration causing potentially large variation in the timings the first timestep is excluded. This is especially true for iterative solvers which are highly dependent on the configuration. The first timestep is thus used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ timesteps.
 
-In order to ensure a stasticial sgnificant result the number of iterations is not fixed, instead it is determined dynamically based on the relative standard error of the already collected timing for the particular number of fibers. Beginning with a minimum of number iterations the relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specificed threshold the number of iterations is doubled and run again. The benchmark suite uses a minimum of $4$ iterations to obtain the initial timings if the relative standard error is not below a threshold of $20\%$ an additional $4$ iterations are run to bring the total to $8$. This process repeats until the threshold is satisfied and more reliable benchmark timings have been obtained. This algorithm is illustrated using pseudocode in listing~\ref{lst:pseudo_benchmark}.
+In order to ensure a statistical significant result, the number of iterations is not fixed. Instead it is determined dynamically and based on the relative standard error of the already collected timing for the particular number of fibers. A minimum number of iterations is always executed first and their relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specificed threshold, the number of iterations is doubled and run again.
 
 \begin{listing}
   \centering
@@ -684,38 +709,40 @@ In order to ensure a stasticial sgnificant result the number of iterations is no
     fontsize=\footnotesize,
     frame=lines,
     framesep=2mm]{c}
-for(int N = 100; N <= 2000; N += 100)
-{
-  int iterations = 4;
-  while (iterations <= MAX_ITER)
-  {
+    for(int N = 100; N <= 2000; N += 100)
+    {
+    int iterations = 4;
+    while (iterations <= MAX_ITER)
+    {
     for(int i = 0; i < iterations; ++i)
     {
-      generateRandomInitialFiberConfiguration();
-      run(10); // execute 10 timesteps
-      collectTimings();
+    generateRandomInitialFiberConfiguration();
+    run(10); // execute 10 timesteps
+    collectTimings();
     }
 
     rse = calculateRelativeStandardError();
 
     if (rse <= 0.2)
     {
-      break;
+    break;
     }
 
     iterations *= 2
-  }
+    }
 
-  reportTimings();
-}
+    reportTimings();
+    }
   \end{minted}
   \caption{Pseudocode for benchmark scheme.}
   \label{lst:pseudo_benchmark}
 \end{listing}
 
+The benchmark suite uses a minimum of $4$ iterations to obtain the initial timings in case the relative standard error is not below a threshold of $20\%$ an additional $4$ iterations are run to bring the total to $8$. This process repeats until the threshold is not exceeded and more reliable benchmark timings have been obtained. The algorithm for collecting the benchmark results is illustrated using pseudocode in listing~\ref{lst:pseudo_benchmark}.
+
 \section{Optimizations}
 
-We now look at the performance results for the different optimizations previously outlined in section~\ref{sec:implementation_optimization}. Where applicable the results will be compared between the OpenMP and CUDA version of the algorithm.
+We now look at the performance results for the different optimizations previously outlined in section~\ref{subsec:optimizations}. Where applicable the results will be compared between the OpenMP and CUDA version of the algorithm.
 
 \subsection{Numeric vs. Analytic Integration}
 
@@ -744,7 +771,7 @@ The first benchmark tests the performance of the two different approaches to com
   \label{fig:openmp_num_vs_anal}
 \end{figure}
 
-However the picture is more interesting when we look at the same graph for the CUDA implementation in figure~\ref{fig:cuda_num_vs_anal}. Here the results are reversed. The numeric integration out performs the analytical integration by an larger margin increasing with the number of fibers.
+However, the picture is more interesting when we look at the same graph for the CUDA implementation in figure~\ref{fig:cuda_num_vs_anal}. Here the results are reversed. The numeric integration outperforms the analytical integration by a large margin increasing with the number of fibers.
 
 \begin{figure}
   \centering
@@ -769,10 +796,11 @@ However the picture is more interesting when we look at the same graph for the C
   \label{fig:cuda_num_vs_anal}
 \end{figure}
 
-This reason for this result lies in the way work is scheduled and executing on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means each line of code is executed for each thread in parallel. However if the code encounteres a branch in the execution path like a simple \emph{if} statement the threads diverge. First all threads for which the condition hold true execute while the other threads have to wait. Only after that can the threads with the false condition execute while the other threads are not used. Finally after all divergent paths have been executed the code continous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code.
+This reason for this result lies in the scheduling and execution of work on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means each line of code is executed for each thread in parallel. However, if the code encounteres a branch in the execution path like a simple \emph{if} statement, the threads diverge. First all threads for which the condition hold true execute while the other threads have to wait. Only after that can the threads whereas the false condition execute while the other threads are not used. Finally after all divergent paths have been executed the code continous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code.
 
-To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in in section~\ref{sec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
+To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in section~\ref{subsec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
 
+\begin{table}[h]
 \begin{center}
   \begin{tabulary}{0.7\textwidth}{LR}
     \toprule
@@ -781,20 +809,22 @@ To confirm that Branch Divergence is the reason for the slow down of the analyti
     Numerical & $99.01\%$ \\
     Analytical & $53.79\%$ \\
     \bottomrule
-    \label{tab:branch_divergence}
   \end{tabulary}
 \end{center}
+\caption{Warp Exection Efficiency of Numerical vs. Analytical Integration.}
+\label{tab:branch_divergence}
+\end{table}
 
-On one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of time only half of threads actually perform work while the other half is just waiting. This results in the observered performance difference. Closer inspection of the source code reveal that the design constant and the resulting branching as described in section~\ref{sec:analytical_integration} is responsible for the divergence. The constant determines a if a different computation is performed in case fibers are very close together. Unfortunately in order to ensure numeric stability this workaround is unavoidable.
+On one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observered performance difference. Closer inspection of the source code reveals that the design constant and the resulting branching as described in section~\ref{subsubsec:numeric_analytic} is responsible for the divergence. The constant determines if a slightly different code should be executed in case fibers are very close together. Unfortunately, in order to ensure numeric stability this workaround is unavoidable.
 
 \subsection{Shared Memory}
 
 - No effect of the performance
-- Assemble System is not Compute Bound not Memory Bound. The transfer times are dwarfed by the compute time
+- Assemble System is Compute Bound not Memory Bound. The transfer times are dwarfed by the compute time
 
 \subsection{Thread Block Dimension}
 
-The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used overhead caused by an increased amout of memory writes to the same location and thus the need for potential slow atomics.
+The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used and the overhead caused by an increased amout of memory writes to the same location and thus the need for potential slow atomics.
 
 \begin{figure}
   \centering
@@ -820,27 +850,30 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
   \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
-The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transationcs that had to be performed. As can be seen in table~\ref{tab:atomic_transationcs} the required atomic transactions are almost two times larger in the 3D case for the Sphere example from section~\ref{sec:example_sphere}.
+The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transactions that had to be performed. As can be seen in table~\ref{tab:atomic_transactions}, the required atomic transactions for the sphere example from section~\ref{subsec:example_sphere} are almost two times larger in the 3D case.
 
-\begin{center}
-  \begin{tabulary}{0.7\textwidth}{LR}
-    \toprule
-    Algorithm & atomic\_transactions \\
-    \midrule
-    2D & $1269325$ \\
-    3D & $2350670$ \\
-    \bottomrule
-    \label{tab:atomic_transactions}
-  \end{tabulary}
-\end{center}
+\begin{table}[h]
+  \begin{center}
+    \begin{tabulary}{0.7\textwidth}{LR}
+      \toprule
+      Algorithm & atomic\_transactions \\
+      \midrule
+      2D & $1269325$ \\
+      3D & $2350670$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+  \caption{Atomic transactions of 2D vs. 3D thread block dimensions.}
+  \label{tab:atomic_transactions}
+\end{table}
 
-The one-dimensional approach is also slower than either two-dimensional or three-dimensional. However it appears to scale linearly whereas the other two scale exponentially. It can already be observed that 1D becomes faster than 3D for close to $2000$ fibers. Unfortunately the hardware of the workstation does not have enough memory to simulate more fibers. So for this particular hardware setup two-dimensional thread blocks are the fastest option.
+The one-dimensional approach is also slower than either two-dimensional or three-dimensional. However, it appears to scale linearly whereas the other two scale exponentially. It can already be observed that 1D becomes faster than 3D for close to $2000$ fibers. Unfortunately, the hardware of the workstation does not have enough memory to simulate more fibers.
 
 \section{Linear Solvers}
 
-Next we compare the performance for different linear solvers. We explored two different types of solver. The first type is a direct solver of the linear equations which is both implemented for OpenMP as well as the CUDA implementation. The second type are iterative solvers. Unfortunately we can't take advantage of the main advantage of iterative solvers to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system is an increasingly large part of the overall runtime. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
+Next we compare the performance for different linear solvers. We explored two different types of solvers. The first type is a direct solver of the linear equations which is both implemented for OpenMP as well as the CUDA implementation. The second type are iterative solvers. Unfortunately, we can't make use of the iterative solvers main advantage to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system is an increasingly large part of the overall runtime. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
 
-On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallized. For GMRES we used the single precision Fortran implmentation from Frayssé et al. which takes extensive advantage of the underyling BLAS functions parallized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests. The benchmark results for this thesis are illustrated in figure~\ref{fig:bench_openmp_solvers}.
+On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al. which takes extensive advantage of the underyling BLAS functions parallelized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests. The benchmark results for this thesis are illustrated in figure~\ref{fig:bench_openmp_solvers}.
 
 \begin{figure}
   \centering
@@ -865,7 +898,7 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
-Up until around $500$ fibers GMRES is indeed faster than as reported by the original authors. However after that the direct solver starts to perform much better, being close to two times faster. Additionally it can be seen that the iterative GMRES solver is fluctuation widely owing to the fact that the performance is highly dependent on the particular tested initial fiber configuration. As the direct solver always performs the same number of computations it doesn't suffer from this. Furthermore the direct solver has the advantage to always calculate the exact result excluding numerical precision as compared to the close solution iterative solvers provide.
+Up until around $500$ fibers GMRES is indeed faster than as reported by the original authors. However, after that the direct solver starts to perform much better, being close to two times faster. Additionally it can be seen that the iterative GMRES solver is fluctuating widely owing to the fact that the performance is highly dependent on the particular tested initial fiber configuration. As the direct solver always performs the same number of computations it doesn't suffer from this. Furthermore, the direct solver has the advantage to always calculate the exact result excluding numerical precision as compared to the close solution iterative solvers provide.
 
 On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in figure~\ref{fig:bench_cuda_solvers}.
 
@@ -893,15 +926,15 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
   \label{fig:bench_cuda_solvers}
 \end{figure}
 
-The same fact that the direct solver is faster than the iterative solvers holds true for the GPU. However compared to the CPU solvers the difference between the performance of the direct solver against the iterative solvers is even more pronounced. At close to $2000$ fibers the direct solver is about three to four times faster than either GMRES or BiCGStab. Looking at the two difference between the two iterative solvers BiCGStab is slightly faster than GMRES, whether this is an inherent property of the algorithm or simply a more performant implementation is not clear. Either way the direct solver is the clear winner and also has the advantage to provide exact solutions.
+The same fact that the direct solver is faster than the iterative solvers holds true for the GPU. However, compared to the CPU solvers the difference between the performance of the direct solver against the iterative solvers is even more pronounced. At close to $2000$ fibers the direct solver is about three to four times faster than either GMRES or BiCGStab. Looking at the difference between the two iterative solvers BiCGStab is slightly faster than GMRES, whether this is an inherent property of the algorithm or simply a more performant implementation is not clear. Either way the direct solver is not only the clear winner in terms of performance but also provides exact solutions.
 
 \section{Comparing CPU and GPU performance}
 
-The final benchmark compares the CPU and GPU performance. How to do a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature. The underlying archictures of the to approaches are completely different and thus not really comparable. Some try to extrapolate relative performance from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account, however because of integrate hardware details this approach is also not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus.
+The final benchmark compares the CPU and GPU performance. How to make a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature. The underlying architectures of the to approaches are completely different and thus not really comparable. Some try to extrapolate relative performance from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account. However, due to of integrate hardware details this approach is also not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus.
 
-Exploring this question in more detail is out of the scope of this thesis. In order to come as close as possible given these complexities and constraints we used both a current CPU and GPU considered as a balanced system at the time of writing. Additionally we implemented the parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore the final benchmark for each uses the fastest possible algorithm variant as determined by all previously performed benchmarks to compare the best variant for each architecture.
+Exploring this question in more detail is out of the scope of this thesis. In order to come as close as possible given these complexities and constraints, we used both a current CPU and GPU considered as a balanced system at the time of writing. Additionally, we implemented the parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore, the final benchmark for each uses the fastest possible algorithm variant as determined by all previously performed benchmarks to compare the best variant for each architecture.
 
-The results for average time required to take a single timestep is illustraded in figure~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. The linear system is solved by the direct solver provided by OpenBLAS. For CUDA we used the numerical integration and the thread block diemsion was chosen to be two-dimensional. The direct solver for MAGMA is used to solve the linear system.
+The results for average time required to take a single timestep is illustrated in figure~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. The linear system is solved by the direct solver provided by OpenBLAS. For CUDA, we used the numerical integration and the thread block dimension was chosen to be two-dimensional. The direct solver for MAGMA is used to solve the linear system.
 
 \begin{figure}
   \centering
@@ -927,9 +960,9 @@ The results for average time required to take a single timestep is illustraded i
   \label{fig:overall}
 \end{figure}
 
-The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. CUDA maintains a relative performance of $~15\times$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
+The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. CUDA maintains a relative performance of $~15×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
 
-We acknowledge that these numbers and performance increase is not necessarily fair. A different CPU and GPU combintation from the one used in this thesis might perform differently. However the relative performance should stay roughly the same. In the end what really matters, for the researcher working with rigid fibers, is the time it takes to simulate large system on the workstation available to him or her. No need to wait for computing time at a computing cluster but instead simple and fast iterations using a workstation. The observed performance increase of $15\times$ is a difference between a whole day of waiting for the simulation results and a quick $1.5$ hour result during the day.
+We acknowledge that these numbers and performance increases is not necessarily fair. A different CPU and GPU combintation from the one used in this thesis might perform differently. However, the relative performance should stay roughly the same. In the end , the only thing that really matters for the researcher working with rigid fibers is the time it takes to simulate large systems on the available workstation. No need to wait for computing time at a computing cluster but instead simple and fast iterations using a workstation. The observed performance increase of $15×$ is a difference between a whole day of waiting for the simulation results and a quick $1.5$ hour result during the day. The saved time also translates directly into the ability to simulate many more fibers than ever before. Before the largest simulation possible in a reasonable time frame where around $500$ fibers, in contrast one single timestep for $2000$ takes only about $10$ seconds on the GPU. Therefor the implementation on the GPU and the optimizations of the simulation code is a great value to the researcoh of rigid fiber simulations.
 
 \chapter{Conclusion}
 
