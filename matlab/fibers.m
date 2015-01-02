@@ -17,9 +17,7 @@ for file = files'
 
     Tx = orient(:,1);
     Ty = orient(:,2);
-    Tz = orient(:,3);
-
-    Xp = [Xc'+Tx'*-1;Xc'+Tx'*0;Xc'+Tx'*1];
+    Tz = orient(:,3);   Xp = [Xc'+Tx'*-1;Xc'+Tx'*0;Xc'+Tx'*1];
     Yp = [Yc'+Ty'*-1;Yc'+Ty'*0;Yc'+Ty'*1];
     Zp = [Zc'+Tz'*-1;Zc'+Tz'*0;Zc'+Tz'*1];
     
@@ -27,7 +25,8 @@ for file = files'
     
     plot3(Xp,Yp,Zp);
     grid on;
-    axis([-30 30 -30 30 -1000 10]);
+    %axis([-30 30 -30 30 -1000 10]);
+    axis([-3 3 -3 3 -40 20]);
     
     output=['output/' sprintf('%05d',index) '.png'];
     

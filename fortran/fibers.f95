@@ -26,6 +26,7 @@ PROGRAM fibers
   REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_translational_velocities, t_current_translational_velocities
   REAL*4,ALLOCATABLE,TARGET,DIMENSION(:)::t_previous_rotational_velocities, t_current_rotational_velocities
 
+  REAL*4,POINTER::tmp_pointer(:)
   REAL*4,POINTER::previous_positions(:),current_positions(:),next_positions(:)
   REAL*4,POINTER::previous_orientations(:),current_orientations(:),next_orientations(:)
   REAL*4,POINTER::previous_translational_velocities(:),current_translational_velocities(:)
@@ -155,7 +156,7 @@ PROGRAM fibers
   END DO
   CLOSE(10)
   PRINT *,"Read initial data from file. "
-  !PRINT '(*(F16.8))', current_positions
+  ! PRINT '(*(F16.8))', current_positions
 
   !--------------------------------------------------
   ! Precompute constants
@@ -290,18 +291,33 @@ PROGRAM fibers
     CLOSE(10)
 #endif
 
-    previous_translational_velocities => t_current_translational_velocities
-    current_translational_velocities => t_previous_translational_velocities
-    previous_rotational_velocities => t_current_rotational_velocities
-    current_rotational_velocities => t_previous_rotational_velocities
+    WRITE(str_timestep, '(I0.5)') current_timestep
+    PRINT *,"SAVING","XcT_res_"//TRIM(str_timestep)//".out"
+    OPEN(10,file="XcT_res_"//TRIM(str_timestep)//".out");
+    WRITE(10,*) NUMBER_OF_FIBERS
+    DO i=1,NUMBER_OF_FIBERS
+      WRITE(10,'(*(F16.8))') current_positions((i-1)*DIMENSIONS+1),current_positions((i-1)*DIMENSIONS+2),current_positions((i-1)*DIMENSIONS+3)
+      WRITE(10,'(*(F16.8))') current_orientations((i-1)*DIMENSIONS+1),current_orientations((i-1)*DIMENSIONS+2),current_orientations((i-1)*DIMENSIONS+3)
+    END DO
+    CLOSE(10)
 
-    previous_positions => t_current_positions
-    current_positions => t_next_positions
-    next_positions => t_previous_positions
+    tmp_pointer => previous_translational_velocities
+    previous_translational_velocities => current_translational_velocities
+    current_translational_velocities => tmp_pointer
 
-    previous_orientations => t_current_orientations
-    current_orientations => t_next_orientations
-    next_orientations => t_previous_orientations
+    tmp_pointer => previous_rotational_velocities
+    previous_rotational_velocities => current_rotational_velocities
+    current_rotational_velocities => tmp_pointer
+
+    tmp_pointer => previous_positions
+    previous_positions => current_positions
+    current_positions => next_positions
+    next_positions => tmp_pointer
+
+    tmp_pointer => previous_orientations
+    previous_orientations => current_orientations
+    current_orientations => next_orientations
+    next_orientations => tmp_pointer
 
 #if defined(BENCHMARK)
     CALL SYSTEM_CLOCK(total_count2, total_count_rate, total_count_max)
