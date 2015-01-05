@@ -292,14 +292,19 @@ PROGRAM fibers
 #endif
 
     WRITE(str_timestep, '(I0.5)') current_timestep
-    PRINT *,"SAVING","XcT_res_"//TRIM(str_timestep)//".out"
-    OPEN(10,file="XcT_res_"//TRIM(str_timestep)//".out");
+    OPEN(10,file=""//TRIM(str_timestep)//".state");
     WRITE(10,*) NUMBER_OF_FIBERS
     DO i=1,NUMBER_OF_FIBERS
       WRITE(10,'(*(F16.8))') current_positions((i-1)*DIMENSIONS+1),current_positions((i-1)*DIMENSIONS+2),current_positions((i-1)*DIMENSIONS+3)
       WRITE(10,'(*(F16.8))') current_orientations((i-1)*DIMENSIONS+1),current_orientations((i-1)*DIMENSIONS+2),current_orientations((i-1)*DIMENSIONS+3)
     END DO
     CLOSE(10)
+
+    OPEN(20,file=""//TRIM(str_timestep)//".velocity")
+    DO i=1,NUMBER_OF_FIBERS
+      WRITE(20,'(*(F16.8))') current_translational_velocities((i-1)*DIMENSIONS+1),current_translational_velocities((i-1)*DIMENSIONS+2),current_translational_velocities((i-1)*DIMENSIONS+3)
+    END DO
+    CLOSE(20)
 
     tmp_pointer => previous_translational_velocities
     previous_translational_velocities => current_translational_velocities

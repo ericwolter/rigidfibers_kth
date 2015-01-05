@@ -21,6 +21,8 @@ fort.*
 matlab/input/
 matlab/output/
 matlab/anim/
+matlab/input_*/
+matlab/output_*/
 
 # binary output
 ADVECT_FIBERS

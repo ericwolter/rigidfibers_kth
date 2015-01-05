@@ -217,7 +217,16 @@ where $\delta(\mathbf{x} - \mathbf{x}_0)$ is Dirac delta function. Solving these
     \mathbf{S}(\mathbf{r}) &= \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|} + \frac{rr}{|r|^3}\right) \text{,}
   \end{aligned}
 \end{equation}
-where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identity tensor. Additionally, we will later need higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so-called doublet is defined as
+where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identity tensor. Figure~\ref{fig:stokeslet} illustrates an example of the force $\mathbf{F}$ at the source point $\mathbf{x}_0$ and resulting velocity $\mathbf{u}$ at the observation point $\mathbf{x}$.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/stokeslet.pdf}
+  \caption{Singular point force embedded in stokes flow.}
+  \label{fig:stokeslet}
+\end{figure}
+
+Additionally, we will later need higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so-called doublet is defined as
 \begin{equation}
   \label{eq:doublet}
   \mathbf{D}(\mathbf{r}) = \frac{1}{2} \Delta\mathbf{S}(\mathbf{r}) = \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|^3} - \frac{3rr}{|r|^5}\right) \text{.}
@@ -638,27 +647,78 @@ Using all the available implementations of the algorithm this chapter will showc
 
 \section{Examples}
 
-Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both a run with the fastest CUDA algorithm implemented in the thesis.
+Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both were run with the fastest CUDA algorithm implemented in the thesis.
 
 \subsection{Numerical precision}
+\label{subsec:example_sphere}
+
+The first example was used to verify that the single precision GPU version is able to replicate the result of the original double precision code. For this we looked at a very simple problem where a small number of fibers are setup perfectly symmetrical position and orientation. All fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation the fibers begin to rotate from their vertical orientation towards the horizontal position. Afterwards they continue rotating back into the vertical position. This motion is referred to as tumbling orbits and as long as there are no distribances or numerical precision issues it repeat forever.
+
+This simple but very intersting problem has also been simulated in \cite{}. Additionally an even more simplified version with only two fibers was studied numerically and experimentally by \cite{}. This example is thus ideally suited to test and verify the numerical precision of GPU simulation. A visulization of the GPU simulation of $16$ fibers evenly distributed around a circle with diameter $1.1$ is shown in figure~\ref{fig:ring_simulation}.
+
+\begin{figure}
+  \centering
+  \begin{subfigure}[h]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00000.png}
+    \caption{$t=0$}\label{fig:ring_simulation_1a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00015.png}
+    \caption{$t=15$}\label{fig:ring_simulation_1b}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00030.png}
+    \caption{$t=30$}\label{fig:ring_simulation_1c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00045.png}
+    \caption{$t=45$}\label{fig:ring_simulation_1d}
+  \end{subfigure}
+  \caption{Visualization Ring Simulation}
+  \label{fig:ring_simulation}
+\end{figure}
+
+In order to analyse the periodic movment of the fibers we now look at the sedimentation velocity caused by gravity. In the initial setup the fibers are aligned vertically and are dropping with the maximum velocity. As they rotate into the horizontal orientation the velocity is decreasing and reaches its minimum once the fibers are perpendicular to the direction of gravity. Afterwards on their way back to vertical orientation the velocity increases again.
+
+Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber overtime. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{img/ring_sedimentation.pdf}
+  \caption{Sedimentation velocity.}
+  \label{fig:ring_sedimentation_velocity}
+\end{figure}
+
 \subsection{Sphere simulation}
 \label{subsec:example_sphere}
 
+The second example showcases a more chaotic system with large number of interacting fibers. It 
+
 \begin{figure}
-  \begin{subfigure}[h]{0.33\textwidth}
+  \centering
+  \begin{subfigure}[h]{0.4\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/sphere_00000.png}
+    \includegraphics[width=\textwidth]{img/sphere_00000.pdf}
     \caption{$t=0$}\label{fig:sphere_simulation_1a}
   \end{subfigure}
-  \begin{subfigure}[h]{0.33\textwidth}
+  \begin{subfigure}[h]{0.4\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/sphere_00100.png}
-    \caption{$t=100$}\label{fig:sphere_simulation_1a}
+    \includegraphics[width=\textwidth]{img/sphere_00100.pdf}
+    \caption{$t=100$}\label{fig:sphere_simulation_1b}
   \end{subfigure}
-  \begin{subfigure}[h]{0.33\textwidth}
+  \begin{subfigure}[h]{0.4\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/sphere_00285.png}
-    \caption{$t=285$}\label{fig:sphere_simulation_1a}
+    \includegraphics[width=\textwidth]{img/sphere_00150.pdf}
+    \caption{$t=285$}\label{fig:sphere_simulation_1c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00250.pdf}
+    \caption{$t=285$}\label{fig:sphere_simulation_1d}
   \end{subfigure}
   \caption{Visualization Sphere Simulation}
   \label{fig:sphere_simulation}
