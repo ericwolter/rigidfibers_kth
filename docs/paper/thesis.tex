@@ -696,7 +696,29 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 \subsection{Sphere simulation}
 \label{subsec:example_sphere}
 
-The second example showcases a more chaotic system with large number of interacting fibers. It 
+The second example showcases a more chaotic system with large number of interacting fibers. The observed phenomen only occurs if enough fibers are simulated and is thus ideally suited for the GPU simulation as it reduces the required time per step. For this this example $500$ fibers are initially distributed inside a sphere with a radius of $3$. Both their positions and orientations are randomly generated inside this sphere. An illustration of an example run can be seen in figure~\ref{fig:sphere_simulation} and the corresponding configuration parameters in table~\ref{tab:example_sphere}.
+
+\begin{table}[h]
+  \begin{center}
+    \begin{tabulary}{0.7\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Sphere Radius & $3$ \\
+      Number of fibers & $500$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+  \caption{Parameters for example sphere simulation.}
+  \label{tab:example_sphere}
+\end{table}
+
+This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{subsec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behaviour is more chaotic.
 
 \begin{figure}
   \centering
@@ -723,6 +745,10 @@ The second example showcases a more chaotic system with large number of interact
   \caption{Visualization Sphere Simulation}
   \label{fig:sphere_simulation}
 \end{figure}
+
+After some time the ring starts to break and the fibers are split into multiple smaller clusters. Each cluster continues to sediment seperately and slowly forms its own smaller rings again. However due to tiny variations these rings can be harder to see.
+
+For the presented example with the GPU simulation only takes $~0.28$ seconds. It is able to perform the simulated $300$ timesteps in less than $2$ minutes. The new GPU simulation can now be used to increase the number of fibers even further and explore the intricate patterns formed.
 
 \section{Methodology}
 
