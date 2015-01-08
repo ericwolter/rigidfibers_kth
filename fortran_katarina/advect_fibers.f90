@@ -443,7 +443,7 @@ PROGRAM ADVECT_FIBERS
   CALL SYSTEM_CLOCK(count1,count_rate,count_max);
 
   PRINT *,"=========== Starting the time-stepping ==================="
-  DO tt=1,1
+  DO tt=1,no_ts
       CALL SYSTEM_CLOCK(step_count1,step_count_rate,step_count_max);
     PRINT *,"time step no ",tt
      !! Compute the coefficient in the force expansion using Legendre polynomials
@@ -559,54 +559,55 @@ PROGRAM ADVECT_FIBERS
 
       t=t+dt;
 
-!      IF (mod(tt,save_ival)==0) THEN
-!         !Time to save
-!         nos=nos+1;
-!         PRINT *,"========================================"
-!         PRINT *,"Time step no ",tt,"."
-!         PRINT *,"========================================"
-!         PRINT *,"Saving to file ",trim(filename),", nos=",nos
-!         PRINT *,"Saving to file ",trim(filename2),", nos=",nos
-!         DO i=1,M
-!            ind=(i-1)*3
-!            WRITE(10,'(2F24.16)') XcVecs(ind+1,three)
-!            WRITE(10,'(2F24.16)') XcVecs(ind+2,three)
-!            WRITE(10,'(2F24.16)') XcVecs(ind+3,three)
-!            WRITE(10,*) ' '
-!            WRITE(10,'(2F24.16)') tVecs(ind+1,three)
-!            WRITE(10,'(2F24.16)') tVecs(ind+2,three)
-!            WRITE(10,'(2F24.16)') tVecs(ind+3,three)
-!            WRITE(10,*) ' '
-!            WRITE(30,'(2F24.16)') VelVecs(ind+1,new)
-!            WRITE(30,'(2F24.16)') VelVecs(ind+2,new)
-!            WRITE(30,'(2F24.16)') VelVecs(ind+3,new)
-!            WRITE(30,*) ' '
-!            WRITE(30,'(2F24.16)') RotVecs(ind+1,new)
-!            WRITE(30,'(2F24.16)') RotVecs(ind+2,new)
-!            WRITE(30,'(2F24.16)') RotVecs(ind+3,new)
-!            WRITE(30,*) ' '
-!         END DO
-!         DO i=1,3*M*N
-!            WRITE(70,'(2F24.16)') coeffvec(i)
-!         END DO
-!         WRITE(70,*) ' '
-!      END IF
-!      PRINT*, "5"
+      PRINT *, "SEDIMENTATION:", VelVecs(3,new)
 
-!     IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
-!        pp=pp+1;
-!        CALL int2str(filenostr,pp)
+     IF (mod(tt,save_ival)==0) THEN
+        !Time to save
+        nos=nos+1;
+        PRINT *,"========================================"
+        PRINT *,"Time step no ",tt,"."
+        PRINT *,"========================================"
+        PRINT *,"Saving to file ",trim(filename),", nos=",nos
+        PRINT *,"Saving to file ",trim(filename2),", nos=",nos
+        DO i=1,M
+           ind=(i-1)*3
+           WRITE(10,'(2F24.16)') XcVecs(ind+1,three)
+           WRITE(10,'(2F24.16)') XcVecs(ind+2,three)
+           WRITE(10,'(2F24.16)') XcVecs(ind+3,three)
+           WRITE(10,*) ' '
+           WRITE(10,'(2F24.16)') tVecs(ind+1,three)
+           WRITE(10,'(2F24.16)') tVecs(ind+2,three)
+           WRITE(10,'(2F24.16)') tVecs(ind+3,three)
+           WRITE(10,*) ' '
+           WRITE(30,'(2F24.16)') VelVecs(ind+1,new)
+           WRITE(30,'(2F24.16)') VelVecs(ind+2,new)
+           WRITE(30,'(2F24.16)') VelVecs(ind+3,new)
+           WRITE(30,*) ' '
+           WRITE(30,'(2F24.16)') RotVecs(ind+1,new)
+           WRITE(30,'(2F24.16)') RotVecs(ind+2,new)
+           WRITE(30,'(2F24.16)') RotVecs(ind+3,new)
+           WRITE(30,*) ' '
+        END DO
+        DO i=1,3*M*N
+           WRITE(70,'(2F24.16)') coeffvec(i)
+        END DO
+        WRITE(70,*) ' '
+     END IF
 
-!        filename=trim(abbr)//filenostr
-!        filename2=trim(abbr2)//filenostr
-!        CLOSE(10)
-!        CLOSE(30)
-!        CLOSE(70)
-!        OPEN(10,file=trim(filename));
-!        OPEN(30,file=trim(filename2));
-!        OPEN(70,file=trim(filename3));
-!        PRINT *,"Opened new file: ",filename, "and", filename2
-!     END IF
+    IF (mod(tt,save_ival*no_saves_in_file)==0 .AND. tt<no_ts) THEN
+       pp=pp+1;
+       CALL int2str(filenostr,pp)
+
+       filename=trim(abbr)//filenostr
+       filename2=trim(abbr2)//filenostr
+       CLOSE(10)
+       CLOSE(30)
+       CLOSE(70)
+       OPEN(10,file=trim(filename));
+       OPEN(30,file=trim(filename2));
+       OPEN(70,file=trim(filename3));
+       PRINT *,"Opened new file: ",filename, "and", filename2
+    END IF
     CALL SYSTEM_CLOCK(step_count2,step_count_rate,step_count_max);
     CPU_p=real(step_count2-step_count1)/step_count_rate
 

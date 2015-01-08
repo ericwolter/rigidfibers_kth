@@ -1,2 +1,3 @@
 #!/bin/sh
-arara thesis.tex --verbose --log
+arara thesis.tex
+rubber-info thesis.tex

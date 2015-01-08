@@ -1,5 +1,6 @@
-% arara: lualatex: { shell : yes }
-% arara: lualatex: { shell : yes }
+% arara: clean: {files: [thesis.aux, thesis.idx, thesis.ilg, thesis.ind, thesis.log, thesis.bbl, thesis.bcf, thesis.ist, thesis.blg, thesis.run.xml, thesis.lol, thesis.out, thesis.toc, texput.log]}
+% arara: lualatex: { shell : yes , action: batchmode}
+% arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
 \DeclareMathSizes{12}{}{}{}
@@ -22,6 +23,7 @@
 
 % Bibliographies
 \usepackage[backend=biber]{biblatex} % modern bibliographies
+\usepackage{csquotes}
 
 % PDF Metadata
 \usepackage{hyperref} % enables PDF hyperlinks
@@ -44,6 +46,7 @@
 % Graphics
 \usepackage{graphicx} % all things graphics
 \usepackage{pgfplots} % complex graphs
+\usepgfplotslibrary{dateplot}
 \usepackage{pgfplotstable}
 \pgfplotsset{
   compat=1.11, % avoid running in backwards compatibility mode
@@ -219,7 +222,7 @@ where $\delta(\mathbf{x} - \mathbf{x}_0)$ is Dirac delta function. Solving these
 \end{equation}
 where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identity tensor. Figure~\ref{fig:stokeslet} illustrates an example of the force $\mathbf{F}$ at the source point $\mathbf{x}_0$ and resulting velocity $\mathbf{u}$ at the observation point $\mathbf{x}$.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.3819660112501450000000\textwidth]{img/stokeslet.pdf}
   \caption{Singular point force embedded in stokes flow.}
@@ -267,9 +270,69 @@ I will begin with a short introduction to general purpose computing on the GPU a
 \section{GPU Programming}
 In the beginning of Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. The deciding factor is how well the problem can be parallized to take advantage of the massively parallel architectures of GPUs. This has lead to potentially large performance advantages of GPUs over CPUs as illustrated in figure~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (GFLOP/s). The FLOP/s number is calculated by combining information of the number of compute cores, core frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to show the potential GPUs have.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=\textwidth]{img/gpu_performance.pdf}
+  \begin{tikzpicture}
+    \setmathfont{FiraSans-Book.otf}
+    \begin{axis}[
+      title=Theoretical GFLOP/s,
+      xlabel={Year},
+      ylabel={GFLOP/s},
+      date coordinates in=x,
+      xticklabel={\year},
+      date ZERO=2002-01-01,
+      xtick={2002-01-01,2004-01-01,2006-01-01,2008-01-01,2010-01-01,2012-01-01,2014-01-01},
+      xmin=2002-01-01,
+      xmax=2014-01-01,
+      ymin=0,ymax=5500,
+      ]
+      \addplot[color=set12_light,mark=*,mark options={fill=white}, very thick] table[x=Date,y=Double,col sep=comma,meta=Name] {charts/cpu_performance.csv};
+      \addlegendentry{Intel CPU Double Precision}
+
+      \addplot[
+      scatter,
+      visualization depends on=\thisrow{alignment} \as \alignment,
+      nodes near coords,
+      point meta=explicit symbolic,
+      every node near coord/.style={anchor=\alignment},
+      color=set13_light,
+      mark=*,
+      mark options={fill=white},
+      very thick,
+      every node near coord/.append style={font=\tiny},
+      ] table[x=Date,y=Double,col sep=comma,meta=Name] {charts/double_gpu_performance.csv};
+      \addlegendentry{NVIDIA GPU Double Precision}
+
+      \addplot[
+      scatter,
+      visualization depends on=\thisrow{alignment} \as \alignment,
+      nodes near coords,
+      point meta=explicit symbolic,
+      every node near coord/.style={anchor=\alignment},
+      color=set12,
+      mark=*,
+      mark options={fill=white},
+      very thick,
+      every node near coord/.append style={font=\tiny},
+      ] table[x=Date,y=Single,col sep=comma,meta=Name] {charts/cpu_performance.csv};
+      \addlegendentry{Intel CPU Single Precision}
+      \addplot[
+      scatter,
+      visualization depends on=\thisrow{alignment} \as \alignment,
+      nodes near coords,
+      point meta=explicit symbolic,
+      every node near coord/.style={anchor=\alignment},
+      color=set13,
+      mark=*,
+      mark options={fill=white},
+      very thick,
+      every node near coord/.append style={font=\tiny},
+      ] table[x=Date,y=Single,col sep=comma,meta=Name] {charts/single_gpu_performance.csv};
+      \addlegendentry{NVIDIA GPU Single Precision}
+
+    \end{axis}
+    \setmathfont{XITS Math}
+  \end{tikzpicture}
   \caption{Increase in floating-point operations per second for CPUs versus GPUs over time.}
   \label{fig:gpu_performance}
 \end{figure}
@@ -288,7 +351,7 @@ The CUDA stands for Compute Unified Device Architecture and was introduced by Nv
 
 The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accerlated library and simply using the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java and Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. figure~\ref{fig:cuda_overview} illustrated the different components of the overall CUDA platform.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/cuda_overview.pdf}
   \caption{Overview of the CUDA platform.}
@@ -297,9 +360,7 @@ The CUDA platform allows developers to use a variety of different options to pro
 
 The basic building blocks of the CUDA Programming Model from a development perspective are kernels. CUDA kernels are the equivalent of normal C functions. However the major difference is that instead of being executed just once, kernels are executed in parallel by $N$ different threads. These CUDA threads are distributed and run across the available compute cores of the GPU. To illustrate how a very basic kernel call looks, figure \ref{lst:code_vector_addition} shows a code sample for a very simple vector addition.
 
-\paragraph{CUDA Kernels}
-
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -326,13 +387,15 @@ int main()
   \label{lst:code_vector_addition}
 \end{listing}
 
+\paragraph{CUDA Kernels}
+
 It is important to remember that each kernel invocation is executed independently and no ordering is guaranteed. It is therefore essential to make sure to avoid any race conditions or shared memory access. There are however, ways to allow for shared memory access which will be briefly touched upon later in the practical implementation of the simulation.
 
 \paragraph{Thread hierarchy}
 
 In order to efficiently distribute the different threads across the compute cores of the GPU, CUDA defines a thread hierachy. As discussed previously a GPU consists of many independent compute cores. On Nvidia GPUs theses cores are referred to as Streaming Multiprocessors (SMs). During execution of the application each SM is tasked with running a distinct set of threads. In CUDA these sets of threads are called thread blocks. Each thread block is then distributed to all the available SMs, which allows for automatic scalability depending on the number of SMs available  as illustrated in figure~\ref{fig:automatic_scaling}.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/automatic_scaling.pdf}
   \caption{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.}
@@ -343,7 +406,7 @@ Thus the developer only has to divide the workload into appropriately sized bloc
 
 In order to make programming and modeling of real world problems easier CUDA blocks can be addressed using either a one-dimensional, two-dimensional, or three-dimensional thread index. For example in the case of a matrix calculation it is more natural to think about parallelizing each element given by the row and column index instead of a single one-dimensional index. This is illustrated in the code simple in listing~\ref{lst:code_matrix_addition}
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -375,7 +438,7 @@ int main()
 
 Finally because the resources of each Streaming Multiprocessor are limited there exists a upper bound of how many threads a block can contain. Currently this maximum number of threads is $1024$. This means that the maximum size of matrices possible to be added in the code sample in listing~\ref{lst:code_matrix_addition} is $32\times32$. To solve this problem CUDA introduces another layer above blocks called a grid. A grid organizes thread blocks again into either one, two, or three dimensions. The number of thread blocks in a grid is unlimited and thus solely dependent on the size of the workload. Listing~\ref{fig:grid_blocks} shows an example configuration of a 2D grid with 2D blocks.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{img/grid_blocks.pdf}
   \caption{Overview of the CUDA platform.}
@@ -422,7 +485,7 @@ In order to faciliate easier usage of the application both during development an
 \subsection{Kernels}
 The overall parallel algorithm is very similar to the serial version, however, each simulation step is seperated into different kernels. Each kernel is invoked in a serial manner, this means CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as Nvidia limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all timesteps and for each step the four main algorithm substeps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — are run on the GPU.
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -458,7 +521,7 @@ Each of the parallelized substeps are now discussed in more detail. The purpose 
 
 \paragraph{Assemble System}
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -507,7 +570,7 @@ As this thesis does not aim to implement generic linear solvers, this step is tr
 
 \paragraph{Update Velocities}
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -556,7 +619,7 @@ Fortunately CUDA provides a mechanism to circumvent this issue. By using so-call
 
 \paragraph{Update Fibers}
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -602,7 +665,7 @@ Many optimizations performed during this process are applicable to both the CPU 
 
 \subsubsection{Numeric vs. Analytic Integration}
 \label{subsubsec:numeric_analytic}
-The first optimization was already part of the original serial implementation as described in section~\label{sec:quadrature}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate.
+The first optimization was already part of the original serial implementation as described in section~\ref{sec:quadrature}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate.
 
 However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. The implementation is dependent on a design variable which uses a slightly different code to calculate the integral for very close fibers in order to avoid numerical instabilities. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. Exploring the performance implications of both approaches on the GPU is thus of great interest, and especially how it compares against the same algorithm running on the CPU.
 
@@ -650,32 +713,32 @@ Using all the available implementations of the algorithm this chapter will showc
 Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both were run with the fastest CUDA algorithm implemented in the thesis.
 
 \subsection{Numerical precision}
-\label{subsec:example_sphere}
+\label{subsec:example_ring}
 
 The first example was used to verify that the single precision GPU version is able to replicate the result of the original double precision code. For this we looked at a very simple problem where a small number of fibers are setup perfectly symmetrical position and orientation. All fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation the fibers begin to rotate from their vertical orientation towards the horizontal position. Afterwards they continue rotating back into the vertical position. This motion is referred to as tumbling orbits and as long as there are no distribances or numerical precision issues it repeat forever.
 
 This simple but very intersting problem has also been simulated in \cite{}. Additionally an even more simplified version with only two fibers was studied numerically and experimentally by \cite{}. This example is thus ideally suited to test and verify the numerical precision of GPU simulation. A visulization of the GPU simulation of $16$ fibers evenly distributed around a circle with diameter $1.1$ is shown in figure~\ref{fig:ring_simulation}.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/ring_00000.png}
+    \includegraphics[width=\textwidth]{img/ring_00000.pdf}
     \caption{$t=0$}\label{fig:ring_simulation_1a}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/ring_00015.png}
+    \includegraphics[width=\textwidth]{img/ring_00015.pdf}
     \caption{$t=15$}\label{fig:ring_simulation_1b}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/ring_00030.png}
+    \includegraphics[width=\textwidth]{img/ring_00030.pdf}
     \caption{$t=30$}\label{fig:ring_simulation_1c}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/ring_00045.png}
+    \includegraphics[width=\textwidth]{img/ring_00045.pdf}
     \caption{$t=45$}\label{fig:ring_simulation_1d}
   \end{subfigure}
   \caption{Visualization Ring Simulation}
@@ -686,7 +749,7 @@ In order to analyse the periodic movment of the fibers we now look at the sedime
 
 Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber overtime. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/ring_sedimentation.pdf}
   \caption{Sedimentation velocity.}
@@ -698,7 +761,7 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 
 The second example showcases a more chaotic system with large number of interacting fibers. The observed phenomen only occurs if enough fibers are simulated and is thus ideally suited for the GPU simulation as it reduces the required time per step. For this this example $500$ fibers are initially distributed inside a sphere with a radius of $3$. Both their positions and orientations are randomly generated inside this sphere. An illustration of an example run can be seen in figure~\ref{fig:sphere_simulation} and the corresponding configuration parameters in table~\ref{tab:example_sphere}.
 
-\begin{table}[h]
+\begin{table}[!htbp]
   \begin{center}
     \begin{tabulary}{0.7\textwidth}{LR}
       \toprule
@@ -720,24 +783,24 @@ The second example showcases a more chaotic system with large number of interact
 
 This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{subsec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behaviour is more chaotic.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/sphere_00000.pdf}
     \caption{$t=0$}\label{fig:sphere_simulation_1a}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/sphere_00100.pdf}
     \caption{$t=100$}\label{fig:sphere_simulation_1b}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/sphere_00150.pdf}
     \caption{$t=285$}\label{fig:sphere_simulation_1c}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/sphere_00250.pdf}
     \caption{$t=285$}\label{fig:sphere_simulation_1d}
@@ -759,7 +822,7 @@ The methodology used for the benchmark suite is the same for all presented bench
 All benchmarks were run on the same workstation with specifications listed in table~\ref{tab:workstation}. The components were chosen to provide a balanced system.
 This was done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
 
-\begin{table}[h]
+\begin{table}[!htbp]
   \begin{center}
   \begin{tabulary}{0.7\textwidth}{LL}
     \toprule
@@ -787,7 +850,7 @@ Using this semi-random generation the rigid fiber simulation is run for exactly 
 
 In order to ensure a statistical significant result, the number of iterations is not fixed. Instead it is determined dynamically and based on the relative standard error of the already collected timing for the particular number of fibers. A minimum number of iterations is always executed first and their relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specificed threshold, the number of iterations is doubled and run again.
 
-\begin{listing}
+\begin{listing}[!htbp]
   \centering
   \begin{minted}[mathescape,
     linenos,
@@ -834,7 +897,7 @@ We now look at the performance results for the different optimizations previousl
 
 The first benchmark tests the performance of the two different approaches to compute the inner integral. It can be solved either numerically or analytically. Figure~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation the parallel version of the analytic integration is always faster than the numeric integration.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
@@ -859,7 +922,7 @@ The first benchmark tests the performance of the two different approaches to com
 
 However, the picture is more interesting when we look at the same graph for the CUDA implementation in figure~\ref{fig:cuda_num_vs_anal}. Here the results are reversed. The numeric integration outperforms the analytical integration by a large margin increasing with the number of fibers.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
@@ -886,7 +949,7 @@ This reason for this result lies in the scheduling and execution of work on the 
 
 To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in section~\ref{subsec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
 
-\begin{table}[h]
+\begin{table}[!htbp]
 \begin{center}
   \begin{tabulary}{0.7\textwidth}{LR}
     \toprule
@@ -912,7 +975,7 @@ On one hand the numerical integration is almost $100\%$ efficient, meaning all w
 
 The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used and the overhead caused by an increased amout of memory writes to the same location and thus the need for potential slow atomics.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
@@ -938,7 +1001,7 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
 
 The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transactions that had to be performed. As can be seen in table~\ref{tab:atomic_transactions}, the required atomic transactions for the sphere example from section~\ref{subsec:example_sphere} are almost two times larger in the 3D case.
 
-\begin{table}[h]
+\begin{table}[!htbp]
   \begin{center}
     \begin{tabulary}{0.7\textwidth}{LR}
       \toprule
@@ -961,7 +1024,7 @@ Next we compare the performance for different linear solvers. We explored two di
 
 On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al. which takes extensive advantage of the underyling BLAS functions parallelized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests. The benchmark results for this thesis are illustrated in figure~\ref{fig:bench_openmp_solvers}.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
@@ -988,7 +1051,7 @@ Up until around $500$ fibers GMRES is indeed faster than as reported by the orig
 
 On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in figure~\ref{fig:bench_cuda_solvers}.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}
@@ -1022,7 +1085,7 @@ Exploring this question in more detail is out of the scope of this thesis. In or
 
 The results for average time required to take a single timestep is illustrated in figure~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. The linear system is solved by the direct solver provided by OpenBLAS. For CUDA, we used the numerical integration and the thread block dimension was chosen to be two-dimensional. The direct solver for MAGMA is used to solve the linear system.
 
-\begin{figure}
+\begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \setmathfont{FiraSans-Book.otf}

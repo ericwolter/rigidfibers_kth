@@ -5,7 +5,7 @@ PROGRAM gen
   CHARACTER(LEN=256)::program_name, str_number_of_fibers
 
   INTEGER::N
-  REAL*4::min_distance, min_distance_2, avg_distance, step
+  REAL*4::min_distance, avg_distance, step
   REAL*4::domain
 
   REAL*4,SAVE,DIMENSION(:,:),ALLOCATABLE::positions
@@ -13,9 +13,11 @@ PROGRAM gen
 
   LOGICAL::optimal
   INTEGER::i,j
-  REAL*4,DIMENSION(3)::p_i,p_j
+  REAL*4,DIMENSION(3)::p_i,p_j,o_i,o_j
   REAL*4::r
   REAL*4::distance, nearest_distance
+
+  REAL*4::distanceSegments
 
   CALL init_random_seed()
 
@@ -24,8 +26,7 @@ PROGRAM gen
   READ(str_number_of_fibers,'(I10)') N
 
   min_distance = 0.2
-  min_distance_2 = min_distance**2
-  avg_distance = min_distance * 1.7 !0.4
+  avg_distance = min_distance * 5
 
   domain = (N-1)**(1.0/3.0) * avg_distance
 
@@ -43,8 +44,15 @@ PROGRAM gen
   positions = positions * (domain - (-domain)) + (-domain)
   orientations = orientations * (1 - (-1)) + (-1)
 
+  DO i=1,N
+    orientations(i,:) = orientations(i,:) / SQRT(DOT_PRODUCT(orientations(i,:),orientations(i,:)))
+  END DO
+
   PRINT *, "BEFORE:"
-  CALL stats(N, positions)
+  CALL stats(N, positions, orientations)
+
+  distance = distanceSegments(positions(1,:), orientations(1,:), positions(2,:), orientations(2,:))
+  ! PRINT *, distance, SQRT(SUM((positions(1,:) - positions(2,:))**2))
 
   optimal = .FALSE.
 
@@ -54,6 +62,7 @@ PROGRAM gen
     DO i = 1, N
 
       p_i = positions(i,:)
+      o_i = orientations(i,:)
 
       ! BOUNDARY
       IF (p_i(1) > domain) THEN
@@ -92,8 +101,9 @@ PROGRAM gen
         IF (i /= j) THEN
 
           p_j = positions(j,:)
+          o_j = orientations(j,:)
 
-          distance = SUM((p_i - p_j)**2)
+          distance = distanceSegments(p_i, o_i, p_j, o_j)
 
           IF (distance < nearest_distance) THEN
             nearest_distance = distance
@@ -103,7 +113,7 @@ PROGRAM gen
 
       END DO
 
-      IF (nearest_distance < min_distance_2) THEN
+      IF (nearest_distance < min_distance) THEN
         CALL RANDOM_NUMBER(r)
         p_i(1) = p_i(1) + r * (step - (-step)) + (-step)
         CALL RANDOM_NUMBER(r)
@@ -111,16 +121,20 @@ PROGRAM gen
         CALL RANDOM_NUMBER(r)
         p_i(3) = p_i(3) + r * (step - (-step)) + (-step)
 
+        CALL RANDOM_NUMBER(o_i)
+        o_i = o_i / SQRT(DOT_PRODUCT(o_i, o_i))
+
         optimal = optimal .AND. .FALSE.
       END IF
 
       positions(i,:) = p_i
+      orientations(i,:) = o_i
 
     END DO
   END DO
 
   PRINT *, "AFTER:"
-  CALL stats(N, positions)
+  CALL stats(N, positions, orientations)
 
   OPEN(10,file="XcT_gen"//TRIM(str_number_of_fibers)//".in")
   WRITE(10,'(*(I10))') (N)
@@ -132,16 +146,127 @@ PROGRAM gen
 
 END PROGRAM gen
 
-SUBROUTINE stats(N, positions)
+!! http://geomalgorithms.com/a07-_distance.html#dist3D_Segment_to_Segment()
+FUNCTION distanceSegments(p_i, o_i, p_j, o_j) RESULT(distance)
+  REAL*4,DIMENSION(3),INTENT(IN)::p_i,p_j,o_i,o_j
+  REAL*4::distance
+
+  REAL*4,DIMENSION(3)::S1P1,S1P0,S2P1,S2P0
+  REAL*4,DIMENSION(3)::u,v,w,dP
+  REAL*4::a,b,c,d,e
+  REAL*4::X
+  REAL*4::sc,sN,sD
+  REAL*4::tc,tN,tD
+
+  S1P0 = p_i - o_i
+  S1P1 = p_i + o_i
+  S2P0 = p_j - o_j
+  S2P1 = p_j + o_j
+
+  ! S1P0(1) = 1.55296648;
+  ! S1P0(2) = -0.639337718;
+  ! S1P0(3) = -1.15629041;
+  !
+  ! S1P1(1) = 0.815716386;
+  ! S1P1(2) = -1.94480538;
+  ! S1P1(3) = 0.167422503;
+  !
+  ! S2P0(1) = -1.82547736;
+  ! S2P0(2) = 3.73734117;
+  ! S2P0(3) = 1.79775524;
+  !
+  ! S2P1(1) = -1.06064153;
+  ! S2P1(2) = 3.02075219;
+  ! S2P1(3) = 3.50114202;
+
+  u = S1P1 - S1P0
+  v = S2P1 - S2P0
+  w = S1P0 - S2P0
+
+  a = DOT_PRODUCT(u,u)
+  b = DOT_PRODUCT(u,v)
+  c = DOT_PRODUCT(v,v)
+  d = DOT_PRODUCT(u,w)
+  e = DOT_PRODUCT(v,w)
+
+  X = a * c - b * b
+  sc = X
+  sN = X
+  sD = X
+  tc = X
+  tN = X
+  tD = X
+
+  IF ( X < 1e-5 ) THEN
+    sN = 0.0
+    sD = 1.0
+    tN = e
+    tD = c
+  ELSE
+    sN = (b * e - c * d)
+    tN = (a * e - b * d)
+    IF (sN < 0.0) THEN
+      sN = 0.0
+      tN = e
+      tD = c
+    ELSE IF (sN > sD) THEN
+      sN = sD
+      tN = e + b
+      tD = c
+    END IF
+  END IF
+
+  IF ( tN < 0.0 ) THEN
+    tN = 0.0
+    IF (-d < 0.0) THEN
+      sN = 0.0
+    ELSE IF (-d > a) THEN
+      sN = sD
+    ELSE
+      sN = -d
+      sD = a
+    END IF
+  ELSE IF ( tN > tD) THEN
+    tN = tD
+    IF ((-d + b) < 0.0) THEN
+      sN = 0.0
+    ELSE IF ((-d + b) > a) THEN
+      sN = sD
+    ELSE
+      sN = (-d + b)
+      sD = a
+    END IF
+  END IF
+
+  IF (ABS(sN) < 1e-5) THEN
+    sc = 0.0
+  ELSE
+    sc = sN / sD
+  END IF
+  IF (ABS(tN) < 1e-5) THEN
+    tc = 0.0
+  ELSE
+    tc = tN / tD
+  END IF
+
+  dP = w + (sc * u) - (tc * v)
+
+  distance = SQRT(DOT_PRODUCT(dp,dp))
+
+END FUNCTION distanceSegments
+
+SUBROUTINE stats(N, positions, orientations)
   IMPLICIT NONE
 
   INTEGER,INTENT(IN)::N
   REAL*4,INTENT(IN),DIMENSION(N,3)::positions
+  REAL*4,INTENT(IN),DIMENSION(N,3)::orientations
 
   INTEGER::i,j,count
 
   REAL*4::distance, nearest_distance, min_dist, total
-  REAL*4,DIMENSION(3)::p_i,p_j
+  REAL*4,DIMENSION(3)::p_i,p_j,o_i,o_j
+  REAL*4::distanceSegments
 
   count = 0
   total = 0.0
@@ -150,6 +275,7 @@ SUBROUTINE stats(N, positions)
   DO i = 1, N
 
     p_i = positions(i,:)
+    o_i = orientations(i,:)
 
     nearest_distance = 99999.0
     DO j= 1, N
@@ -157,8 +283,10 @@ SUBROUTINE stats(N, positions)
       IF (i /= j) THEN
 
         p_j = positions(j,:)
+        o_j = orientations(j,:)
 
-        distance = SQRT(SUM((p_i - p_j)**2))
+        ! distance = SQRT(SUM((p_i - p_j)**2))
+        distance = distanceSegments(p_i, o_i, p_j, o_j)
 
         IF (distance < nearest_distance) THEN
           nearest_distance = distance
