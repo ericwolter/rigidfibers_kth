@@ -290,7 +290,7 @@ void Simulation::step(size_t current_timestep)
     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
-    saveFibers(current_timestep);
+    //saveFibers(current_timestep);
 
 #ifdef VALIDATE
     dumpFibers(current_timestep);

@@ -6,6 +6,15 @@ import re
 import csv
 import ConfigParser
 
+def average(s):
+    return sum(s) * 1.0 / len(s)
+
+def deviation(s):
+    avg = average(s)
+    variance = map(lambda x: (x - avg)**2, s)
+    # sample deviation
+    return math.sqrt(sum(variance) / (len(variance) - 1))
+
 def read_parameters(args):
     """Parsing  parameters configuration file"""
 
@@ -213,7 +222,7 @@ def benchmark(args):
 
     results = {}
 
-    # tests = tests[-2:-1]
+    #tests = tests[:2]
     tests.reverse()
 
     for idx,number_of_fibers in enumerate(tests):
@@ -271,24 +280,37 @@ def benchmark(args):
             # reset the mean value for the different steps
             for run in benchmark:
                 for step in run.keys():
-                    results[number_of_fibers][step] = 0.0
+                    results[number_of_fibers][step] = []
 
-            run_sum = reduce(lambda memo, run: memo + run['total'], benchmark, 0.0)
+            for run in benchmark:
+                for step in run.keys():
+                    results[number_of_fibers][step].append(run[step])
 
-            sample_mean = run_sum/len(benchmark)
-            sample_deviation = 0.0
-            for idx, run in enumerate(benchmark):
-                sample_deviation += (run['total'] - sample_mean)**2
+            for step in benchmark[0].keys():
+                results[number_of_fibers][step+"_std"] = deviation(results[number_of_fibers][step])
+                results[number_of_fibers][step] = average(results[number_of_fibers][step])
+            #run_sum = reduce(lambda memo, run: memo + run['TOTAL'], benchmark, 0.0)
+
+            #sample_mean = run_sum/len(benchmark)
+            #sample_deviation = 0.0
+            #for idx, run in enumerate(benchmark):
+            #    sample_deviation += (run['TOTAL'] - sample_mean)**2
 
                 # calculate cumulative moving average
-                for step in run.keys():
-                    results[number_of_fibers][step] = results[number_of_fibers][step] + (run[step] - results[number_of_fibers][step]) / (idx+1)
+            #    for step in run.keys():
+            #        results[number_of_fibers][step] = results[number_of_fibers][step] + (run[step] - results[number_of_fibers][step]) / (idx+1)
 
-            sample_deviation /= len(benchmark)-1
-            sample_deviation = math.sqrt(sample_deviation)
+            #sample_deviation /= len(benchmark)-1
+            #sample_deviation = math.sqrt(sample_deviation)
+
+            sample_mean = results[number_of_fibers]["total"]
+            sample_deviation = results[number_of_fibers]["total_std"]
+            #sample_mean = results[number_of_fibers]["GMRES_ITERATIONS"]
+            #sample_deviation = results[number_of_fibers]["GMRES_ITERATIONS_STD"]
 
             standard_error = sample_deviation / math.sqrt(len(benchmark))
             relative_standard_error = standard_error / sample_mean
+
             if relative_standard_error > args.max_rse:
                 iterations = len(benchmark)
                 print '                : Relative Standard Error: ' + str(round(relative_standard_error*100)) + '% - increasing iterations to ' + str(iterations)

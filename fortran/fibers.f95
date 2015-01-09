@@ -5,6 +5,8 @@
 #define MULTIPLY_EQUALS(A, B) A = A * B
 #define DIVIDE_EQUALS(A, B) A = A / B
 
+!#define CONDITION_NUMBER
+
 PROGRAM fibers
   USE omp_lib
   IMPLICIT NONE
@@ -85,6 +87,15 @@ PROGRAM fibers
   INTEGER::gmres_done
   INTEGER,DIMENSION(3)::gmres_info
   REAL*4,DIMENSION(2)::gmres_rinfo
+#endif
+
+#if defined(CONDITION_NUMBER)
+  REAL*4,DIMENSION(4*TOTAL_NUMBER_OF_ROWS)::cond_work
+  INTEGER,DIMENSION(4*TOTAL_NUMBER_OF_ROWS)::cond_iwork
+  REAL*4,EXTERNAL::slange
+  REAL*4::a_norm, rcond
+  INTEGER::cond_info
+  REAL*4,DIMENSION(TOTAL_NUMBER_OF_ROWS)::cond_ipvt
 #endif
 
   INTEGER::x_row_index,y_row_index,z_row_index
@@ -291,20 +302,20 @@ PROGRAM fibers
     CLOSE(10)
 #endif
 
-    WRITE(str_timestep, '(I0.5)') current_timestep
-    OPEN(10,file=""//TRIM(str_timestep)//".state");
-    WRITE(10,*) NUMBER_OF_FIBERS
-    DO i=1,NUMBER_OF_FIBERS
-      WRITE(10,'(*(F16.8))') current_positions((i-1)*DIMENSIONS+1),current_positions((i-1)*DIMENSIONS+2),current_positions((i-1)*DIMENSIONS+3)
-      WRITE(10,'(*(F16.8))') current_orientations((i-1)*DIMENSIONS+1),current_orientations((i-1)*DIMENSIONS+2),current_orientations((i-1)*DIMENSIONS+3)
-    END DO
-    CLOSE(10)
+    !WRITE(str_timestep, '(I0.5)') current_timestep
+    !OPEN(10,file=""//TRIM(str_timestep)//".state");
+    !WRITE(10,*) NUMBER_OF_FIBERS
+    !DO i=1,NUMBER_OF_FIBERS
+    !  WRITE(10,'(*(F16.8))') current_positions((i-1)*DIMENSIONS+1),current_positions((i-1)*DIMENSIONS+2),current_positions((i-1)*DIMENSIONS+3)
+    !  WRITE(10,'(*(F16.8))') current_orientations((i-1)*DIMENSIONS+1),current_orientations((i-1)*DIMENSIONS+2),current_orientations((i-1)*DIMENSIONS+3)
+    !END DO
+    !CLOSE(10)
 
-    OPEN(20,file=""//TRIM(str_timestep)//".velocity")
-    DO i=1,NUMBER_OF_FIBERS
-      WRITE(20,'(*(F16.8))') current_translational_velocities((i-1)*DIMENSIONS+1),current_translational_velocities((i-1)*DIMENSIONS+2),current_translational_velocities((i-1)*DIMENSIONS+3)
-    END DO
-    CLOSE(20)
+    !OPEN(20,file=""//TRIM(str_timestep)//".velocity")
+    !DO i=1,NUMBER_OF_FIBERS
+    !  WRITE(20,'(*(F16.8))') current_translational_velocities((i-1)*DIMENSIONS+1),current_translational_velocities((i-1)*DIMENSIONS+2),current_translational_velocities((i-1)*DIMENSIONS+3)
+    !END DO
+    !CLOSE(20)
 
     tmp_pointer => previous_translational_velocities
     previous_translational_velocities => current_translational_velocities

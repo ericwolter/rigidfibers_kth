@@ -3,17 +3,18 @@
 
 #include "../common.h"
 
+#define BENCHMARK
 
 #define FORCE_2D
 
-#define MAGMA
+#define BICGSTAB
 
-#define NUMERICAL
+#define ANALYTICAL
 
 #define DIMENSIONS (3)
 #define NUMBER_OF_FIBERS (100)
 #define TIMESTEP (0.1f)
-#define NUMBER_OF_TIMESTEPS (10000)
+#define NUMBER_OF_TIMESTEPS (4)
 #define SLENDERNESS (0.01f)
 #define NUMBER_OF_TERMS_IN_FORCE_EXPANSION (5)
 #define NUMBER_OF_QUADRATURE_POINTS_PER_INTERVAL (3)
