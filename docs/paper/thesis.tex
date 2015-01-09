@@ -1098,10 +1098,12 @@ The results for average time required to take a single timestep is illustrated i
       unbounded coords=discard,
       ]
 
-      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_magma_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
+      \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_gmres_numerical_2D.csv};
+      \addplot[color=set11_light,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_magma_numerical_2D.csv};
+      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_gmres_analytical.csv};
+      \addplot[color=set12_light,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
 
-      \legend{CUDA, OpenMP}
+      \legend{CUDA GMRES, CUDA MAGMA, OpenMP GMRES, OpenMP Direct}
     \end{axis}
     \setmathfont{XITS Math}
   \end{tikzpicture}
