@@ -20,6 +20,7 @@ PROGRAM gen
   REAL*4::distance, nearest_distance
   REAL*4,DIMENSION(3)::nearest_dP
   INTEGER::nearest_index
+  INTEGER::count_pairs,old_count_pairs
 
   REAL*4::distanceSegments
   REAL*4,DIMENSION(3)::dP
@@ -47,8 +48,8 @@ PROGRAM gen
 
   ALLOCATE(positions(N,3))
   ALLOCATE(orientations(N,3))
-  step = 0.1 * min_distance
-  rotation_step = 0.1
+  step = 1.0 * min_distance
+  rotation_step = 1.0
 
   !! to ensure enough space to account for fiber orientations
   !! increase avg_distance for domain calculation by 2
@@ -65,7 +66,7 @@ PROGRAM gen
   END IF
 
   PRINT *, "---  before  ---"
-  CALL stats(N, positions, orientations, min_distance)
+  CALL stats(N, positions, orientations, min_distance,count_pairs)
   PRINT *, "----------------"
 
   !distance = distanceSegments(positions(1,:), orientations(1,:), positions(2,:), orientations(2,:))
@@ -81,7 +82,16 @@ PROGRAM gen
 
     IF (MODULO(optimization_iteration, 100) == 0) THEN
       PRINT *, "--- optimize ---"
-      CALL stats(N, positions, orientations, min_distance)
+      CALL stats(N, positions, orientations, min_distance, count_pairs)
+      IF (old_count_pairs > count_pairs) THEN
+        step = 0.98 * step
+        rotation_step = 0.98 * rotation_step
+      ELSE
+        step = 1.01 * step
+        rotation_step = 1.01 * rotation_step
+      END IF
+      old_count_pairs = count_pairs
+      PRINT *, "steps: ", step
       PRINT *, "----------------"
     END IF
 
@@ -90,7 +100,7 @@ PROGRAM gen
       p_i = positions(i,:)
       o_i = orientations(i,:)
 
-      ! BOUNDARY
+      ! force fibers inside domain boundary
       IF (domain_type .EQ. "box") THEN
         optimal = optimal .AND. boxBoundary(p_i, domain, step)
       ELSE IF (domain_type .EQ. "sphere") THEN
@@ -179,7 +189,7 @@ PROGRAM gen
   END DO
 
   PRINT *, "---  after   ---"
-  CALL stats(N, positions, orientations,min_distance)
+  CALL stats(N, positions, orientations,min_distance,count_pairs)
   PRINT *, "----------------"
 
   OPEN(10,file="XcT_gen"//TRIM(str_number_of_fibers)//".in")
@@ -448,7 +458,7 @@ FUNCTION distanceSegments(p_i, o_i, p_j, o_j, dP) RESULT(distance)
 
 END FUNCTION distanceSegments
 
-SUBROUTINE stats(N, positions, orientations, min_distance)
+SUBROUTINE stats(N, positions, orientations, min_distance, count_pairs)
   IMPLICIT NONE
 
   INTEGER,INTENT(IN)::N
@@ -458,7 +468,7 @@ SUBROUTINE stats(N, positions, orientations, min_distance)
 
   INTEGER::i,j,count
 
-  INTEGER::count_pairs
+  INTEGER,INTENT(OUT)::count_pairs
   REAL*4::distance_segment, distance_center
   REAL*4::nearest_distance_segment, nearest_distance_center
   REAL*4::total_segment, total_center
@@ -466,6 +476,10 @@ SUBROUTINE stats(N, positions, orientations, min_distance)
   REAL*4,DIMENSION(3)::p_i,p_j,o_i,o_j
   REAL*4::distanceSegments
   REAL*4,DIMENSION(3)::dP
+  REAL*4,DIMENSION(3)::min_domain, max_domain
+
+  min_domain = 99999999.0
+  max_domain = -99999999.0
 
   count = 0
   total_segment = 0.0
@@ -479,6 +493,25 @@ SUBROUTINE stats(N, positions, orientations, min_distance)
     p_i = positions(i,:)
     o_i = orientations(i,:)
 
+    IF (p_i(1) < min_domain(1)) THEN
+      min_domain(1) = p_i(1)
+    END IF
+    IF (p_i(2) < min_domain(2)) THEN
+      min_domain(2) = p_i(2)
+    END IF
+    IF (p_i(3) < min_domain(3)) THEN
+      min_domain(3) = p_i(3)
+    END IF
+    IF (p_i(1) > max_domain(1)) THEN
+      max_domain(1) = p_i(1)
+    END IF
+    IF (p_i(2) > max_domain(2)) THEN
+      max_domain(2) = p_i(2)
+    END IF
+    IF (p_i(3) > max_domain(3)) THEN
+      max_domain(3) = p_i(3)
+    END IF
+
     nearest_distance_segment = 99999999.0
     nearest_distance_center = 99999999.0
     DO j= 1, N
@@ -488,7 +521,6 @@ SUBROUTINE stats(N, positions, orientations, min_distance)
         p_j = positions(j,:)
         o_j = orientations(j,:)
 
-        ! distance = SQRT(SUM((p_i - p_j)**2))
         distance_segment = SQRT(distanceSegments(p_i, o_i, p_j, o_j,dP))
         distance_center = SQRT(SUM((p_i - p_j)**2))
 
@@ -520,6 +552,7 @@ SUBROUTINE stats(N, positions, orientations, min_distance)
 
   PRINT *, "Distribution Statistics:"
   PRINT *, "  - number of too close pairs: ", count_pairs
+  PRINT *, "  - domain: [", min_domain, ",", max_domain, "]"
   PRINT *, "  - minimal distance segments: ", minimal_distance_segment
   PRINT *, "  - minimal distance centers:  ", minimal_distance_center
   PRINT *, "  - average distance segments: ", total_segment/count

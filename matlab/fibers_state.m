@@ -1,5 +1,6 @@
 % files = dir('input/*.state');
-files = dir('input/*.out');
+% files = dir('input/*.out');
+files = dir('XcT_2gen*.in');
 
 index = 0;
 
@@ -20,7 +21,7 @@ f = figure();
 % set(f,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 
 for file = files'
-    input=['input/' file.name]; 
+    input=[file.name]; 
     data = dlmread(input,'',1, 0);
 
     data = reshape(data',3,2,[]);
