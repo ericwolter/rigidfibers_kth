@@ -164,63 +164,77 @@ inceptos hymenaeos.
 \label{cha:theoretical_foundation}
 The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate as many fibers as possible to generate the various patterns found in real world experiments.
 
-In this chapter we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis.
+In this chapter we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the method is only presented in a reduced summary for more details please refer to \cite{}.
 
-We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterwards I will focus on the implications this has and how the flow properties can be calulated for the special case of straight and rigid fibers.
+We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterwards we will focus on the implications this has and how the flow properties can be calulated for the special case of straight and rigid fibers.
 
 \section{Stokes flow and Stokeslet}
-The fluids involved in the rigid fiber simulation are characterized by three properties which allow the general Naviar-Stokes Equations to be immensly simplified.
+
+The aim of the presented simulation is to model the behaviour of objects immersed in a fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a viscous fluid due to gravity. The velocity of these rigid objects is only dependent on their orientation and the resulting drag. The interaction between multiple objects is only modeled through the surrounding fluid as collision are not modelled.
+
+\begin{equation}
+  \label{eq:naviar_stokes_equations}
+  \begin{aligned}
+    \rho(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f}
+    \nabla \cdot \mathbf{u} &= 0
+  \end{aligned}
+\end{equation}
+
+The Naviar-Stokes equations describe the motion of fluids and allow to model the flow around an object. Using and solving theses equations is however quite challenging due to their time depedence and non-linearity. Fortunately we can make a number of simplification due to the restriction we placed on our model. Our model is characterized by three properties.
+
 \begin{enumerate}
   \item{\textit{Newtonian fluid} — The viscosity $\mu$ of the fluid does not depend on the stress.}
   \item{\textit{Incompressible flow} — The density of the fluid does not change.}
-  \item{\textit{Low Reynolds number $Re \ll 1$} — The fluid velocities are very slow and/or the viscosity is very large.}
+  \item{\textit{Low Reynolds number $Re = \frac{\rho U L}{\mu} \ll 1$} — The fluid velocities are very slow and/or the viscosity is very large.}
 \end{enumerate}
 
-Given these constraints and special case of very low Reynolds numbers the general Naviar-Stokes Equations can be linearized to the Stokes Equations
+Given these constraints and especially the very low Reynolds number due to slowly sedimenting objects in a viscous fluid the Naviar-Stokes equations can be linearized to arrive at the Stokes Equations
 
 \begin{equation}
 \label{eq:stokes_equations}
 \begin{aligned}
-    grad(p) - \mu \Delta \mathbf{u} &= \mathbf{f} \quad &\text{in} \quad \Omega \text{,}\\
-    div(\mathbf{u}) &= 0 \quad &\text{in} \quad \Omega \text{,}
+    \nabla p - \mu \Delta \mathbf{u} &= \mathbf{f} \quad &\text{in} \quad \Omega \text{,}\\
+    \nabla \cdot \mathbf{u} &= 0 \quad &\text{in} \quad \Omega \text{,}
 \end{aligned}
 \end{equation}
 
 where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$.
 The constant $\mu$ is the viscosity of the fluid.
 
-The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally, the equations are time independent and time depedence is only reintroduced by boundary conditions. Thus given the boundary conditions the structure of the flow can be calculated.
+The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally, the equations are time independent and time depedence is only reintroduced due to the motion of the immersed objects and the boundary conditions. Thus given the boundary conditions the structure of the flow can be calculated.
 
-By taking advantage of the linearity of the Stokes equations, which implies the existence of a Green's function, and introducing boundary conditions so-called fundamental solutions can be found. First no-slip conditions on the surface of the slender bodies are defined as
+For our model we define two boundary conditions. First we force the fluid velocity at the boundary of the object to be equal to the velocity of the object itself. These no-slip conditions on the surface of the objects are defined as
 \begin{equation}
   \label{eq:boundary_condition_surface}
   \mathbf{u} = \mathbf{u}_\Gamma  \quad \text{on} \quad  \Gamma \text{,}
 \end{equation}
-where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus forcing the fluid to have zero velocity relative to the surface boundary.
+where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus constraining the fluid to have zero velocity relative to the surface boundary.
 
-Furthermore, the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
-
+The second boundary condition models the fact that the fluid velocity far from the object is not affected by its presence. This is modeled by the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
 \begin{equation}
   \label{eq:boundary_condition_background}
-  \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{.}
+  \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{,}
 \end{equation}
-Next the force term in \eqref{eq:stokes_equations} is replaced by a point force acting at the origin $\mathbf{x}_0$
+enforcing that the velocity field $\mathbf{u}$ should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity. In our simulations this background velocity is always set to $0$.
+
+By taking advantage of the linearity of the Stokes equations and these boundary conditions so-called fundamental solution can be found. For this the force term in Stokes equation~\eqref{eq:stokes_equations} is replaced by a point force acting at the origin $\mathbf{x}_0$
 \begin{equation}
   \label{eq:stokes_equations_point}
   \begin{aligned}
-    grad(p) - \mu \Delta \mathbf{u} &= \mathbf{F} \cdot \delta(\mathbf{x} - \mathbf{x}_0) \text{,}\\
-    div(\mathbf{u}) &= 0 \text{,}
+    \nabla p - \mu \Delta \mathbf{u} &= \mathbf{F} \cdot \delta(\mathbf{x} - \mathbf{y}) \text{,} \\
+    \nabla \cdot \mathbf{u}) &= 0\text{,}
   \end{aligned}
 \end{equation}
-where $\delta(\mathbf{x} - \mathbf{x}_0)$ is Dirac delta function. Solving these equations for the velocity field $\mathbf{u}(\mathbf{x})$ yields the fundamental solution
+where $\delta(\mathbf{x} - \mathbf{y})$ is Dirac delta function. Solving these equations for the velocity field $\mathbf{u}(\mathbf{x})$ yields
 \begin{equation}
   \label{eq:stokeslet}
   \begin{aligned}
-    \mathbf{u}(\mathbf{x}) &= \mathbf{S}(\mathbf{x}-\mathbf{x}_0) \text{,}\\
-    \mathbf{S}(\mathbf{r}) &= \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|} + \frac{rr}{|r|^3}\right) \text{,}
+    u_i(\mathbf{x}) &= \frac{1}{8\pi\mu}S_{ij}(\mathbf{x},\mathbf{y})F_j \\
+    S_{ij}F_j &= S_{i1}F_1 + S_{i2}F_2 + S_{i3}F_3 \quad \text{where,} \quad \\
+    S_{ij}(\mathbf{x} - \mathbf{y}) &= \frac{\delta_{ij}}{|\mathbf{x}-\mathbf{y}|} + \frac{}{|\mathbf{x}-\mathbf{y}|^3}\quad \text{,} \quad i,j=1,2,3\text{.}
   \end{aligned}
 \end{equation}
-where $\mathbf{S}$ denotes the Stokeslet tensor and $\mathbf{I}$ the identity tensor. Figure~\ref{fig:stokeslet} illustrates an example of the force $\mathbf{F}$ at the source point $\mathbf{x}_0$ and resulting velocity $\mathbf{u}$ at the observation point $\mathbf{x}$.
+The term $S_{ij}$ is called the Stokeslet and is the fundamental solution for the Stokes equations. Figure~\ref{fig:stokeslet} illustrates an example of the force $\mathbf{F}$ at the source point $\mathbf{x}_0$ and resulting velocity $\mathbf{u}$ at the observation point $\mathbf{x}$.
 
 \begin{figure}[!htbp]
   \centering
@@ -235,8 +249,61 @@ Additionally, we will later need higher order fundamental solutions which can be
   \mathbf{D}(\mathbf{r}) = \frac{1}{2} \Delta\mathbf{S}(\mathbf{r}) = \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|^3} - \frac{3rr}{|r|^5}\right) \text{.}
 \end{equation}
 
-\section{Slender bodies}
-\section{Rigid fibers}
+\section{Boundary integral formulation}
+
+Using the Stokeslet from equation~\eqref{eq:stokeslet} we can now model the influence of an immersed object on the Stokes flow. For a given point $y$ as well as the the force distribution $f$ on the surface of the object we can now calculate the resulting velocity at any point in the flow. The velocity $u$ at the oberservation point $x$ is then given by
+\begin{equation}
+  \label{eq:boundary_integral_formulation}
+  u_i(\mathbf{x}) = \frac{1}{8\pi\mu}\int_{\Omega}S_{ij}(\mathbf{x},\mathbf{y})f_j(\mathbf{y}) \, dS \text{,} \quad i=1,2,3\text{,}
+\end{equation}
+which is illustrated in Figure~\ref{fig:immersed}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed.pdf}
+  \caption{Immersed object in stokes flow.}
+  \label{fig:immersed}
+\end{figure}
+
+Thus if $f$ is known on the one hand the velocity field can be solved for any point $x$ in the flow which is on the boundary or outside the object. If on the other hand only $u$ is known on the boundary of the object we have to solve the boundary integral integration~\eqref{eq:boundary_integral_formulation}.
+
+However for the simulation we don't know the velocity field $u$ nor do we know the force distribution $f$ on the surface of the object. The only force we know is the externally applied force, which in our case is simply gravity. Additionally we are only concerned with rigid objects. Thus by combining the equations governing rigid body motion with the no-slip boundary condition we can model the velocity field $u$ on the surface $\Omega$ of the rigid body as
+\begin{equation}
+  \label{eq:rigid_body_motion}
+  \mathbf{u}(\mathbf{x}) = \mathbf{U} + \omega \times (\mathbf{x} - \mathbf{x}_c)
+\end{equation}
+where $\mathbf{x}_c$ and $t$ denote the center point and orientation of the body and $U$ and $\omega$ the translational and rotational velocity respectively. The rigid body motion is illustrated in Figure~\ref{fig:immersed_rigid}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed_rigid.pdf}
+  \caption{Immersed object in stokes flow.}
+  \label{fig:immersed_rigid}
+\end{figure}
+
+Furthermore we required at the integrated force distrubtion over the body as well as the the torque have to be equal to the externally applied force. In our case this is simply gravity and an external torque of $0$. For the a single body the force $\mathbf{F}_body$ and torque $\mathbf{T}_body$ are thus defined as
+\begin{equation}
+  \label{eq:force_torque}
+  \begin{aligned}
+    \mathbf{F}_body &= \int_\Omega \mathbf{f}(y) \, dS_y \\
+    \mathbf{T}_body &= \int_\Omega (\mathbf{x} - \mathbf{x_c}) \times \mathbf{f}(y) \, dS_y \quad i,j=1,2,3\text{,}
+  \end{aligned}
+\end{equation}
+
+and together with the equation relating the force and velocity for body
+
+\begin{equation}
+  \label{eq:boundary_integral_formulation_specific}
+  \mathbf{U}_i + (\omega (\mathbf{x} - \mathbf{x}_c))_i = \frac{1}{8\pi\mu} \int_\Omega S_{ij}(\mathbf{x},\mathbf{y} f_i(\mathbf{y}))  \, dS_y
+\end{equation}
+
+we obtain the final boundary integral formulation. Until now we only looked at the model for a single body. However for the simulation we want to be able to handle many bodies. By taking advantage of the superposition principle resulting from the linearity of the Stokes equations, the equations \eqref{eq:force_torque} and \eqref{eq:boundary_integral_formulation_specific} can easily be extended.
+
+Reformulating the problem in form of a boundary integral reduced the original 3-dimensional partial differential equation to the 2-dimensional equation over the surface of the body. However for this many-body problem this is still expensive to solve. The next step to reduce the dimensionality of the model simplifies the rigid bodies to slender fibers.
+
+\section{Slender fibers}
+
+
 \subsection{Nondimensionalization}
 \subsection{Slender body equations}
 \subsection{Forces}
@@ -260,14 +327,16 @@ We will begin by presenting the employed time stepping approach. This is followe
 \subsection{Analytic Integration}
 \section{Linear system}
 
-\chapter{Parallel Implementation}
+\section{Algorithm}
+
+\chapter{GPU Programming}
 In the previous chapter the serial implementation of the numerical simulation was presented. It discussed various implementation details which have to be considered to arrive at the most efficent and performant implementation.
 
 Based on the previous existing serial Fortran implementation this chapter will look at the algorithm in more detail and show, how it was adapted to take advantage of multi-core architectures. Modern GPUs in particular offer a massively parallel architecture and this is why the main focus of this thesis is the implementation of the simulation on a modern nVidia GPUs using CUDA. In addition to the main work of reimplementing the algorithm for CUDA and to have a better understanding of the achievable performance improvements the finished GPU code was also ported to multi-core CPUs using the OpenMP framework.
 
 I will begin with a short introduction to general purpose computing on the GPU and explain briefly how CUDA works. I then move on to illustrate the practical implementation of the CUDA code. This is followed by a brief explanation of OpenMP and how the code was parallelized on the CPU. The chapter ends with the discussion of several potential optimization approaches to further improve the performance of the simulation.
 
-\section{GPU Programming}
+\section{Overview}
 In the beginning of Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. The deciding factor is how well the problem can be parallized to take advantage of the massively parallel architectures of GPUs. This has lead to potentially large performance advantages of GPUs over CPUs as illustrated in figure~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (GFLOP/s). The FLOP/s number is calculated by combining information of the number of compute cores, core frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to show the potential GPUs have.
 
 \begin{figure}[!htbp]
@@ -459,7 +528,10 @@ In addition to the Thread hierarchy...
 \item Or hide with compute heavy, as is the case with assemble system step (ala will be used later)
 \end{itemize}
 
-\section{Implementation}
+\chapter{Parallel Implementation}
+
+\section{Development environment}
+
 The rigid fiber simulation developed as part of this thesis is only loosely based on the original serial Fortran implementation. This was done to ensure a clean starting point and avoid difficulties in adapting the existing code for parallel execution as it was never intended to be run across multiple cores. This also provided the opportunity to learn from the shortcomings of the old code to not only parallelize it but also improve the efficiency in general.
 
 The development was done exclusively on a Linux workstation running Ubuntu as this will also be the exact same runtime environment used in the later experimental usage of the resulting application. The build system for compiling and linking the final application was CMake. It was chosen because it is widely used open-source and cross-platform build system, which allowing for easy integration of the various required libraries in a well documented and straightforward manner.
@@ -482,7 +554,7 @@ In order to faciliate easier usage of the application both during development an
 \item Unified interface for OpenMP and CUDA -> OpenMP only introduced later... -> Is that really important any way?
 \end{itemize}
 
-\subsection{Kernels}
+\section{Kernels}
 The overall parallel algorithm is very similar to the serial version, however, each simulation step is seperated into different kernels. Each kernel is invoked in a serial manner, this means CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as Nvidia limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all timesteps and for each step the four main algorithm substeps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — are run on the GPU.
 
 \begin{listing}[!htbp]
@@ -541,11 +613,15 @@ __global__ void AssembleSystem1D(
 
   for (int j = 0; j < NUMBER_OF_FIBERS ++j)
   {
-    for (int force_index_j = 0; force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_j)
+    for (int force_index_j = 0;
+         force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
+         ++force_index_j)
     {
       computeInnerIntegral(...);
 
-      for (int force_index_i = 0; force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION; ++force_index_i)
+      for (int force_index_i = 0;
+           force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
+           ++force_index_i)
       {
         // Only 1D thread block
         // Each thread updates unique memory locations, thus
@@ -587,9 +663,13 @@ __global__ void UpdateVelocities2D(...)
   if (j >= NUMBER_OF_FIBERS) return;
   if (i==j) return;
 
-  for (int quadrature_index_i = 0; quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_i)
+  for (int quadrature_index_i = 0;
+       quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
+       ++quadrature_index_i)
   {
-    for (int quadrature_index_j = 0; quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS; ++quadrature_index_j)
+    for (int quadrature_index_j = 0;
+         quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
+         ++quadrature_index_j)
     {
       force = computeForce(coefficents, ...)
       computeDeltaVelocities(force)
@@ -600,13 +680,19 @@ __global__ void UpdateVelocities2D(...)
   // Each thread responsible for an interaction pair, thus
   // result is written to the same memory location
   // Using atomics to avoid conflicts
-  atomicAdd(&(translational_velocities[i].x), delta_translational_velocity.x);
-  atomicAdd(&(translational_velocities[i].y), delta_translational_velocity.y);
-  atomicAdd(&(translational_velocities[i].z), delta_translational_velocity.z);
+  atomicAdd(&(translational_velocities[i].x),
+              delta_translational_velocity.x);
+  atomicAdd(&(translational_velocities[i].y),
+              delta_translational_velocity.y);
+  atomicAdd(&(translational_velocities[i].z),
+              delta_translational_velocity.z);
 
-  atomicAdd(&(rotational_velocities[i].x), delta_rotational_velocity.x);
-  atomicAdd(&(rotational_velocities[i].y), delta_rotational_velocity.y);
-  atomicAdd(&(rotational_velocities[i].z), delta_rotational_velocity.z);
+  atomicAdd(&(rotational_velocities[i].x),
+              delta_rotational_velocity.x);
+  atomicAdd(&(rotational_velocities[i].y),
+              delta_rotational_velocity.y);
+  atomicAdd(&(rotational_velocities[i].z),
+              delta_rotational_velocity.z);
 }
   \end{minted}
   \caption{Pseudocode for the updating velocities simulation step.}
@@ -636,12 +722,14 @@ __global__ void UpdateFibers()
   next_positions[i] = 4/3 * current_positions[i]
     - 1/3 * previous_positions[i]
     + 2/3 * TIMESTEP
-      * (2 * current_translational_velocities[i] - previous_translational_velocities[i]))
+      * (2 * current_translational_velocities[i]
+         - previous_translational_velocities[i]))
 
   next_orientations[i] = 4/3 * current_orientations[i]
     - 1/3 * previous_orientations[i]
     + 2/3 * TIMESTEP
-      * (2 * current_rotational_velocities[i] - current_rotational_velocities[i]))
+      * (2 * current_rotational_velocities[i]
+         - current_rotational_velocities[i]))
 
   normalize(next_orientations)
 }
@@ -650,10 +738,10 @@ __global__ void UpdateFibers()
   \label{lst:pseudo_update_fibers}
 \end{listing}
 
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As will be seen later in the results in chapter~\ref{cha:results} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
+The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudecode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As will be seen later in the results in chapter~\ref{cha:benchmarks} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
 
-\subsection{Optimizations}
-\label{subsec:optimizations}
+\section{Optimizations}
+\label{sec:optimizations}
 
 During the development of the parallel GPU simulation great care was taken to continuously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
 
@@ -661,15 +749,15 @@ Additionally, more advanced optimization were made like rearranging calculations
 
 Throughout the optimization phase the benchmark suite was run after each step. This ensures that optimizations were only included if they had a measureably impact on the overall performance of the simulation. Moreover, in this way potential performance regressions could be identified early and be avoided.
 
-Many optimizations performed during this process are applicable to both the CPU and GPU and show performance improvements for both. However, some optimizations or algorithm variations have either a different effect or are uniquely suited and related to the GPU hardware. For this thesis we will look into three general different optimizations in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:results}.
+Many optimizations performed during this process are applicable to both the CPU and GPU and show performance improvements for both. However, some optimizations or algorithm variations have either a different effect or are uniquely suited and related to the GPU hardware. For this thesis we will look into three general different optimizations in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:benchmarks}.
 
-\subsubsection{Numeric vs. Analytic Integration}
-\label{subsubsec:numeric_analytic}
+\subsection{Numeric vs. Analytic Integration}
+\label{subsec:numeric_analytic}
 The first optimization was already part of the original serial implementation as described in section~\ref{sec:quadrature}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate.
 
 However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. The implementation is dependent on a design variable which uses a slightly different code to calculate the integral for very close fibers in order to avoid numerical instabilities. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. Exploring the performance implications of both approaches on the GPU is thus of great interest, and especially how it compares against the same algorithm running on the CPU.
 
-\subsubsection{Shared Memory}
+\subsection{Shared Memory}
 
 As the described in section~\ref{sec:CUDA} CUDA code is subject to a highly specialized memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. The access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally, local memory can be shared among a CUDA thread block and potentially save time by avoiding to constantly access the slow global memory.
 
@@ -679,7 +767,7 @@ How this affects performance, however, is not always easy to tell, as various fa
 
 However, in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. Especially when comparing the performance against CPUs, as they don't have an equivalent fast and comparatively large memory space. It is therefore an interesting optimization to explore and benchmark.
 
-\subsubsection{Thread Block Dimension}
+\subsection{Thread Block Dimension}
 
 There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regards to optimally taking advantage of the specific underlying GPU architecture, which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics cards can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
 
@@ -701,117 +789,12 @@ After having implemented a parallel algorithm for the GPU, the conversion to the
 
 The end results of the practical implementation for this thesis is a highly optimized CUDA implementation for Nvidia GPUs and additionally a parallelized and optimized Fortran OpenMP implementation for CPUs. The next chapter will now look at a number of performance metrics and compare them between the GPU and CPU.
 
-\chapter{Results}
-\label{cha:results}
+\chapter{Benchmarks}
+\label{cha:benchmarks}
 
 The last chapter introduced the parallel implementation of the numerical simulation. It presented the concept of general purpose computing on modern GPUs. This was followed with a practical overview of the implementation of the algorithm using Nvidia's CUDA framework. Additionally, possible optimiziations to take advantage of the unique properties of the GPU architecture were outlined.
 
 Using all the available implementations of the algorithm this chapter will showcase a multitude of different results and benchmarks performed. This is done to illustrate the achieved performance increases on the GPU over the original serial CPU implementation and the parallel OpenMP implementation.
-
-\section{Examples}
-
-Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both were run with the fastest CUDA algorithm implemented in the thesis.
-
-\subsection{Numerical precision}
-\label{subsec:example_ring}
-
-The first example was used to verify that the single precision GPU version is able to replicate the result of the original double precision code. For this we looked at a very simple problem where a small number of fibers are setup perfectly symmetrical position and orientation. All fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation the fibers begin to rotate from their vertical orientation towards the horizontal position. Afterwards they continue rotating back into the vertical position. This motion is referred to as tumbling orbits and as long as there are no distribances or numerical precision issues it repeat forever.
-
-This simple but very intersting problem has also been simulated in \cite{}. Additionally an even more simplified version with only two fibers was studied numerically and experimentally by \cite{}. This example is thus ideally suited to test and verify the numerical precision of GPU simulation. A visulization of the GPU simulation of $16$ fibers evenly distributed around a circle with diameter $1.1$ is shown in figure~\ref{fig:ring_simulation}.
-
-\begin{figure}[!htbp]
-  \centering
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/ring_00000.pdf}
-    \caption{$t=0$}\label{fig:ring_simulation_1a}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/ring_00015.pdf}
-    \caption{$t=15$}\label{fig:ring_simulation_1b}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/ring_00030.pdf}
-    \caption{$t=30$}\label{fig:ring_simulation_1c}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/ring_00045.pdf}
-    \caption{$t=45$}\label{fig:ring_simulation_1d}
-  \end{subfigure}
-  \caption{Visualization Ring Simulation}
-  \label{fig:ring_simulation}
-\end{figure}
-
-In order to analyse the periodic movment of the fibers we now look at the sedimentation velocity caused by gravity. In the initial setup the fibers are aligned vertically and are dropping with the maximum velocity. As they rotate into the horizontal orientation the velocity is decreasing and reaches its minimum once the fibers are perpendicular to the direction of gravity. Afterwards on their way back to vertical orientation the velocity increases again.
-
-Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber overtime. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments.
-
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=\textwidth]{img/ring_sedimentation.pdf}
-  \caption{Sedimentation velocity.}
-  \label{fig:ring_sedimentation_velocity}
-\end{figure}
-
-\subsection{Sphere simulation}
-\label{subsec:example_sphere}
-
-The second example showcases a more chaotic system with large number of interacting fibers. The observed phenomen only occurs if enough fibers are simulated and is thus ideally suited for the GPU simulation as it reduces the required time per step. For this this example $500$ fibers are initially distributed inside a sphere with a radius of $3$. Both their positions and orientations are randomly generated inside this sphere. An illustration of an example run can be seen in figure~\ref{fig:sphere_simulation} and the corresponding configuration parameters in table~\ref{tab:example_sphere}.
-
-\begin{table}[!htbp]
-  \begin{center}
-    \begin{tabulary}{0.7\textwidth}{LR}
-      \toprule
-      Parameter & Value \\
-      \midrule
-      Sphere Radius & $3$ \\
-      Number of fibers & $500$ \\
-      Timestep & $0.1$ \\
-      Slenderness & $0.01$ \\
-      Number of terms in force expansion & $5$ \\
-      Number of quadrature intervals & $8$ \\
-      Number of quadrature points per interval & $3$ \\
-      \bottomrule
-    \end{tabulary}
-  \end{center}
-  \caption{Parameters for example sphere simulation.}
-  \label{tab:example_sphere}
-\end{table}
-
-This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{subsec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behaviour is more chaotic.
-
-\begin{figure}[!htbp]
-  \centering
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/sphere_00000.pdf}
-    \caption{$t=0$}\label{fig:sphere_simulation_1a}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/sphere_00100.pdf}
-    \caption{$t=100$}\label{fig:sphere_simulation_1b}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/sphere_00150.pdf}
-    \caption{$t=285$}\label{fig:sphere_simulation_1c}
-  \end{subfigure}
-  \begin{subfigure}[h]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{img/sphere_00250.pdf}
-    \caption{$t=285$}\label{fig:sphere_simulation_1d}
-  \end{subfigure}
-  \caption{Visualization Sphere Simulation}
-  \label{fig:sphere_simulation}
-\end{figure}
-
-After some time the ring starts to break and the fibers are split into multiple smaller clusters. Each cluster continues to sediment seperately and slowly forms its own smaller rings again. However due to tiny variations these rings can be harder to see.
-
-For the presented example with the GPU simulation only takes $~0.28$ seconds. It is able to perform the simulated $300$ timesteps in less than $2$ minutes. The new GPU simulation can now be used to increase the number of fibers even further and explore the intricate patterns formed.
 
 \section{Methodology}
 
@@ -1093,8 +1076,7 @@ The results for average time required to take a single timestep is illustrated i
       title=Overall,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
-      ymin=0,
-      xmin=0,xmax=2000,
+      ymode=log,
       unbounded coords=discard,
       ]
 
@@ -1103,7 +1085,7 @@ The results for average time required to take a single timestep is illustrated i
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_gmres_analytical.csv};
       \addplot[color=set12_light,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
 
-      \legend{CUDA GMRES, CUDA MAGMA, OpenMP GMRES, OpenMP Direct}
+      \legend{CUDA GMRES, CUDA Direct, OpenMP GMRES, OpenMP Direct}
     \end{axis}
     \setmathfont{XITS Math}
   \end{tikzpicture}
@@ -1113,7 +1095,153 @@ The results for average time required to take a single timestep is illustrated i
 
 The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. CUDA maintains a relative performance of $~15×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
 
+\begin{table}[!htbp]
+  \begin{center}
+    \begin{tabulary}{\textwidth}{lRRRR}
+      \toprule
+      N = 2000 & OpenMP Direct & OpenMP GMRES & CUDA Direct & CUDA GMRES \\
+      \midrule
+      OpenMP Direct & $1×$  & $—$   & $—$ & $—$ \\
+      OpenMP GMRES  & $3×$  & $1×$  & $—$ & $—$ \\
+      CUDA Direct   & $16×$ & $6×$  & $1×$ & $—$ \\
+      CUDA GMRES    & $99×$ & $39×$ & $6×$ & $1×$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+  \caption{Overall speedup factor for $2000$ fibers.}
+  \label{tab:overall_speedup}
+\end{table}
+
 We acknowledge that these numbers and performance increases is not necessarily fair. A different CPU and GPU combintation from the one used in this thesis might perform differently. However, the relative performance should stay roughly the same. In the end , the only thing that really matters for the researcher working with rigid fibers is the time it takes to simulate large systems on the available workstation. No need to wait for computing time at a computing cluster but instead simple and fast iterations using a workstation. The observed performance increase of $15×$ is a difference between a whole day of waiting for the simulation results and a quick $1.5$ hour result during the day. The saved time also translates directly into the ability to simulate many more fibers than ever before. Before the largest simulation possible in a reasonable time frame where around $500$ fibers, in contrast one single timestep for $2000$ takes only about $10$ seconds on the GPU. Therefor the implementation on the GPU and the optimizations of the simulation code is a great value to the researcoh of rigid fiber simulations.
+
+\chapter{Experiments}
+
+Before examining the different performance metrics and optimizations we will first look at a couple of examples to better illustrate the rigid fiber simulation. The first example shows the numerical precision of the final single precision simulation compared against both the original serial double precision and the expected physical results. The second example presents a real world example which illustrates an interesting phyiscal phenomenon. Both were run with the fastest CUDA algorithm implemented in the thesis.
+
+\section{Fiber Ring}
+\label{sec:example_ring}
+
+The first example was used to verify that the single precision GPU version is able to replicate the result of the original double precision code. For this we looked at a very simple problem where a small number of fibers are setup perfectly symmetrical position and orientation. All fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation the fibers begin to rotate from their vertical orientation towards the horizontal position. Afterwards they continue rotating back into the vertical position. This motion is referred to as tumbling orbits and as long as there are no distribances or numerical precision issues it repeat forever.
+
+This simple but very intersting problem has also been simulated in \cite{}. Additionally an even more simplified version with only two fibers was studied numerically and experimentally by \cite{}. This example is thus ideally suited to test and verify the numerical precision of GPU simulation. A visulization of the GPU simulation of $16$ fibers evenly distributed around a circle with diameter $1.1$ is shown in figure~\ref{fig:ring_simulation}.
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00000.pdf}
+    \caption{$t=0$}\label{fig:ring_simulation_1a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00015.pdf}
+    \caption{$t=15$}\label{fig:ring_simulation_1b}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00030.pdf}
+    \caption{$t=30$}\label{fig:ring_simulation_1c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/ring_00045.pdf}
+    \caption{$t=45$}\label{fig:ring_simulation_1d}
+  \end{subfigure}
+  \caption{Visualization Ring Simulation}
+  \label{fig:ring_simulation}
+\end{figure}
+
+In order to analyse the periodic movment of the fibers we now look at the sedimentation velocity caused by gravity. In the initial setup the fibers are aligned vertically and are dropping with the maximum velocity. As they rotate into the horizontal orientation the velocity is decreasing and reaches its minimum once the fibers are perpendicular to the direction of gravity. Afterwards on their way back to vertical orientation the velocity increases again.
+
+Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber overtime. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments.
+
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{tikzpicture}
+    \setmathfont{FiraSans-Book.otf}
+    \begin{axis}[
+      title=Sedimentation Velocity,
+      xlabel={timestep},
+      ylabel={velocity},
+      height={207pt},
+      unbounded coords=discard,
+      xmin=0,xmax=200,
+      ymin=-4,ymax=-2,
+      ]
+
+      \addplot[color=set12, very thick] table[x=Timestep,y=Single] {charts/ring_sedimentation.csv};
+      \addplot[color=set11, loosely dashed, ultra thick] table[x=Timestep,y=Double] {charts/ring_sedimentation.csv};
+
+      \legend{Single Precision, Double Precision}
+    \end{axis}
+    \setmathfont{XITS Math}
+  \end{tikzpicture}
+  \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
+  \label{fig:ring_sedimentation_velocity}
+\end{figure}
+
+\section{Density effect on GMRES iterations}
+
+\section{Spherical simulation}
+\label{sec:example_sphere}
+
+The second example showcases a more chaotic system with large number of interacting fibers. The observed phenomen only occurs if enough fibers are simulated and is thus ideally suited for the GPU simulation as it reduces the required time per step. For this this example $500$ fibers are initially distributed inside a sphere with a radius of $3$. Both their positions and orientations are randomly generated inside this sphere. An illustration of an example run can be seen in figure~\ref{fig:sphere_simulation} and the corresponding configuration parameters in table~\ref{tab:example_sphere}.
+
+\begin{table}[!htbp]
+  \begin{center}
+    \begin{tabulary}{0.7\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Sphere Radius & $3$ \\
+      Number of fibers & $500$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+  \caption{Parameters for example sphere simulation.}
+  \label{tab:example_sphere}
+\end{table}
+
+This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{subsec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behaviour is more chaotic.
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00000.pdf}
+    \caption{$t=0$}\label{fig:sphere_simulation_1a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00100.pdf}
+    \caption{$t=100$}\label{fig:sphere_simulation_1b}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00150.pdf}
+    \caption{$t=285$}\label{fig:sphere_simulation_1c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/sphere_00250.pdf}
+    \caption{$t=285$}\label{fig:sphere_simulation_1d}
+  \end{subfigure}
+  \caption{Visualization Sphere Simulation}
+  \label{fig:sphere_simulation}
+\end{figure}
+
+After some time the ring starts to break and the fibers are split into multiple smaller clusters. Each cluster continues to sediment seperately and slowly forms its own smaller rings again. However due to tiny variations these rings can be harder to see.
+
+For the presented example with the GPU simulation only takes $~0.28$ seconds. It is able to perform the simulated $300$ timesteps in less than $2$ minutes. The new GPU simulation can now be used to increase the number of fibers even further and explore the intricate patterns formed.
+
+\section{Density effect on spherical simulation}
+\section{Number of fibers effect on spherical simulation}
 
 \chapter{Conclusion}
 

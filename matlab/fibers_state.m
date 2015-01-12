@@ -1,10 +1,9 @@
 % files = dir('input/*.state');
-% files = dir('input/*.out');
-files = dir('XcT_2gen*.in');
-
+files = dir('input_wip/*.out');
+% files = files(1455:end);
 index = 0;
-
 f = figure();
+
 
 %r = 600; % pixels per inch
 %set(gcf, 'PaperUnits', 'inches', 'PaperPosition', [0 0 4000 25000]/r);
@@ -21,7 +20,7 @@ f = figure();
 % set(f,'PaperPositionMode','Auto','PaperUnits','Inches','PaperSize',[pos(3), pos(4)])
 
 for file = files'
-    input=[file.name]; 
+    input=['input_wip/' file.name]; 
     data = dlmread(input,'',1, 0);
 
     data = reshape(data',3,2,[]);
@@ -48,7 +47,7 @@ for file = files'
     %camproj('perspective');
     grid on;
     
-    output=['output/state_' sprintf('%05d',index) '.pdf'];
+    output=['output_wip/state_' sprintf('%05d',index) '.pdf'];
     
     % Options for Ring Simulation
 %     axis([-2 2 -2 2 -2 2]);
@@ -74,8 +73,11 @@ for file = files'
     axis image;
     zcs = sort(Zp(2,:));
     zmean = mean(zcs(1:ceil(length(zcs)/2)));
+    axis([-50 50 -50 50 zmean-(50*2) zmean+(50*2)]);
     
-    axis([-20 10 -20 10 zmean-30 zmean+30]);
+%     zmean = min(Zp(2,:));
+%     axis([-8 8 -8 8 zmean-4 zmean+16]);
+    
     zticks = get(gca,'ZTick');
     set(gca,'ZTickLabel', sprintf('%+5.0f\n',zticks))
     
@@ -95,4 +97,3 @@ for file = files'
     
     %close all;
 end
-
