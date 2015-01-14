@@ -3,7 +3,7 @@
 % arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
-\DeclareMathSizes{12}{}{}{}
+\DeclareMathSizes{10.95}{12}{9}{7}
 
 % Math and code packages
 \usepackage{amsmath}   % all things math
@@ -125,13 +125,11 @@
 \maketitle
 \selectlanguage{english}
 \begin{abstract}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
-purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
-ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
-rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
-nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
-aptent taciti sociosqu ad litora torquent per conubia nostra, per
-inceptos hymenaeos.
+The major objective of this Master's thesis is to accelerate a serial implementation of a numerical algorithm for the simulation of slender fiber dynamics by using Graphical Processing Units (GPU). We focus on rigid fibers sedimenting due to gravity in a free-space Stokes flow. The ability to simulate a large number of fibers in a reasonable computational time on a high-performance parallel platform opens exciting new research opportunities.
+
+The previous serial implementation is rewritten for parallel execution. The algorithm is implemented in single precision using the Compute Unified Device Architecture (CUDA) on NVIDIA GPUs. In addition, we develop an OpenMP version of the parallel implementation to run on multi-core CPUs. Using both implementations, we perform a number of benchmarks to determine the fastest variant of the algorithm. We observe a speedup of $20×$ to $40×$ on the NVIDIA GTX 970 compared to an Intel Core i7 4770. The GPU implementation can simulate up to $2000$ fibers on a desktop computer and it takes only in the order of $8$ seconds to advance one time step.
+
+Furthermore, we have performed a number of simulations of known experiments for sedimenting fibers to validate the algorithm and to explore the numerical precision of the results. The results show an excellent agreement with results from prior experiments in the field.
 \end{abstract}
 
 \clearpage
@@ -168,7 +166,7 @@ In this chapter we will present the theoretical foundation of the physics the si
 
 We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterwards we will focus on the implications this has and how the flow properties can be calulated for the special case of straight and rigid fibers.
 
-\section{Stokes flow and Stokeslet}
+\section{Stokes flow}
 
 The aim of the presented simulation is to model the behaviour of objects immersed in a fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a viscous fluid due to gravity. The velocity of these rigid objects is only dependent on their orientation and the resulting drag. The interaction between multiple objects is only modeled through the surrounding fluid as collision are not modelled.
 
@@ -200,6 +198,8 @@ Given these constraints and especially the very low Reynolds number due to slowl
 
 where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$.
 The constant $\mu$ is the viscosity of the fluid.
+
+\section{Stokeslet}
 
 The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally, the equations are time independent and time depedence is only reintroduced due to the motion of the immersed objects and the boundary conditions. Thus given the boundary conditions the structure of the flow can be calculated.
 
@@ -281,12 +281,12 @@ where $\mathbf{x}_c$ and $t$ denote the center point and orientation of the body
   \label{fig:immersed_rigid}
 \end{figure}
 
-Furthermore we required at the integrated force distrubtion over the body as well as the the torque have to be equal to the externally applied force. In our case this is simply gravity and an external torque of $0$. For the a single body the force $\mathbf{F}_body$ and torque $\mathbf{T}_body$ are thus defined as
+Furthermore we required at the integrated force distrubtion over the body as well as the the torque have to be equal to the externally applied force. In our case this is simply gravity and an external torque of $0$. For the a single body the force $\mathbf{F}_{body}$ and torque $\mathbf{T}_{body}$ are thus defined as
 \begin{equation}
   \label{eq:force_torque}
   \begin{aligned}
-    \mathbf{F}_body &= \int_\Omega \mathbf{f}(y) \, dS_y \\
-    \mathbf{T}_body &= \int_\Omega (\mathbf{x} - \mathbf{x_c}) \times \mathbf{f}(y) \, dS_y \quad i,j=1,2,3\text{,}
+    \mathbf{F}_{body} &= \int_\Omega \mathbf{f}(y) \, dS_y \\
+    \mathbf{T}_{body} &= \int_\Omega (\mathbf{x} - \mathbf{x_c}) \times \mathbf{f}(y) \, dS_y \quad i,j=1,2,3\text{,}
   \end{aligned}
 \end{equation}
 
@@ -303,22 +303,134 @@ Reformulating the problem in form of a boundary integral reduced the original 3-
 
 \section{Slender fibers}
 
+The goal of the simulation is to simulate many very slender fibers. For slender fibers the 2D-dimensional boundary integral formulation would be very expensive to solve numerically. We thus simplify the formulation of arbritrary rigid fibers by replacing them with ellipsoids, or more precisly in our case prolate spheroids. They are defined by two parameters, $2*L$ corresponds to the length of the major axis and $a$ to the length of the minor axis or simply the fiber radius.
 
-\subsection{Nondimensionalization}
-\subsection{Slender body equations}
-\subsection{Forces}
-\subsection{Velocities}
+Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as the slenderness parameter. As illustrated in Figure~\ref{fig:slenderness}, when $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitisimal slender fiber.
 
-\chapter{Serial Implementation}
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/slender/1_4.pdf}
+    \caption{$\epsilon=1/4$}\label{fig:slenderness_1_4}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/slender/1_10.pdf}
+    \caption{$\epsilon=1/10$}\label{fig:slenderness_1_10}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/slender/1_20.pdf}
+    \caption{$\epsilon=1/20$}\label{fig:slenderness_1_20}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/slender/1_100.pdf}
+    \caption{$\epsilon=1/100$}\label{fig:slenderness_1_100}
+  \end{subfigure}
+  \caption{Illustration slenderness parameters.}
+  \label{fig:slenderness}
+\end{figure}
+
+Without this approximation the fundatmental solution have been evaluated on the surface of the rigid body. However, as \cite{} showed the fluid velocity $\mathbf{U}(\mathbf{x})$ at any point $x$ outside the fiber can be also be computed up to an accurary of $O(\epsilon)$ by placing the fundatmental solution on a 1-dimensional fiber centerline. The formulation remains closed for no-slip boundary condition and no angular variation in the fiber velocity.
+
+Thus as shown in Figure~\ref{} each fiber is only defined by its center coordinate and the orientation along its centerline parameterized by the arclength $s \in [-L, L]$. In order to simplify the calculation the rigid fiber simulation uses a non-dimensional formulation of the numerical method. This allows each fiber $m$ to be expressed in terms of
+\begin{equation}
+  \label{eq:rigid_fiber_model}
+  x_m(s,t) = x_m(t) + s * t_m(t) \quad \text{with} \quad s \in [-1, 1] \text{,}
+\end{equation}
+where $x_m$ is the center cooridnate and $t_m$ the unit tangent vector representing the orientation.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/slender.pdf}
+  \caption{Slender fiber approximation.}
+  \label{fig:slender_fiber}
+\end{figure}
+
+By approximating the slender bodies using slender fibers we can reduce the dimensionality of the boundary formulation from 2D to a 1D integral equation. This allows for a much cheaper numerical simulation. The next step is to combine the equations~\eqref{eq:boundary_integral_formulation_specific} and ~\eqref{eq:force_torque} with non-dimensionalized rigid fiber model in equation~\eqref{eq:rigid_fiber_model} to arrive at the final mathmatical model of the rigid fiber simulation.
+
+For the slender fiber approximation the velocity for the centerline of fiber $m$ is given by
+\begin{equation}
+  \label{eq:slender_fibers_velocity}
+  \begin{aligned}
+    \mathbf{\dot{x}}_m + s \mathbf{\dot{t}}_m &= L(\mathbf{t}_m) \mathbf{f}_m(s) \quad \textit{\tiny{(Local contribution)}} \\
+     &\quad + (\mathbf{I} + \mathbf{t}_m \mathbf{t}_m)\bar{\mathbf{K}}[\mathbf{f}_m](s) \quad \textit{\tiny{(Global contribution)}} \\
+     &\quad + \sum_{\substack{l = 1\\l \neq m}}^M \int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s'))\mathbf{f}_l(s') \,ds' \quad \textit{\tiny{(Contribution from other fibers)}} \\
+  \end{aligned}
+\end{equation}
+where $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}}_m$ denote the translational and rotational velocity of the fiber, respectively. In this equation we take advantage of the superpositon principle in the Stokes flow and simply sum up the contribution over every other fiber $l$ to the current fiber $m$. So for the contribution from another fiber $l$ we integrate over the Stokeslet and Doublet over the complete fiber length for $s' \in [-1, 1]$. The function $\mathbf{G}$ than simply describes a linear combination of the two fundamental solutions
+\begin{equation}
+  \label{eq:G}
+  \mathbf{G}(\mathbf{R}) = S(\mathbf{R}) + \epsilon^2 \mathbf{D}(\mathbf{R}) \text{.}
+\end{equation}
+
+By discretizing the integral with a quadrature rule we can calculate the equation~\eqref{eq:slender_fibers_velocity} for a specific number of quadrature points along each fiber. In this case the following function
+\begin{equation}
+  \label{eq:fiber_distance}
+  \mathbf{R}(s, s') = \mathbf{x}_m + s \mathbf{t}_m - (\mathbf{x}_l + s'\mathbf{t}_l) \text{,}
+\end{equation}
+simply compute the difference vector between the two points on the fiber. Figure~\ref{fig:fiber_contribution} illustrates the case of only two fibers with $5$ quadrature points each.
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/fiber_contribution.pdf}
+  \caption{Contribution between fibers.}
+  \label{fig:fiber_contribution}
+\end{figure}
+
+Right now we have the we have only one equation but three unknowns. The translational velocity $\mathbf{\dot{x}}_m$, the rotational velocity $\mathbf{\dot{t}}_m$ and the force $\mathbf{f}_m$ acting on the fibers. To close the system we again constrain the force and the torque for each fiber as
+\begin{equation}
+  \label{eq:force_torque_2}
+  \begin{aligned}
+    \mathbf{F}_{m} &= \int_{-1}^{1} \mathbf{f}(s) \, ds = \mathbf{F}_g \\
+    \mathbf{T}_{m} &= \int_{-1}^{1} s(\mathbf{t}_m \times \mathbf{f}_m(s)) \, ds = 0\text{.}
+  \end{aligned}
+\end{equation}
+
+The total force integrated over each discretized quadrature point is always equal to the externally applied force, which as discussed before is just gravity. For the torque the same principle applies, however instead of an external influence we always force it to $0$. Together with this the system is now closed and we can solve our rigid fiber simulation using the equations~\eqref{eq:slender_fibers_velocity}~and~\eqref{eq:force_torque_2}.
+
+\chapter{Numerical algorithm and serial implementation}
 \label{cha:serial_implementation}
 
-In the last chapter we presented the theoretical foundation of the physics and math involved in simulating rigid fibers. It showed how based on the Stokes Equation a framework can be developed to efficiently model rigid fibers.
+In the last chapter we presented the theoretical foundation of the physics and mathematics involved in simulating rigid fibers. It how Based on the Stokes Equation, it showed how a framework can be developed to efficiently model rigid fibers.
 
-Using this background we will now introduce the approach used for the numeric simulation. This is crucial to be able to validate the framework against real world experiments.
+Using this background we will now introduce the approach used for the numeric simulation. Additionally we will touch upon implemtentation details used in the original serial version of the algorithm.
 
-We will begin by presenting the employed time stepping approach. This is followed by a discussion about the different ways the integrals can be solved for the various quadrature points. The final section will illustrate the structure of the resulting final linear system and the briefly introduce the employed solvers.
+We will seperate the algorithm into four steps and discuss each individually. We close this chapter with a brief reflection of performance characteristica of the serial implementation in order to guide the new parallel implementation on the GPU.
 
-\section{Time stepping}
+\section{Assemble System}
+In the previous chapter we obtained the final closed system and the equations~\eqref{eq:slender_fibers_velocity}~and~\eqref{eq:force_torque_2}. By integrating equation~\eqref{eq:slender_fibers_velocity} from $-1$ to $1$ we can derive two seperate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $1,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to \cite[].
+
+In order to be able solve these equations for $\mathbf{f}_m$ we have to discretize them. For this we expand the force as a sum of $N+1$ Legendre polynomials $P_n(s)$
+\begin{equation}
+  \label{eq:force_discretization}
+  \mathbf{f}_m = \frac{1}{2}\mathbf{F}_g + \sum_{n=1}^{N}a_{m}^{n} P_n(s) \text{,}
+\end{equation}
+where the coefficents $a_{m}^{n}$ are vectors with three components. The number of legendre polynomials $N$ used for the force expansion is a parameter and is usually set to $5$ in our simulation.
+
+\subsection{Closed linear system}
+
+Using the force expansion from equation~\ref{eq:force_discretization} in equation~\ref{} we obtain a closed linear system of equations for the coefficents $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
+
+For 3-dimensional positions of the fibers this results in linear system of size $3MN\times3MN$. The first of the algorithm is thus to compute and assemble the linear system in memory. Writing the system the standard form $\mathbf{A}\mathbf{\bar{x}}=\mathbf{b}$ gives the following structure for the matrix $A$
+\begin{equation}
+  \label{eq:matrix_structure}
+  \mathbf{A} =
+  \begin{bmatrix}
+    \mathbf{I} & \bar{A}_{12} & \cdots & \bar{A}_{1M} \\
+    \bar{A}_{21} & \mathbf{I} & \cdots & \bar{A}_{1M} \\
+    \vdots & \vdots & \ddots & \vdots \\
+    \bar{A}_{M1} & \bar{A}_{M2} & \cdots & \mathbf{I}
+  \end{bmatrix} \text{.}
+\end{equation}
+In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix indicating the contribution from the the force coefficents on fiber $l$ on to the force coefficents for fiber $m$.
+
+\subsection{Inner integral}
+
+\section{Solve System}
+\section{Update Velocities}
+\section{Update fibers}
 \label{sec:time_stepping}
 
 \section{Quadrature}
@@ -1015,7 +1127,7 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
       title=OpenMP Linear Solver,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
-      ymin=0,ymax=180,
+      ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
       ]
@@ -1042,7 +1154,7 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
       title=CUDA Linear Solver,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
-      ymin=0,ymax=30,
+      ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
       ]
@@ -1076,7 +1188,6 @@ The results for average time required to take a single timestep is illustrated i
       title=Overall,
       xlabel={number of fibers},
       ylabel={simulation time (sec)},
-      ymode=log,
       unbounded coords=discard,
       ]
 
