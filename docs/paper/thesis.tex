@@ -1,5 +1,7 @@
 % arara: clean: {files: [thesis.aux, thesis.idx, thesis.ilg, thesis.ind, thesis.log, thesis.bbl, thesis.bcf, thesis.ist, thesis.blg, thesis.run.xml, thesis.lol, thesis.out, thesis.toc, texput.log]}
 % arara: lualatex: { shell : yes , action: batchmode}
+% arara: biber
+% arara: lualatex: { shell : yes , action: batchmode}
 % arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
@@ -22,7 +24,12 @@
 \usepackage{subcaption} % nice subfigures and subtables
 
 % Bibliographies
-\usepackage[backend=biber]{biblatex} % modern bibliographies
+\usepackage[
+  backend=biber,
+  style=numeric,
+  sorting=nty
+]{biblatex} % modern bibliographies
+\addbibresource{thesis.bib}
 \usepackage{csquotes}
 
 % PDF Metadata
@@ -198,7 +205,7 @@ The aim of the presented simulation is to model the behavior of objects immersed
 \begin{equation}
   \label{eq:naviar_stokes_equations}
   \begin{aligned}
-    \rho(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f}
+    \rho(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f} \\
     \nabla \cdot \mathbf{u} &= 0
   \end{aligned}
 \end{equation}
@@ -282,7 +289,7 @@ which is illustrated in Figure~\ref{fig:immersed}.
 
 \begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed.pdf}
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed.png}
   \caption{Immersed object in stokes flow.}
   \label{fig:immersed}
 \end{figure}
@@ -298,7 +305,7 @@ where $\mathbf{x}_c$ and $t$ denote the center point and orientation of the body
 
 \begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed_rigid.pdf}
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/immersed_rigid.png}
   \caption{Immersed object in stokes flow.}
   \label{fig:immersed_rigid}
 \end{figure}
@@ -330,22 +337,22 @@ Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as 
   \centering
   \begin{subfigure}[h]{0.24\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/slender/1_4.pdf}
+    \includegraphics[width=\textwidth]{img/slender/1_4.png}
     \caption{$\epsilon=1/4$}\label{fig:slenderness_1_4}
   \end{subfigure}
   \begin{subfigure}[h]{0.24\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/slender/1_10.pdf}
+    \includegraphics[width=\textwidth]{img/slender/1_10.png}
     \caption{$\epsilon=1/10$}\label{fig:slenderness_1_10}
   \end{subfigure}
   \begin{subfigure}[h]{0.24\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/slender/1_20.pdf}
+    \includegraphics[width=\textwidth]{img/slender/1_20.png}
     \caption{$\epsilon=1/20$}\label{fig:slenderness_1_20}
   \end{subfigure}
   \begin{subfigure}[h]{0.24\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{img/slender/1_100.pdf}
+    \includegraphics[width=\textwidth]{img/slender/1_100.png}
     \caption{$\epsilon=1/100$}\label{fig:slenderness_1_100}
   \end{subfigure}
   \caption{Illustration slenderness parameters.}
@@ -439,7 +446,7 @@ For 3-dimensional positions of the fibers this results in linear system of size 
   \mathbf{A} =
   \begin{bmatrix}
     \mathbf{I} & \bar{A}_{12} & \cdots & \bar{A}_{1M} \\
-    \bar{A}_{21} & \mathbf{I} & \cdots & \bar{A}_{1M} \\
+    \bar{A}_{21} & \mathbf{I} & \cdots & \bar{A}_{2M} \\
     \vdots & \vdots & \ddots & \vdots \\
     \bar{A}_{M1} & \bar{A}_{M2} & \cdots & \mathbf{I}
   \end{bmatrix} \text{.}
@@ -1072,6 +1079,9 @@ The first benchmark tests the performance of the two different approaches to com
       ymin=0,ymax=55,
       xmin=0,xmax=2000,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_analytical.csv};
@@ -1097,6 +1107,9 @@ However, the picture is more interesting when we look at the same graph for the 
       ymin=0,ymax=5.5,
       xmin=0,xmax=2000,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
@@ -1156,6 +1169,9 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
       ymin=0,ymax=1.4,
       xmin=0,xmax=2000,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_1D.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
@@ -1206,6 +1222,9 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
       ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_gmres_numerical.csv};
@@ -1233,6 +1252,9 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
       ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_magma_numerical_2D.csv};
       \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
@@ -1333,6 +1355,9 @@ The results for average time required to take a single time step is illustrated 
       xmin=0,xmax=2000,
       ymin=0,ymax=140,
       unbounded coords=discard,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
 
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_gmres_numerical_2D.csv};
@@ -1552,6 +1577,9 @@ The first parameter we explore was the concentration of the fibers. Concentratio
       unbounded coords=discard,
       xmin=0,xmax=3,
       ymin=0,ymax=1800,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
 
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Break] {charts/concentration_breakup.csv};
@@ -1579,6 +1607,9 @@ The second parameter we looked at was the number of fibers. For this experiment 
       unbounded coords=discard,
       xmin=0,xmax=2000,
       ymin=0,ymax=500,
+      xmode=log,
+      ymode=log,
+      grid=major,
       ]
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=M,y=Break] {charts/number_breakup.csv};
 
@@ -1608,6 +1639,9 @@ Currently the number of fibers in our simulation is limited by the amount of mem
 Another exciting possibility is the move to a multi-device setup. Using multiple GPUs simultaneously would allow for much larger systems if the workload can be split efficiently. MAGMA, the library used for the GPU direct solver, offers a couple of interesting options in this area. The hardest part to efficiently parallelized is solving the system and broadcasting the result across multiple GPUs. The other steps of the algorithm allow for an easy natural partition and have already been implemented across multiple CPUs using OpenMPI.
 
 Finally, to further improve the simulation it might be worth looking at the numerical algorithm itself. Adapting a different algorithm based on the fast summation method might not only improve the performance but also reduce the required memory allowing for faster and larger simulation. How this affects the accuracy and behavior of the simulation is an interesting future research question.
+
+\nocite{*}
+\printbibliography
 
 \appendix
 \addappheadtotoc
