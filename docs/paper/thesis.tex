@@ -138,13 +138,7 @@ Furthermore, we have performed a number of simulations of known experiments for 
 
 
 \begin{foreignabstract}{swedish}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Mauris
-purus. Fusce tempor. Nulla facilisi. Sed at turpis. Phasellus eu
-ipsum. Nam porttitor laoreet nulla. Phasellus massa massa, auctor
-rutrum, vehicula ut, porttitor a, massa. Pellentesque fringilla. Duis
-nibh risus, venenatis ac, tempor sed, vestibulum at, tellus. Class
-aptent taciti sociosqu ad litora torquent per conubia nostra, per
-inceptos hymenaeos.
+
 \end{foreignabstract}
 
 \clearpage
@@ -153,22 +147,53 @@ inceptos hymenaeos.
 
 \clearpage
 
+\listoffigures
+\clearpage
+
+\listoftables
+\clearpage
+
+\addcontentsline{toc}{chapter}{List of Listings}
+\listoflistings
+\clearpage
+
 \mainmatter
 \pagestyle{newchap}
 
 \chapter{Introduction}
 
+Predicting the physical behavior of particles suspended in fluid is of great interest in a variety of different field. The ability to accurately model different kind of materials allows their properties to be analyzed and optimized for a large number of applications. Examples include medical applications were the deliver and distribution of the active agent has to be modeled, waste management to efficiently extract waste from water and the paper industry which is trying to improve the properties of their material. Simulating these complex behaviors usually requires a large number of particles and being able to do so efficient is very important.
+
+The work in this thesis focus on the numerical simulation on micro-scale. Rigid and fibers are allowed to sediment in a viscous fluid due to gravity. The fibers are simulated in a free-space Stokes flow. The model is expressed using a boundary integral formulation to simply and increase the performance of the simulation. This setup resembles the simplified model for paper pulp, where the quality of the paper is determined by individual fibers. By optimizing the fiber alignment and distribution different properties of the paper can be influenced. Accurately modeling the interaction requires many fibers to be simulated.
+
+In this thesis we present a high performance GPU implementation of the rigid fiber suspension simulation. By taking advantage of the massively parallel architecture of modern GPUs many more fibers than before with a CPU based implementation can be simulated. We focus our work on the ability to easily and efficiently perform simulation on a high-end desktop computer or workstation readily accessible by the researcher. This approach allows the researcher to explore the huge problem space and simulate a relatively large number of fibers in a short amount of time. They can rapidly iterate to find and discover interesting test cases. Theses cases can than be used as a starting point for large scale simulation using computing clusters.
+
+We limit ourselves to the naive algorithm for simulating the fibers, were the interactions between every pair is computed. The development of such an naive algorithm is not only easier and more cost effective but the potentially large overhead introduced by a complex fast summation method, like multipoles might not result in desired performance increase. Additionally, because we are limited to a single precision simulation by our choice of consumer-grade GPU hardware, maintaining the accuracy of the simulation is a major concern. However, exploring theses questions is an interesting future research direction.
+
+\begin{enumerate}
+\item Prior research:
+\item Two general approaches full 3d body simulation vs boundary integral formulation
+\item Brief Examples/discussion for both
+\item Parallel CPU/GPU research available for 3D Bodies?
+\item Based on serial fortran implementation
+\item OpenMPI version only interesting for computing clusters not desktop computers
+\item Suffers from having to collect matrix to single node
+\end{enumerate}
+
+
+This thesis into three major parts. First we introduce the theoretical foundation of the numerical method in chapter~\ref{cha:theoretical_foundation} and refer to the original paper by Tornberg and Gustavsson for in-depth details. We conclude the description of the previous work by discussing the numerical algorithm and the serial implementation on the CPU in chapter~\ref{cha:serial_implementation}. In the following chapter~\ref{cha:gpu_programming} we briefly introduce the topic of general purpose computing on GPUs. Based on this we than describe our new parallel GPU implementation of the rigid fibers simulation in detail in chapter~\ref{cha:parallel_implementation}. The last part of this thesis presents the benchmarking result and achieved performance increase of the GPU implementation in chapter~\ref{cha:benchmarks}. Finally, we performed and compared our simulation results to a number of known experiments in chapter~\ref{cha:experiments}.
+
 \chapter{Theoretical Foundation}
 \label{cha:theoretical_foundation}
 The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate as many fibers as possible to generate the various patterns found in real world experiments.
 
-In this chapter we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the method is only presented in a reduced summary for more details please refer to \cite{}.
+In this chapter, we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the method is only presented in a reduced summary for more details please refer to \cite{}.
 
-We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterwards we will focus on the implications this has and how the flow properties can be calculated for the special case of straight and rigid fibers.
+We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterward, we will focus on the implications this has and how the flow properties can be calculated for the special case of straight and rigid fibers.
 
 \section{Stokes flow}
 
-The aim of the presented simulation is to model the behavior of objects immersed in a fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a viscous fluid due to gravity. The velocity of these rigid objects is only dependent on their orientation and the resulting drag. The interaction between multiple objects is only modeled through the surrounding fluid as collision are not modeled.
+The aim of the presented simulation is to model the behavior of objects immersed in a fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a viscous fluid due to gravity. The velocity of these rigid objects is only dependent on their orientation and the resulting drag. The interaction between multiple objects is only modeled through the surrounding fluid as collision are completely excluded from the model.
 
 \begin{equation}
   \label{eq:naviar_stokes_equations}
@@ -178,7 +203,7 @@ The aim of the presented simulation is to model the behavior of objects immersed
   \end{aligned}
 \end{equation}
 
-The Naviar-Stokes equations describe the motion of fluids and allow to model the flow around an object. Using and solving theses equations is however quite challenging due to their time dependence and non-linearity. Fortunately we can make a number of simplification due to the restriction we placed on our model. Our model is characterized by three properties.
+The Naviar-Stokes equations describe the motion of fluids and allow to model the flow around an object. Using and solving theses equations is however quite challenging due to their time dependence and non-linearity. Fortunately, we can make a number of simplification due to the restriction we placed on our model. Our model is characterized by three properties.
 
 \begin{enumerate}
   \item{\textit{Newtonian fluid} — The viscosity $\mu$ of the fluid does not depend on the stress.}
@@ -329,7 +354,7 @@ Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as 
 
 Without this approximation the fundamental solution have been evaluated on the surface of the rigid body. However, as \cite{} showed the fluid velocity $\mathbf{U}(\mathbf{x})$ at any point $x$ outside the fiber can be also be computed up to an accuracy of $O(\epsilon)$ by placing the fundamental solution on a 1-dimensional fiber centerline. The formulation remains closed for no-slip boundary condition and no angular variation in the fiber velocity.
 
-Thus as shown in Figure~\ref{} each fiber is only defined by its center coordinate and the orientation along its centerline parameterized by the arc-length $s \in [-L, L]$. In order to simplify the calculation the rigid fiber simulation uses a non-dimensional formulation of the numerical method. This allows each fiber $m$ to be expressed in terms of
+Thus as shown in Figure~\ref{fig:slender_fiber} each fiber is only defined by its center coordinate and the orientation along its centerline parameterized by the arc-length $s \in [-L, L]$. In order to simplify the calculation the rigid fiber simulation uses a non-dimensional formulation of the numerical method. This allows each fiber $m$ to be expressed in terms of
 \begin{equation}
   \label{eq:rigid_fiber_model}
   x_m(s,t) = x_m(t) + s * t_m(t) \quad \text{with} \quad s \in [-1, 1] \text{,}
@@ -405,7 +430,7 @@ where the coefficients $a_{m}^{n}$ are vectors with three components. The number
 
 \subsection{Closed linear system}
 
-Using the force expansion from equation~\ref{eq:force_discretization} in equation~\ref{} we obtain a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
+Using the force expansion from equation~\ref{eq:force_discretization} in equation~\ref{eq:slender_fibers_velocity} we obtain a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
 
 For 3-dimensional positions of the fibers this results in linear system of size $3MN\times3MN$. The first of the algorithm is thus to compute and assemble the linear system in memory. Writing the system the standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure for the matrix $A$
 \begin{equation}
@@ -422,6 +447,7 @@ For 3-dimensional positions of the fibers this results in linear system of size 
 In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix encapsulating the contribution from the force coefficients on fiber $l$ on to the force coefficients for fiber $m$.
 
 \subsection{Inner integral}
+\label{subsec:inner_integral}
 
 For each $\bar{A}_{ml}$ we need to compute the $3\times3$ matrix $\Theta_{lm}^{kn}$
 \begin{equation}
@@ -445,6 +471,7 @@ The linear system can either be solved using a direct solver or an iterative met
 The force coefficients obtained by solving the linear system can now be used to calculate the remaining unknowns. By using the force expansion in the two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. The required implementation is thus similar to the computations for the \emph{Assemble System} step. The two integral, again, can be evaluated either exclusively numerical or with the combined approach of solving the inner integral analytically.
 
 \section{Update Fibers}
+\label{sec:serial_update_fibers}
 
 The final step takes care of advancing the fibers forward in time. The equations do not impose any strict stability restriction so an explicit time-stepping scheme can be used. We also use the same second order multi-step method used in the original paper. The update for position of the center coordinate $\mathbf{x}_m$ is given by the following discretization in time
 \begin{equation}
@@ -456,6 +483,7 @@ where the time step is denoted by $\Delta t$ and superscripts denote the numeric
 At the end of this step the state of the fibers can be written to an external file for post processing and visualization in other tools. After completing this step the algorithm starts the top again with the \emph{Assemble System} step. This cycle repeats until a specified number of time steps have been executed.
 
 \section{Algorithm summary}
+\label{sec:algorithm_summary}
 
 The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are
 \begin{enumerate}
@@ -469,9 +497,11 @@ Empirical results show that the majority of the required computation time is spe
 
 As the 2.~\emph{Solve System} step is treated as a black box the only potential performance difference is caused by the choice of linear solver. In line with the original paper we will both test direct solver as well as iterative solver like GMRES. However, the short of writing our own implementation of linear solvers on the GPU we have no influence on the performance of this step. We instead of to rely on pre-existing libraries.
 
-Thus the most important step to optimize is 1.~\emph{Assemble System}. Fortunately it is well suited for parallelization. The fibers can naturally partitioned across the compute units, where each unit is responsible for a subset of fibers. The focus of the optimization will thus lie on the \emph{Assemble System}. As the required computation for the 3.~\ref{Update Velocities} step is similar it will also indirectly benefit from any optimizations. Additionally, we will also look at how the two different methods for solving the integral in equation~\ref{eq:inner_integral} perform in the parallel environment. The next goal thus is to parallelize each algorithm step on the GPU.
+Thus the most important step to optimize is 1.~\emph{Assemble System}. Fortunately it is well suited for parallelization. The fibers can naturally partitioned across the compute units, where each unit is responsible for a subset of fibers. The focus of the optimization will thus lie on the \emph{Assemble System}. As the required computation for the 3.~\emph{Update Velocities} step is similar it will also indirectly benefit from any optimizations. Additionally, we will also look at how the two different methods for solving the integral in equation~\ref{eq:inner_integral} perform in the parallel environment. The next goal thus is to parallelize each algorithm step on the GPU.
 
 \chapter{GPU Programming}
+\label{cha:gpu_programming}
+
 In the previous chapter the serial implementation of the numerical simulation was presented. It discussed various implementation details which have to be considered to arrive at the most efficient implementation.
 
 This chapter will now give a brief overview of the Compute Unified Device Architecture (CUDA) from NVIDIA. Modern GPUs offer a massively parallel architecture, which can accelerate many different simulations. We will begin with a short introduction to general purpose computing on the GPU and explain how CUDA allows the developer to take advantage of this.
@@ -671,6 +701,7 @@ In addition to the Thread hierarchy...
 \end{itemize}
 
 \chapter{Parallel Implementation}
+\label{cha:parallel_implementation}
 
 Based on the previous two chapters describing the serial Fortran implementation and GPU programming we will now look at the algorithm in more detail and show, how it was adapted to take advantage of multi-core architectures. The main focus of this thesis is the implementation of the simulation on a modern massively parallel NVIDIA GPUs using CUDA. In order to gain a better understanding of the achievable performance improvements we additionally backported the finished GPU code of the algorithm to multi-core CPUs using the OpenMP framework.
 
@@ -700,6 +731,8 @@ ViennaCL is an open-source linear algebra library developed at the University of
 ViennaCL's focus is on solving sparse matrices with the implemented iterative solvers. However, it also has basic support for solving dense matrices using a variety of different iterative solvers. As the rigid fiber simulation exclusively relies on dense matrices this makes it an ideal candidate for benchmarking. For this thesis both the BiCGStab as well as the GMRES iterative solvers where used and tested.
 
 \section{Kernels}
+\label{sec:kernels}
+
 The overall parallel algorithm is very similar to the serial version, however, each simulation step is separated into different kernels. Each kernel is invoked in a serial manner, this means CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as Nvidia limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all time steps and for each step the four main algorithm sub steps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — are run on the GPU.
 
 \begin{listing}[!htbp]
@@ -782,7 +815,7 @@ __global__ void AssembleSystem1D(
   \label{lst:pseudo_assemble_system}
 \end{listing}
 
-The \emph{Assemble System} kernel is the most important step of the algorithm. Its goal is to build the matrix and vector in memory for the linear system of equations in the form of $A*x = b$. Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the assemble system step. This means the code is parallelized for each fiber and each thread calculates the contributions to this fiber from all other fibers. Looking at the matrix each thread is thus responsible for $3*M$ rows of the matrix.
+The \emph{Assemble System} kernel is the most important step of the algorithm, as it is the most time consuming step as discussed in section~\ref{sec:algorithm_summary} and we will later show during benchmarking in chapter~\ref{cha:benchmarks}. Its goal is to build the matrix and vector in memory for the linear system of equations in the form of $A*x = b$. Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the assemble system step. This means the code is parallelized for each fiber and each thread calculates the contributions to this fiber from all other fibers. Looking at the matrix each thread is thus responsible for $3*M$ rows of the matrix.
 
 The kernel requires two inputs, the current position of each fiber and its orientation. Using these combined with the equations outlined in chapter~\ref{cha:theoretical_foundation} and chapter~\ref{cha:serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
 
@@ -883,10 +916,10 @@ __global__ void UpdateFibers()
   \label{lst:pseudo_update_fibers}
 \end{listing}
 
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudocode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:time_stepping}. As will be seen later in the results in chapter~\ref{cha:benchmarks} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
+The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudocode in listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:serial_update_fibers}. As will be seen later in the results in chapter~\ref{cha:benchmarks} this required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
 
 \section{Optimizations}
-\label{sec:optimizations}
+\label{sec:serial_optimizations}
 
 During the development of the parallel GPU simulation great care was taken to continuously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
 
@@ -898,11 +931,12 @@ Many optimizations performed during this process are applicable to both the CPU 
 
 \subsection{Numeric vs. Analytic Integration}
 \label{subsec:numeric_analytic}
-The first optimization was already part of the original serial implementation as described in section~\ref{sec:quadrature}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate.
+The first optimization was already part of the original serial implementation as described in section~\ref{subsec:inner_integral}. In the original paper \cite{} the authors observed that the analytical integration of the inner integral yielded a performance increase compared to the numerical integration. On paper an analytical integration should also not only be preferred because of being faster but more importantly also being more accurate. However, in our implementation we show that using the analytical integration is actually slower on the GPU. We will discuss the reason and consequences of this in more details in section~\ref{subsec:bench_numeric_vs_analytic}.
 
-However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. The implementation is dependent on a design variable which uses a slightly different code to calculate the integral for very close fibers in order to avoid numerical instabilities. The computation of the inner integral lies at the heart of the algorithm and is a very performance critical section of the implementation. Exploring the performance implications of both approaches on the GPU is thus of great interest, and especially how it compares to the same algorithm running on the CPU.
+However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. The implementation is dependent on a design variable which uses a slightly different algorithm to calculate the integral for very close fibers in order to avoid numerical instabilities. The computation of the inner integral from equation~\eqref{eq:inner_integral} lies at the heart of the algorithm and is a very performance critical section of the implementation. Exploring the performance implications of both approaches on the GPU is thus of great interest, and especially how it compares to the same algorithm running on the CPU.
 
 \subsection{Shared Memory}
+\label{subsec:shared_memory}
 
 As the described in section~\ref{sec:CUDA} CUDA code is subject to a highly specialized memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. The access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally, local memory can be shared among a CUDA thread block and potentially save time by avoiding to constantly access the slow global memory.
 
@@ -910,9 +944,10 @@ In order to test this, shared memory was implemented and tested with the \emph{A
 
 How this affects performance, however, is not always easy to tell, as various factors can influence the result. If the loaded data is small enough, the various memory caches can hide to increased costs of accessing global memory. Also while the first threads in a thread block load the data from global to shared memory, all other threads in this thread block have to wait for their data to become available. This has a particular large impact when the overall kernel has to execute many calculations and the required time for computations effectively hides the memory loading time. CUDA is than able to seamlessly and very efficiently switch to the next thread block and continue executing it. In this case the performance penalty only occurs at the very beginning and end, and has only a negligible impact on the overall performance.
 
-However, in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. Especially when comparing the performance to CPUs, as they don't have an equivalent fast and comparatively large memory space. It is therefore an interesting optimization to explore and benchmark.
+However, in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. Especially when comparing the performance to CPUs, as they don't have an equivalent fast and comparatively large memory space. Unfortunately during our testing in section~\ref{subsec:bench_shared_memory} the effect is for the GPU simulation of rigid fibers seems to be rather limited.
 
 \subsection{Thread Block Dimension}
+\label{subsec:bench_thread_block}
 
 There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regard to optimally taking advantage of the specific underlying GPU architecture, which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics cards can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
 
@@ -922,7 +957,7 @@ The most straight forward approach is to simply parallelize the algorithm with r
 
 For a two-dimensional thread block each kernel invocation is responsible for a pair of fibers interacting. While this decreases the necessary resources, it also required atomics which can potential slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are a further extension of the two-dimensional thread block, as now each kernel invocation is responsible not for the complete interaction but only the interaction resulting from a specific point from the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
 
-How exactly each decision for the thread-block dimension affects performance is not clear. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm.
+How exactly each decision for the thread-block dimension affects performance is not clear. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm. We will later show in section~\ref{subsec:bench_thread_block}, that for our GPU implementation the two-dimensional approach is the most efficient.
 
 \section{OpenMP}
 
@@ -974,7 +1009,7 @@ The main goal of the benchmark system was to generate statistical significant an
 
 For all different benchmarks timings were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For each separate number of fibers a number of iterations are run to obtain the average over multiple runs. For each iteration a completely new and random initial fiber configuration is generated with the current number of fibers. In order to exclude illegal configurations where fibers overlap and intersect an additional correction pass is done over the fibers to ensure a minimal and average distance between all fibers. For the configurations in this thesis the minimal distance was always set to $0.2$ and the average to $0.4$ respectively.
 
-Using this semi-random generation the rigid fiber simulation is run for exactly $10$ time steps. To avoid remaining outliers in the configuration causing potentially large variation in the timings the first time step is excluded. This is especially true for iterative solvers which are highly dependent on the configuration. The first time step is thus used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ time steps.
+Using this semi-random generation the rigid fiber simulation is run for exactly $10$ time steps. To avoid remaining outliers in the configuration causing potentially variations in the timings the first time step is excluded. The first time step is thus used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ time steps.
 
 In order to ensure a statistical significant result, the number of iterations is not fixed. Instead it is determined dynamically and based on the relative standard error of the already collected timing for the particular number of fibers. A minimum number of iterations is always executed first and their relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specified threshold, the number of iterations is doubled and run again.
 
@@ -1019,11 +1054,12 @@ The benchmark suite uses a minimum of $4$ iterations to obtain the initial timin
 
 \section{Optimizations}
 
-We now look at the performance results for the different optimizations previously outlined in section~\ref{subsec:optimizations}. Where applicable the results will be compared between the OpenMP and CUDA version of the algorithm.
+We now look at the performance results for the different optimizations previously outlined in section~\ref{sec:serial_optimizations}. Where applicable the results will be compared between the OpenMP and CUDA version of the algorithm.
 
 \subsection{Numeric vs. Analytic Integration}
+\label{subsec:bench_numeric_vs_analytic}
 
-The first benchmark tests the performance of the two different approaches to compute the inner integral. It can be solved either numerically or analytically. Figure~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation the parallel version of the analytic integration is always faster than the numeric integration.
+The first benchmark tests the performance of the two different approaches to compute the inner integral from equation~\eqref{eq:inner_integral}. It can be solved either numerically or analytically. Figure~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation the parallel version of the analytic integration is always faster than the numeric integration.
 
 \begin{figure}[!htbp]
   \centering
@@ -1075,7 +1111,7 @@ However, the picture is more interesting when we look at the same graph for the 
 
 This reason for this result lies in the scheduling and execution of work on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means each line of code is executed for each thread in parallel. However, if the code encounters a branch in the execution path like a simple \emph{if} statement, the threads diverge. First all threads for which the condition hold true execute while the other threads have to wait. Only after that can the threads whereas the false condition execute while the other threads are not used. Finally after all divergent paths have been executed the code continuous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code.
 
-To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in section~\ref{subsec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
+To confirm that Branch Divergence is the reason for the slow down of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in section~\ref{sec:example_sphere} can be seen in table~\ref{tab:branch_divergence}.
 
 \begin{table}[!htbp]
 \begin{center}
@@ -1092,15 +1128,16 @@ To confirm that Branch Divergence is the reason for the slow down of the analyti
 \label{tab:branch_divergence}
 \end{table}
 
-On one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. Closer inspection of the source code reveals that the design constant and the resulting branching as described in section~\ref{subsubsec:numeric_analytic} is responsible for the divergence. The constant determines if a slightly different code should be executed in case fibers are very close together. Unfortunately, in order to ensure numeric stability this workaround is unavoidable.
+On one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. Closer inspection of the source code reveals that the design constant and the resulting branching as described in section~\ref{subsec:numeric_analytic} is responsible for the divergence. The constant determines if a slightly different code should be executed in case fibers are very far apart together. Unfortunately, in order to ensure numeric stability this workaround is unavoidable.
 
 \subsection{Shared Memory}
+\label{subsec:bench_shared_memory}
 
-The second optimization tried to reduce the amount of data that had to transfered between the compute units and the global memory. For this each Streaming Multiprocessor has a small amout of locally shared memory. This memory can be accessed from all threads on the SM and in case data can be shared, it only has to be transfered slowly from global to shared memory once. Afterwards in can be accessed from the faster local memory.
+The second optimization tried to reduce the amount of data that had to be transferred between the compute units and the global memory. For this each Streaming Multiprocessor has a small amount of locally shared memory. This memory can be accessed from all threads on the SM and in case data can be shared, it only has to be transferred slowly from global to shared memory once. Afterwards in can be accessed from the faster local memory.
 
-During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in section~\ref{sec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
+During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in section~\ref{subsec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
 
-The reason for this that the \emph{Assemble System} step is compute bound and not memory bound. This means the time it takes to do the computation, like solving the integrals takes substantilly longer than reading and writing to global memory. For example in the 2D thread block version, each kernel is responsible for a pair of fibers it only has to read $4$ vectors from global memory.
+The reason for this that the \emph{Assemble System} step is compute bound and not memory bound. This means the time it takes to do the computation, like solving the integrals takes substantially longer than reading and writing to global memory. For example in the 2D thread block version, each kernel is responsible for a pair of fibers it only has to read $4$ vectors from global memory.
 
 CUDA is then able to quickly switch between different sets of threads, so while one set is waiting for data another set can already continue with the computations. Thus only pause happens until the very first of data has been fetched. As their was no advantage in using shared memory we opted for the simpler implementation without it for all our simulations.
 
@@ -1132,7 +1169,7 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
   \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
-The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transactions that had to be performed. As can be seen in table~\ref{tab:atomic_transactions}, the required atomic transactions for the sphere example from section~\ref{subsec:example_sphere} are almost two times larger in the 3D case.
+The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. Using a three-dimensional thread block is always slower and has a worse scaling factor. Using the \emph{Atomic Transactions} from \emph{nvprof} shows the total number of atomic transactions that had to be performed. As can be seen in table~\ref{tab:atomic_transactions}, the required atomic transactions for the sphere example from section~\ref{sec:example_sphere} are almost two times larger in the 3D case.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -1152,6 +1189,7 @@ The results in figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best 
 The one-dimensional approach is also slower than either two-dimensional or three-dimensional. However, it appears to scale linearly whereas the other two scale exponentially. It can already be observed that 1D becomes faster than 3D for close to $2000$ fibers. Unfortunately, the hardware of the workstation does not have enough memory to simulate more fibers.
 
 \section{Linear Solvers}
+\label{sec:bench_linear_solvers}
 
 Next we compare the performance for different linear solvers. We explored two different types of solvers. The first type is a direct solver of the linear equations which is both implemented for OpenMP as well as the CUDA implementation. The second type are iterative solvers. Unfortunately, we can't make use of the iterative solvers main advantage to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system is an increasingly large part of the overall runtime. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
 
@@ -1180,7 +1218,7 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
-We observe the exactly the same, GMRES is faster by a wide margin as reported by the original authors. From an advantage of just $~40×$ for $1000$ fibers this increase to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observered number of iterations remain almost the same regardless of the number of fibers. However there is one caveat to this clear victory and that is the minimal and average distance between the fibers. As this concentration increases so do the required GMRES iterations as well. It is likely that for a very complex setup and many more time steps, that at one point fibers come very close together and GMRES might have problems finding settling on the solution. We will test is later in section~\ref{sec:example_concentration_gmres}.
+We observe the exactly the same, GMRES is faster by a wide margin as reported by the original authors. From an advantage of just $~40×$ for $1000$ fibers this increase to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observed number of iterations remain almost the same regardless of the number of fibers. However there is one caveat to this clear victory and that is the minimal and average distance between the fibers. As this concentration increases so do the required GMRES iterations as well. It is likely that for a very complex setup and many more time steps, that at one point fibers come very close together and GMRES might have problems finding settling on the solution. We will test is later in section~\ref{sec:example_concentration_gmres}.
 
 On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in figure~\ref{fig:bench_cuda_solvers}.
 
@@ -1208,11 +1246,11 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
   \label{fig:bench_cuda_solvers}
 \end{figure}
 
-The same fact that the iterative solvers are faster than the direct solver holds true for the GPU. However, compared to the CPU solvers the difference between the performance of the direct solver to the iterative solvers is not as staggering. At close to $2000$ fibers the iterative solver are only about $25×$ faster than the direct solver. Looking at the difference between the two iterative BiCGStab and GMRES perform almost exactly the same and any small differences can be attributed to small measuring uncertaintys. Again please remember that this particular performance ratio only holds true for the specific fiber concentration which was benchmarked.
+The same fact that the iterative solvers are faster than the direct solver holds true for the GPU. However, compared to the CPU solvers the difference between the performance of the direct solver to the iterative solvers is not as staggering. At close to $2000$ fibers the iterative solver are only about $25×$ faster than the direct solver. Looking at the difference between the two iterative BiCGStab and GMRES perform almost exactly the same and any small differences can be attributed to small measuring uncertainties. Again please remember that this particular performance ratio only holds true for the specific fiber concentration which was benchmarked.
 
 \section{Individual Steps}
 
-The next benchmark explore the relative time each step of the algorithm described in section~\ref{sec:algorithm_summary}~and~\ref{sec:kernels} takes. The results for the OpenMP implementation can be seen in Figure~\ref{fig:bench_openmp_steps} and for CUDA in Figure~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in equation~\ref{eq:G} analytically. On the GPU we use a purely numerical approach instead as it is faster.
+The next benchmark explore the relative time each step of the algorithm described in section~\ref{sec:algorithm_summary}~and~\ref{sec:kernels} takes. The results for the OpenMP implementation can be seen in Figure~\ref{fig:bench_openmp_steps} and for CUDA in Figure~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in equation~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead as it is faster.
 
 \begin{figure}[!htbp]
   \centering
@@ -1240,7 +1278,7 @@ The next benchmark explore the relative time each step of the algorithm describe
   \label{fig:bench_openmp_steps}
 \end{figure}
 
-The results for the OpenMP implementation show that for $2000$ fibers the \emph{Assemble System} step is responsible for $78\%$ and the \emph{Update Velocities} step for $21\%$ of the overall time. The two other steps \emph{Solve System} and \emph{Update Fibers} barely register with just $1\%$. However, as discussed in the previous section~\ref{sec:bench_solver} this only holds true for sufficiently low concentrations of fibers.
+The results for the OpenMP implementation show that for $2000$ fibers the \emph{Assemble System} step is responsible for $78\%$ and the \emph{Update Velocities} step for $21\%$ of the overall time. The two other steps \emph{Solve System} and \emph{Update Fibers} barely register with just $1\%$. However, as discussed in the previous section~\ref{sec:bench_linear_solvers} this only holds true for sufficiently low concentrations of fibers.
 
 \begin{figure}[!htbp]
   \centering
@@ -1268,13 +1306,13 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
   \label{fig:bench_cuda_steps}
 \end{figure}
 
-For the CUDA implementation the \emph{Assemble System} step remains the largest block with $72\%$ of the time. However, now the \emph{Solve System} step takes $20\%$. \emph{Update Velocites} drops to just $7\%$ and \emph{Update Fibers} is negible with below $1\%$.
+For the CUDA implementation the \emph{Assemble System} step remains the largest block with $72\%$ of the time. However, now the \emph{Solve System} step takes $20\%$. \emph{Update Velocites} drops to just $7\%$ and \emph{Update Fibers} is negligible with below $1\%$.
 
-This difference in the relative time between the steps can be attributed to the compartively slow GMRES implementation on the GPU. In absolute terms for $2000$ fibers both the CPU and GPU take $~0.25$ seconds for solving the system. However when transfering the same relative distrbution from the CPU to GPU this makes the GPU GMRES implementation $40×$ too slow. The other steps all perform relatively better.
+This difference in the relative time between the steps can be attributed to the comparatively slow GMRES implementation on the GPU. In absolute terms for $2000$ fibers both the CPU and GPU take $~0.25$ seconds for solving the system. However when transferring the same relative distribution from the CPU to GPU this makes the GPU GMRES implementation $40×$ too slow. The other steps all perform relatively better.
 
 The reason for this most likely lies in the non-optimized code for the GMRES solver in ViennaCL. The authors openly state that the goal for their library is easy of use and not pure performance. The parallel BLAS function from OpenBLAS on the other hand have been highly optimized and tested for a long time.
 
-This point is reenforced if we look at the same numbers for the linear solvers. Here the absolute time for solving system on the GPU is just $~7$ seconds compared to the $~76$ seconds on the CPU. Again transfering the relative distrubtion from the CPU to the GPU yields just a small factor of $~1.4×$. This illustrates that the highly optimized code of the MAGMA library performs roughly on the same level as the optimized code from OpenBLAS.
+This point is reenforced if we look at the same numbers for the linear solvers. Here the absolute time for solving system on the GPU is just $~7$ seconds compared to the $~76$ seconds on the CPU. Again transferring the relative distribution from the CPU to the GPU yields just a small factor of $~1.4×$. This illustrates that the highly optimized code of the MAGMA library performs roughly on the same level as the optimized code from OpenBLAS.
 
 \section{GPU vs. CPU}
 
@@ -1332,10 +1370,11 @@ The required simulation time on the GPU outperforms the CPU by a wide margin. Th
 We acknowledge that these numbers and performance increases are not necessarily fair. A different CPU and GPU combination from the one used in this thesis might perform differently. However, the relative performance should stay roughly the same. In the end, the only thing that really matters for the researcher working with rigid fibers is the time it takes to simulate large systems on the available workstation. No need to wait for computing time at a computing cluster but instead simple and fast iterations using a workstation. The observed performance increase of $40×$ is a difference between a whole day of waiting for the simulation results and a quick $30$ minute result during the day. The saved time also translates directly into the ability to simulate many more fibers than ever before. Before the largest simulation possible in a reasonable time frame where around $500$ to $800$ fibers, in contrast one single time step for $2000$ takes at most $8$ seconds on the GPU. Therefore the implementation on the GPU and the optimizations of the simulation code is of great value to the research of rigid fiber simulations.
 
 \chapter{Experiments}
+\label{cha:experiments}
 
 The previous chapter showed how much faster the CUDA implementation is compared to the same algorithm implemented on the CPU. This significant increase in performance allows for new experiments.
 
-We will now perform a number of experiments to explore the numerical precision and validate the results against prior research. We begin by looking at tumbling orbits, a very delicate experiment requiering great precision. This is followed by a quick look at the effect of the fiber concentration on the required GMRES iterations to settle on the solution. Next we reproduce a very interesting phyiscal phenomenon of letting a sphere of fibers sediment and validate our result against similar experiment by others. Furthermore we will have a brief exploration of the effects of the number of fibers and the concentration of fibers on the sphere simulation. All experiments were run with the purely numerical, 2-dimensional CUDA algorithm  implemented in the thesis. The system were solved using the direct solver from MAGMA in order to avoid variations in the run time.
+We will now perform a number of experiments to explore the numerical precision and validate the results against prior research. We begin by looking at tumbling orbits, a very delicate experiment requiring great precision. This is followed by a quick look at the effect of the fiber concentration on the required GMRES iterations to settle on the solution. Next we reproduce a very interesting physical phenomenon of letting a sphere of fibers sediment and validate our result against similar experiment by others. Furthermore we will have a brief exploration of the effects of the number of fibers and the concentration of fibers on the sphere simulation. All experiments were run with the purely numerical, 2-dimensional CUDA algorithm  implemented in the thesis. The system were solved using the direct solver from MAGMA in order to avoid variations in the run time.
 
 \section{Tumbling orbits}
 \label{sec:example_ring}
@@ -1400,8 +1439,9 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 \end{figure}
 
 \section{Fiber concentration effect on GMRES iterations}
+\label{sec:example_concentration_gmres}
 
-As alluded to in the discussion about the performance of direct solvers versus iterative solvers in section~\ref{} we will now investigate how the concentration of fibers affects the GMRES iterations. In this context the concentration of fibers refers to the average distance between each fiber and its closest neighbor. Thus we use the average minimal pair-wise distance between the fibers as a measurement of fiber concentration. Figure~\ref{fig:concentration_gmres} illustrates the average number of iterations GMRS needs to solve the system for a given pair-wise distance. Please note that both the x-axis as well as the y-axis are logarithmic to improve clarity.
+As alluded to in the discussion about the performance of direct solvers versus iterative solvers in section~\ref{sec:bench_linear_solvers} we will now investigate how the concentration of fibers affects the GMRES iterations. In this context the concentration of fibers refers to the average distance between each fiber and its closest neighbor. Thus we use the average minimal pair-wise distance between the fibers as a measurement of fiber concentration. Figure~\ref{fig:concentration_gmres} illustrates the average number of iterations GMRS needs to solve the system for a given pair-wise distance. Please note that both the x-axis as well as the y-axis are logarithmic to improve clarity.
 
 \begin{figure}[!htbp]
   \centering
@@ -1429,9 +1469,9 @@ As alluded to in the discussion about the performance of direct solvers versus i
   \label{fig:concentration_gmres}
 \end{figure}
 
-We can see that for an increasing average pair-wise distance, i.e. a lower fiber concentration is increasing sharply. The average iteration count for the concentration (average distance of $0.4$) we used during our benchmarks in chapter~\ref{cha:benchmarks} lies between $3$ and $10$. However, as the average pair-wise distance decreases we observe an exponential increase in the number of iterations.
+We can see that for an increasing average pair-wise distance, i.e. a lower fiber concentration, number of iterations decrease. The average iteration count for the concentration (average distance of $0.4$) we used during our benchmarks in chapter~\ref{cha:benchmarks} lies between $3$ and $10$. However, as the average pair-wise distance decreases we observe an exponential increase in the number of iterations.
 
-To find the reason for this we have again have to look at the integral in equation~\eqref{eq:G} which has to be solved for each fiber pair during the \emph{Assemble System} step. The required Stokeslet computation in equation~\eqref{eq:stokeslet} include the distance between the fibers in the denominator. As the distance gets very small the value of the Stokeslet becomes large. These large terms can than cause the assembled matrix to become ill-conditioned and thus increase the number of iterations GMRES requires to settle on a solution.
+To find the reason for this we have again have to look at the integral in equation~\eqref{eq:inner_integral} which has to be solved for each fiber pair during the \emph{Assemble System} step. The required Stokeslet computation in equation~\eqref{eq:stokeslet} include the distance between the fibers in the denominator. As the distance gets very small the value of the Stokeslet becomes large. These large terms can than cause the assembled matrix to become ill-conditioned and thus increase the number of iterations GMRES requires to settle on a solution.
 
 This result is important to keep in mind when simulating long running complex fiber configuration. Here the probability that any two fibers get close is very high. If that is the case solving the system using GMRES than takes longer than expected. In practice it might thus be beneficial to switch to the direct solver, as it has a predictable run time. This is especially true because the performance difference between direct and iterative solvers on the GPU is relatively small.
 
@@ -1460,7 +1500,7 @@ The second example showcases a more chaotic system with large number of interact
   \label{tab:example_sphere}
 \end{table}
 
-This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{subsec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behavior is more chaotic.
+This sphere have packed fibers is then allowed to sediment due to gravity. Beginning from this spherical shape the interacting fibers begin to form a ring similar to the result shown in the previous example in section~\ref{sec:example_sphere}. However due to the large number of fibers and random initial setup the tumbling orbits evident and the behavior is more chaotic.
 
 \begin{figure}[!htbp]
   \centering
@@ -1490,15 +1530,15 @@ This sphere have packed fibers is then allowed to sediment due to gravity. Begin
 
 After some time the ring starts to break and the fibers are split into multiple smaller clusters. Each cluster continues to sediment separately and slowly forms its own smaller rings again. However due to tiny variations these rings can be harder to detect.
 
-For the presented example with the GPU simulation only takes $~7.7$ seconds. It is able to perform the simulated $500$ time steps in roughly $1$ hour. Simulating this large number of fibers in such a time frame will allow new research of this interesting phenomen.
+For the presented example with the GPU simulation only takes $~7.7$ seconds. It is able to perform the simulated $500$ time steps in roughly $1$ hour. Simulating this large number of fibers in such a time frame will allow new research of this interesting phenomena.
 
 \subsection{Fiber concentration effect on break up time}
 
-One interesting aspect of the sedimenting sphere experiment is the fact that after some time the torus shape will break up. This is caused by tiny distrubances which accumulate and eventually cause the system to fall apart. However, this poses an interesting question what determines how and when the torus breaks. Can we choose our initially setup in a particular way to increase the time the system remains stable.
+One interesting aspect of the sedimenting sphere experiment is the fact that after some time the torus shape will break up. This is caused by tiny disturbances which accumulate and eventually cause the system to fall apart. However, this poses an interesting question what determines how and when the torus breaks. Can we choose our initially setup in a particular way to increase the time the system remains stable.
 
-One problem is how to even determine the exact time the torus breaks up. This problem and question was also examined by asdf et al. \cite[] using a slightly different simulation method. They the break up as the moment when torus starts to bend prior to actually breaking. Unfortunately finding this time step requires visual inspection of the simulation result by the researcher and thus suffers from uncertainyt in defining the exact point. More detailed analysis of this problem in future should try to define a more reliable metric for the break up.
+One problem is how to even determine the exact time the torus breaks up. This problem and question was also examined by Park et al. \cite[] using a slightly different simulation method. They the break up as the moment when torus starts to bend prior to actually breaking. Unfortunately finding this time step requires visual inspection of the simulation result by the researcher and thus suffers from uncertainty in defining the exact point. More detailed analysis of this problem in future should try to define a more reliable metric for the break up.
 
-The first parameter we explore was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Figure~\ref{fig:concentration_breakup} indicates that their is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by asdf et al. \cite[].
+The first parameter we explore was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Figure~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al. \cite[].
 
 \begin{figure}[!htbp]
   \centering
@@ -1549,25 +1589,25 @@ The second parameter we looked at was the number of fibers. For this experiment 
   \label{fig:number_breakup}
 \end{figure}
 
-These two results show that both the concentration and the number of fibers has an effect on the break up time of the torus. Future should explore these correlations closer as our limited test runs don't account for the variance of the actual break up time. Both the numerical accurary of the model and the initial setup are very closely related.
+These two results show that both the concentration and the number of fibers has an effect on the break up time of the torus. Future should explore these correlations closer as our limited test runs don't account for the variance of the actual break up time. Both the numerical accuracy of the model and the initial setup are very closely related.
 
 \chapter{Conclusion}
 
 We have developed a completely new parallel GPU implementation for the numerical simulation of rigid fibers suspension using CUDA. This allows many more fibers to be simulated than possible before. Including a larger number of fibers will allow for more in-depth extensive studies of the various properties of the flow and simulation.
 
-Based on the theortical foundation of the simulated model and the original serial Fortran implementation we rewrote the algorithm to take advantage of massively parallel computational power available in modern GPUs. We outlined the required steps to implement the algorithm using CUDA. We investigated a number of different optimizations to further improve the performance. This explored ranged from variation of the algorithm, GPU specific implementation details to the optimal choice of linear solver. Finally we backported the parallel algorithm to the CPU using OpenMP to be able to compare the performance between the CPU and GPU.
+Based on the theoretical foundation of the simulated model and the original serial Fortran implementation we rewrote the algorithm to take advantage of massively parallel computational power available in modern GPUs. We outlined the required steps to implement the algorithm using CUDA. We investigated a number of different optimizations to further improve the performance. This explored ranged from variation of the algorithm, GPU specific implementation details to the optimal choice of linear solver. Finally we back ported the parallel algorithm to the CPU using OpenMP to be able to compare the performance between the CPU and GPU.
 
-During extensive benchmarking we showed that variations perform differnetly depending on the underlying architecture. Optimizations developed for the CPU implementation actually slow down the GPU implementation due to diverging execution branches. We also discovered off the shelf implementation of iterative solvers can be slower compared to their highly optimized CPU alternatives. Hopefully future research in this area will allow for even better performance of iterative solvers on the GPU.
+During extensive benchmarking we showed that variations perform differently depending on the underlying architecture. Optimizations developed for the CPU implementation actually slow down the GPU implementation due to diverging execution branches. We also discovered off the shelf implementation of iterative solvers can be slower compared to their highly optimized CPU alternatives. Hopefully future research in this area will allow for even better performance of iterative solvers on the GPU.
 
 Overall our GPU simulation on the NVIDIA GTX 970 is able to outperform the CPU version on an Intel Core i7 4770 by a factor of $20×$ to $40×$. This allows the GPU simulation to simulate up to $2000$ fibers and only taking $8$ seconds to advance one time step on a desktop computer.
 
-Finally, we performed a number of simulations of known experiments for sedimenting fibers. Using the testcase of tumbling orbits we showed that the numerical precision of our single precision implementation is able to reproduce the result obtained from double precision simulations. We also explored how the performance of is affected by the fiber concentration, showing that if fibers come too close the number of iterations increase and slowing down the simulation. Our final experiment looked at the known phenomen that a sphere of fibers sedimenting fill form a torus and eventually break up smaller clusters. Our results show an excellent agreement with both experimental and numuerical work performed previously. Additionally we showed that the stability of the torus is positively correlated with the increasing distance between fibers and the total number of fibers. Further research in this area is helped greatly by the fact that new case can rapidly be explored using our fast GPU simulation.
+Finally, we performed a number of simulations of known experiments for sedimenting fibers. Using the test-case of tumbling orbits we showed that the numerical precision of our single precision implementation is able to reproduce the result obtained from double precision simulations. We also explored how the performance of is affected by the fiber concentration, showing that if fibers come too close the number of iterations increase and slowing down the simulation. Our final experiment looked at the known phenomena that a sphere of fibers sedimenting fill form a torus and eventually break up smaller clusters. Our results show an excellent agreement with both experimental and numerical work performed previously. Additionally we showed that the stability of the torus is positively correlated with the increasing distance between fibers and the total number of fibers. Further research in this area is helped greatly by the fact that new case can rapidly be explored using our fast GPU simulation.
 
-Currently the number of fibers in our simulation is limited by the amount of memory available on the GPU. In future we would like to research of lifting this restrictions. One possible research direction is to avoid storing the matrix completely. Instead the required computation would have to be carried out iteratively and on-demand. This would allow for basicially unlimited number of fibers with the cost of an largely increased computation time. If this trade off is worth it remains to be seen.
+Currently the number of fibers in our simulation is limited by the amount of memory available on the GPU. In future we would like to research of lifting this restrictions. One possible research direction is to avoid storing the matrix completely. Instead the required computation would have to be carried out iteratively and on-demand. This would allow for basically unlimited number of fibers with the cost of an largely increased computation time. If this trade off is worth it remains to be seen.
 
-Another exciting possibility is the move to a multi-device setup. Using multiple GPUs simultanously would allow for much larger systems if the workload can be split efficiently. MAGMA, the library used for the GPU direct solver, offers a couple of options along those lines. The hardest part to efficiently parallized is solving the system and broadcasting the result across multiple GPUs. The other steps of the algorithm allow for an easy natural partition and have already been implemented across multiple CPUs using OpenMPI.
+Another exciting possibility is the move to a multi-device setup. Using multiple GPUs simultaneously would allow for much larger systems if the workload can be split efficiently. MAGMA, the library used for the GPU direct solver, offers a couple of interesting options in this area. The hardest part to efficiently parallelized is solving the system and broadcasting the result across multiple GPUs. The other steps of the algorithm allow for an easy natural partition and have already been implemented across multiple CPUs using OpenMPI.
 
-Finally, to further improve the simulation it might be worth looking at the numerical algorithm itself. Adapting a different algorithm based on the fast summation method might not only improve the performance but also reduce the required memory allowing for faster and larger simulation. How this affects the accurary and behaviour of the simulation is an interesting future research question.
+Finally, to further improve the simulation it might be worth looking at the numerical algorithm itself. Adapting a different algorithm based on the fast summation method might not only improve the performance but also reduce the required memory allowing for faster and larger simulation. How this affects the accuracy and behavior of the simulation is an interesting future research question.
 
 \appendix
 \addappheadtotoc
