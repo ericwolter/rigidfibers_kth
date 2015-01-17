@@ -1,14 +1,3 @@
-@article{Gustavsson2009,
-  author = {Gustavsson, Katarina and Tornberg, Anna-Karin},
-  journal = {Physics of Fluids},
-  number = {12},
-  pages = {123301},
-  title = {{Gravity induced sedimentation of slender fibers}},
-  volume = {21},
-  year = {2009}
-}
-%%%%%%%%%%%
-% Prior Research
 @article{Tornberg2006,
   author = {Tornberg, Anna-Karin and Gustavsson, Katarina},
   journal = {Journal of Computational Physics},
@@ -18,6 +7,73 @@
   title = {{A numerical method for simulations of rigid fiber suspensions}},
   volume = {215},
   year = {2006}
+}
+%%%%%%%%%%%
+% Prior Research
+%% Beads
+@article{Fan1998,
+  author = {Fan, Xijun and Phan-Thien, N and Zheng, Rong},
+  journal = {Journal of Non-Newtonian Fluid Mechanics},
+  number = {1998},
+  pages = {113--135},
+  title = {{A direct simulation of fibre suspensions}},
+  volume = {74},
+  year = {1998}
+}
+@article{Yamamoto1995,
+  author = {Yamamoto, Satoru and Matsuoka, Takaaki},
+  journal = {The Journal of Chemical Physics},
+  number = {5},
+  pages = {2254},
+  title = {{Dynamic simulation of fiber suspensions in shear flow}},
+  volume = {102},
+  year = {1995}
+}
+%% Slender Body Theory
+%% Flexible
+@article{Tornberg2004,
+  author = {Tornberg, Anna-Karin and Shelley, Michael J.},
+  journal = {Journal of Computational Physics},
+  month = may,
+  number = {1},
+  pages = {8--40},
+  title = {{Simulating the dynamics and interactions of flexible fibers in Stokes flows}},
+  volume = {196},
+  year = {2004}
+}
+%% Parallelization
+@article{Gustavsson2009,
+  author = {Gustavsson, Katarina and Tornberg, Anna-Karin},
+  journal = {Physics of Fluids},
+  number = {12},
+  pages = {123301},
+  title = {{Gravity induced sedimentation of slender fibers}},
+  volume = {21},
+  year = {2009}
+}
+@article{Tolke2008,
+  author = {T\"{o}lke, J and Krafczyk, M},
+  journal = {International Journal of Computational Fluid Dynamics},
+  title = {{TeraFLOP computing on a desktop PC with GPUs for 3D CFD}},
+  year = {2008}
+}
+@article{Stone2010,
+  author = {Stone, JE and Hardy, DJ and Ufimtsev, IS and Schulten, K},
+  journal = {Journal of Molecular Graphics and Modelling},
+  title = {{GPU-accelerated molecular modeling coming of age}},
+  year = {2010}
+}
+@article{Thibault2009,
+  author = {Thibault, JC and Senocak, I},
+  journal = {Proceedings of the 47th AIAA Aerospace Science Meeting},
+  title = {{CUDA implementation of a Navier-Stokes solver on multi-GPU desktop platforms for incompressible flows}},
+  year = {2009}
+}
+@article{Zhao2008,
+  author = {Zhao, Y},
+  journal = {The Visual computer},
+  title = {{Lattice Boltzmann based PDE solver on the GPU}},
+  year = {2008}
 }
 %%%%%%%%%%%
 % Theoretical Foundation
@@ -38,6 +94,15 @@
   year={2010},
   organization={ACM}
 }
+@inproceedings{Gregg2011,
+  author = {Gregg, Chris and Hazelwood, Kim},
+  booktitle = {(IEEE ISPASS) IEEE International Symposium on Performance Analysis of systems and software},
+  month = apr,
+  pages = {134--144},
+  publisher = {IEEE},
+  title = {{Where is the data? Why you cannot debate CPU vs. GPU performance without the answer}},
+  year = {2011}
+}
 %%%%%%%%%%%
 % Experiment - Tumbling Orbits
 @article{Jung2006,
@@ -51,7 +116,37 @@
   publisher={APS}
 }
 %%%%%%%%%%%
+% Experiment - Sphere
+@article{Park2010,
+  title={A cloud of rigid fibres sedimenting in a viscous fluid},
+  author={Park, Joontaek and Metzger, Bloen and Guazzelli, Elisabeth and Butler, Jason E},
+  journal={Journal of Fluid Mechanics},
+  volume={648},
+  pages={351--362},
+  year={2010},
+  publisher={Cambridge Univ Press}
+}
+@article{Metzger2007,
+  author = {Metzger, Bloen and Nicolas, Maxime and Guazzelli, \'{E}lisabeth},
+  journal = {Journal of Fluid Mechanics},
+  month = may,
+  pages = {283},
+  title = {{Falling clouds of particles in viscous fluids}},
+  volume = {580},
+  year = {2007}
+}
+%%%%%%%%%%%
 % CUDA
+@article{Owens2008,
+  author = {Owens, J.D. and Houston, M. and Luebke, D. and Green, S. and Stone, J.E. and Phillips, J.C.},
+  journal = {Proceedings of the IEEE},
+  month = may,
+  number = {5},
+  pages = {879--899},
+  title = {{GPU Computing}},
+  volume = {96},
+  year = {2008}
+}
 @online{CudaProgrammingGuide,
   author = {Nvidia Corporation},
   title = {CUDA C Programming Guide},
@@ -66,7 +161,7 @@
 }
 %%%%%%%%%%%
 % OpenMP
-@article{dagum1998openmp,
+@article{OpenMPDagum1998,
   title={OpenMP: an industry standard API for shared-memory programming},
   author={Dagum, Leonardo and Menon, Ramesh},
   journal={Computational Science \& Engineering, IEEE},
@@ -79,12 +174,12 @@
 %%%%%%%%%%%
 % Magma
 @online{MagmaDocumentation,
-author = {Innovative Computing Laboratory},
-title = {MAGMA: MAGMA User Guide},
-year = {2014},
-url = {http://icl.cs.utk.edu/projectsfiles/magma/doxygen/}
+  author = {Innovative Computing Laboratory},
+  title = {MAGMA: MAGMA User Guide},
+  year = {2014},
+  url = {http://icl.cs.utk.edu/projectsfiles/magma/doxygen/}
 }
-@incollection{nath2011accelerating,
+@incollection{MagmaNath2011,
   title={Accelerating GPU kernels for dense linear algebra},
   author={Nath, Rajib and Tomov, Stanimire and Dongarra, Jack},
   booktitle={High Performance Computing for Computational Science--VECPAR 2010},
@@ -92,7 +187,7 @@ url = {http://icl.cs.utk.edu/projectsfiles/magma/doxygen/}
   year={2011},
   publisher={Springer}
 }
-@inproceedings{tomov2010dense,
+@inproceedings{MagmaTomov2010,
   title={Dense linear algebra solvers for multicore with GPU accelerators},
   author={Tomov, Stanimire and Nath, Rajib and Ltaief, Hatem and Dongarra, Jack},
   booktitle={Parallel \& Distributed Processing, Workshops and Phd Forum (IPDPSW), 2010 IEEE International Symposium on},
@@ -102,7 +197,13 @@ url = {http://icl.cs.utk.edu/projectsfiles/magma/doxygen/}
 }
 %%%%%%%%%%%
 % ViennaCL
-@inproceedings{Tillet2013,
+@online{ViennaCLDocumentation,
+  author = {Rupp, Karl},
+  title = {ViennaCL - The Vienna Computing Library},
+  year = {2014},
+  url = {http://viennacl.sourceforge.net/doc}
+}
+@inproceedings{ViennaCLTillet2013,
 author = {Philippe Tillet and Karl Rupp and Siegfried Selberherr and Chin-Teng Lin},
 title = {Towards Performance-Portable, Scalable, and Convenient Linear Algebra},
 booktitle = {Presented as part of the 5th USENIX Workshop on Hot Topics in Parallelism},
@@ -112,7 +213,7 @@ url = {https://www.usenix.org/conference/hotpar13/workshop-program/presentation/
 publisher = {USENIX},
 address = {Berkeley, CA}
 }
-@inproceedings{Rupp2010,
+@inproceedings{ViennaCLRupp2010,
 author={Rupp, K. and Rudolf, F. and Weinbub, J.},
 title={{ViennaCL - A High Level Linear Algebra Library for GPUs and Multi-Core CPUs}},
 booktitle={Intl.~Workshop on GPUs and Scientific Applications},
