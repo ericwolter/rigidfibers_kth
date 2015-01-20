@@ -2,22 +2,20 @@
 \label{cha:theoretical_foundation}
 The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate a large number of fibers in order to generate the various patterns found in real world experiments.
 
-In this chapter, we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the model is only presented in a reduced summary, and for more details please refer to Tornberg and Gustavsson\cite{Tornberg2006}.
+In this chapter, we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the model is only presented in a reduced summary, and for more details please refer to Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 \section{Stokes flow}
 \label{sec:stokes_flow}
 
-We are interested in modeling the behavior of objects immersed in an incompressible fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a fluid due to gravity. In the most general case, the flow can be modeled by the Navier-Stokes equations,
-
+We are interested in modeling the behavior of objects immersed in an incompressible fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in the fluid due to gravity. In the most general case, the flow can be modeled by the Navier-Stokes equations,
 \begin{equation}
   \label{eq:naviar_stokes_equations}
   \begin{aligned}
-    \rho(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f} \\
+    \rho\left(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}\right) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f} \\
     \nabla \cdot \mathbf{u} &= 0 \text{.}
   \end{aligned}
 \end{equation}
-where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$. The constant $\mu$ is the viscosity of the fluid. Solving these equations is quite challenging due to their time dependence and non-linearity. However, in this work we are only concerned with slowly moving objects and the Reynolds number $Re = \frac{\rho U L}{\mu}$ is assumed to be very small. Given the constraint that $Re \ll 1$, the inertial and acceleration terms in the Navier-Stokes equations~\eqref{eq:naviar_stokes_equations} can be neglected and we arrive at the Stokes equations,
-
+where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$. The constant $\mu$ is the viscosity of the fluid. Solving these equations is quite challenging due to their time dependence and non-linearity. However, in this work we are only concerned with slowly moving objects and the Reynolds number $Re = \frac{\rho U L}{\mu}$ is assumed to be very small. Given the constraint that $Re \ll 1$, the inertial and acceleration terms in the Navier-Stokes equations~\eqref{eq:naviar_stokes_equations} can be neglected and we arrive at the linear and time independent Stokes equations,
 \begin{equation}
   \label{eq:stokes_equations}
   \begin{aligned}
@@ -26,19 +24,19 @@ where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the p
   \end{aligned}
 \end{equation}
 
-In addition to the equations we need two boundary conditions. The first boundary condition accounts for the influence on the fluid from the presence of the particle. Hence, we force the fluid velocity at the boundary of the object to be equal to the velocity of the object itself. These no-slip conditions on the surface of the objects are defined as
+In addition to these equations we need two boundary conditions. The first boundary condition accounts for the influence on the fluid from the presence of the particles. Hence, we force the fluid velocity at the boundary of the particle to be equal to the velocity of the particle itself. These no-slip conditions on the surface of the objects are defined as
 \begin{equation}
   \label{eq:boundary_condition_surface}
   \mathbf{u} = \mathbf{u}_\Gamma  \quad \text{on} \quad  \Gamma \text{,}
 \end{equation}
-where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus constraining the fluid to have zero velocity relative to the surface boundary.
+where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus constraining the fluid to have zero velocity relative to the particle surfaces.
 
-The second boundary condition models the fact that the fluid velocity far from the object is not affected by its presence. This is modeled by stating that the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
+The second boundary condition models the fact that the fluid velocity far from the particle is not affected by its presence. This is modeled by stating that the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
 \begin{equation}
   \label{eq:boundary_condition_background}
   \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{.}
 \end{equation}
-In our simulations this background velocity is always set to $0$. Even though the Stokes equations are time independent, a dependency on time will be reintroduced through the motion of the immersed particles via the no-slip boundary conditions~\eqref{eq:boundary_condition_surface}.
+In our simulations this background velocity is always set to $0$. Through the motion of the immersed particles and the no-slip boundary conditions defined in equation~\eqref{eq:boundary_condition_surface} the dependency on time is reintroduced to the time independent Stokes equations~\eqref{eq:stokes_equations}.
 
 \section{Boundary integral formulation}
 \label{sec:boundary_integral_formulation}
@@ -73,33 +71,32 @@ Later, we will need higher order fundamental solutions to the Stokes equations~\
 \subsection{Formulation for objects immersed in a fluid}
 \label{subsec:formulation_objects_in_fluid}
 
-Using the Stokeslet from equation~\eqref{eq:stokeslet} we can now model the influence of immersed objects on the Stokes flow. Assume that we have a total of $M$ immersed rigid objects in the fluid. Each object $m$, for $m = 1,2,\dots,M$ is centered at $\POS_c^m$ with an associated orthonormal basis $\ORIENT^m$ and surface $\Gamma^m$. Given the rigid body motion and the no-slip boundary~\eqref{eq:boundary_condition_surface} we can model the velocity field $\mathbf{u}(\POS)$ at each surface point $\POS \in \Gamma^m$ of object as
+Using the fundamental solution from equation~\eqref{eq:stokeslet_velocity_field} we can now model the influence of immersed objects on the Stokes flow. Assume that we have a total of $M$ immersed rigid objects in the fluid. Each object $m$, for $m = 1,2,\dots,M$ is centered at $\POS_c^m$ with an associated orthonormal basis $\ORIENT^m$ and surface $\Gamma^m$. Given a rigid body motion and the no-slip boundary condition from~\eqref{eq:boundary_condition_surface} we can model the velocity field $\mathbf{u}(\POS)$ at each surface point $\POS \in \Gamma^m$ of the object as
 \begin{equation}
   \label{eq:rigid_body_motion}
-	\mathbf{u}(\mathbf{x} = \mathbf{U}^m) + \mathbf{\omega}^m \times (\POS - \POS_c^m) \text{,}
+	\mathbf{u}(\mathbf{x}) = \mathbf{U}^m + \mathbf{\omega}^m \times (\POS - \POS_c^m) \text{,}
 \end{equation}
-where $\mathbf{U}^m$ is the translational velocity of the object and $\omega^m$ the rotational velocity. This setup is illustrated for $M=2$ fibers in Figure~\ref{fig:immersed_rigid}
+where $\mathbf{U}^m$ is the translational velocity of the object and $\mathbf{\omega}^m$ the rotational velocity. This setup is illustrated for $M=2$ fibers in Figure~\ref{fig:immersed_rigid}.
 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=.8\textwidth]{img/immersed_rigid.png}
-  \caption{Immersed object in stokes flow.}
+  \caption{Two immersed objects in stokes flow, using a rigid body motion.}
   \label{fig:immersed_rigid}
 \end{figure}
 
-By combining this rigid body motion with the boundary integral formulation~\eqref{eq:stokeslet_velocity_field} of the Stokes equations we can now relate the objects velocities with the force exerted by all the other objects and transferred by the flow. For this we take advantage of linearity of the Stokes equation and apply the superposition principle. The superposition principle states that the combined effect from all objects at a single point in the flow is simply the sum of all the individual effects caused by each object. For $M$ fibers this yields
-
+By combining this rigid body motion with the boundary integral formulation~\eqref{eq:stokeslet_velocity_field} of the Stokes equations we can now relate the objects velocities with the force exerted by all other objects as it is transferred through the fluid. For this we take advantage of the linearity of the Stokes equation and apply the superposition principle. The superposition principle states that the combined effect from all objects at a single point in the flow is simply the sum of all the individual effects caused by each object. For $M$ fibers this yields the following relationship between the objects velocities and forces
 \begin{equation}
   \label{eq:objects_boundary}
-	\mathbf{U}_i^m) + (\mathbf{\omega}^m \times (\POS - \POS_c^m))_i = \frac{1}{8 \pi \mu} \sum_{l=1}^{M} \int_{\Gamma^l} S_{ij}(\mathbf{x},\mathbf{y})f_j^l(\mathbf{y} \, dS_y) \quad i,j =1,2,3 \text{.}
+	\mathbf{U}_i^m + (\mathbf{\omega}^m \times (\POS - \POS_c^m))_i = \frac{1}{8 \pi \mu} \sum_{l=1}^{M} \int_{\Gamma^l} S_{ij}(\mathbf{x},\mathbf{y})f_j^l(\mathbf{y} \, dS_y) \quad i,j =1,2,3 \text{.}
 \end{equation}
 
-The resulting system has three unknowns. Thus in order to solve the system we add two constraint
+The resulting system has three unknowns, the translational and rotational velocities $\mathbf{U}^m$ and $\mathbf{\omega}^m$ as well as the force distribution $\mathbf{f}^m$. Thus in order to be able to solve the system we add two constraints
 \begin{equation}
 	\label{eq:objects_boundary_constraints}
-	\mathbf{F}_{\text{object}}^m = \int_{\Gamma^m} \mathbf{f}^m(\mathbf{y}) \, dS_y \quad \mathbf{T}_{\text{object}}^m = \int_{\Gamma^m} (\POS - \POS_c^m) \times \mathbf{f}^m(\mathbf{y} \, dS_y \text{,}
+	\mathbf{F}_{\text{object}}^m = \int_{\Gamma^m} \mathbf{f}^m(\mathbf{y}) \, dS_y\text{,} \quad \mathbf{T}_{\text{object}}^m = \int_{\Gamma^m} (\POS - \POS_c^m) \times \mathbf{f}^m(\mathbf{y} \, dS_y \text{,}
 \end{equation}
-stating that the integrated force and torque over each body must be equal to the externally applied force and torque on the object. Given theses additional constraints we are now able to solve equations ~\eqref{eq:objects_boundary} and~\eqref{eq:objects_boundary_constraints} for $\mathbf{f}^m(x)$, $\mathbf{U}^m$ and $\mathbf{\omega}^m$ for all fibers $m=1,2,\dots,M$. Using these obtained velocities we can then simply update the position and orthonormal basis of the object by
+stating that the integrated force and torque over each object must be equal to the externally applied force and torque on the object. Given theses additional constraints we are now able to solve equations ~\eqref{eq:objects_boundary} and~\eqref{eq:objects_boundary_constraints} for $\mathbf{f}^m(x)$, $\mathbf{U}^m$ and $\mathbf{\omega}^m$ for all fibers $m=1,2,\dots,M$. Using the resulting velocities we can then simply update the position and orthonormal basis of each object through time $t$ by
 \begin{equation}
 	\label{eq:objects_update}
 	\frac{d}{dt}\POS_c^m = \mathbf{U}^m \text{,} \quad \frac{d}{dt}\ORIENT^m = \ORIENT^m \times \mathbf{\omega}^m \text{.}
@@ -114,7 +111,7 @@ Additionally given the force distribution $\mathbf{f}_m$ of each fiber we can co
 \section{Slender fibers}
 \label{sec:slender_fibers}
 
-Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon = a / 2 L$ denote a slenderness parameter. If $\epsilon \ll 1$ the body is referred to as a slender body (slender fiber) as illustrated in Figure~\ref{fig:slenderness}.
+The goal of this thesis is to simulate many fibers and the 2D boundary integral formulation would be very expensive to solve numerically. A slender body approximation can be used to overcome this challenge. Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon = a / 2 L$ denote a slenderness parameter. If $\epsilon \ll 1$ the body is referred to as a slender body (slender fiber) as illustrated in Figure~\ref{fig:slenderness}.
 
 \begin{figure}[!htbp]
   \centering
@@ -142,17 +139,15 @@ Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon
   \label{fig:slenderness}
 \end{figure}
 
-The goal is to simulate many fibers and the 2D boundary integral formulation would be very expensive to solve numerically. As the aspect ratio, $1/\epsilon$, of the fiber increases, the requirement of the number of quadrature points increases in order to accurately resolve the flow field around the fibers as shown in Figure~\ref{fig:slenderness}.
+As the aspect ratio, $1/\epsilon$, of the fiber increases, the requirement of the number of quadrature points increases in order to accurately resolve the flow field around the fibers as shown in Figure~\ref{fig:slenderness}. However, for slender bodies a slender body approximation can be used instead. 
 
-However, for slender bodies a slender body approximation can be used. The slender body approximation is derived from the integral formulation of the Stokes equations~\ref{eq:stokes_equations}. Using asymptotic analysis the governing 2D equations are reduced to 1D equations along the centerline of the fiber by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$
+The slender body approximation is derived from the boundary integral formulation of the Stokes equations~\ref{eq:objects_velocity_field}. Using asymptotic analysis the governing 2D equations are reduced to 1D equations along a centerline of the fiber by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$ This reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
 
-The reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
-
-The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations~\eqref{eq:stokes_equations}, the Stokeslet~\eqref{eq:stokeslet_stokeslet} and the doublet~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using a boundary integral method from Pozrikidis\cite{Pozrikidis1992}. Details of the model are given by Tornberg and Gustavsson\cite{Tornberg2006}.
+The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations, the Stokeslet~\eqref{eq:stokeslet_stokeslet} and the doublet~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using the boundary integral method from Pozrikidis~\cite{Pozrikidis1992}. Details of the model are given by Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 \begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/slender.pdf}
+  \includegraphics[width=0.6\textwidth]{img/slender.pdf}
   \caption{Slender fiber approximation.}
   \label{fig:slender_fiber}
 \end{figure}
@@ -167,6 +162,7 @@ If the fluid exerts a force per unit length $\mathbf{f}_m$ on fiber $m$, the sle
     &+ (\mathbf{I} + \ORIENT_m\ORIENT_m^\top)\bar{\mathbf{K}}[\mathbf{f}_m](s) + \mathbf{V}_m(s) \text{.}
   \end{aligned}
 \end{equation}
+
 Here $d$ is a geometry parameter
 \begin{equation}
   \label{eq:geometry_parameter}
@@ -188,7 +184,7 @@ where $\mathbf{R}_{lm}(s,s') = \POS_m + s\ORIENT_m - (\POS_l + s'\ORIENT_m)$ is 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.3819660112501450000000\textwidth]{img/fiber_contribution.pdf}
-  \caption{Two fibers with five quadrature points each. The interaction between two fibers is given by the term $\mathbf{V}_m$} and depends solely on the distance between the two. The integral in equation~\eqref{eq:velocity_contribution} can not be evaluated analytically and will be approximated by a quadrature rule.
+  \caption{Two fibers with five quadrature points each. The interaction between two fibers is given by the term $\mathbf{V}_m$ and depends solely on the distance between the two. The integral in equation~\eqref{eq:velocity_contribution} can not be evaluated analytically and will be approximated by a quadrature rule.}
   \label{fig:fiber_contribution}
 \end{figure}
 
@@ -200,16 +196,17 @@ The Green's function in this case is a linear combination of two fundamental sol
   0 & if $l = m$
   \end{dcases*}
 \end{equation}
-with $\mathbf{R}$ and $\mathbf{D}$ as defined in equations~\eqref{eq:doublet} and~\eqref{eq:velocity_contribution}.
+with $\mathbf{S}$ and $\mathbf{D}$ as defined in equations~\eqref{eq:stokeslet_stokeslet} and~\eqref{eq:doublet}.
 
 The equations are stated in non-dimensional form using the half-length of the fiber as a characteristic length, $L_c = L$. This will give use a characteristic velocity and time as
 \begin{equation}
   U_C = \frac{d \Delta \rho g V}{4\pi\mu_fL} \text{,} \quad T_C = \frac{2\pi\mu_fL^2}{d \Delta \rho g V} \text{.}
 \end{equation}
 
-The unknowns in equations~\eqref{} are the translational and rotational velocities, $\dot{\POS}_m$ and $\dot{\ORIENT}_m$ and the force distribution along the fiber $\mathbf{f}_m(s)$. To close the formulation of equation~\eqref{}, we se the additional conditions stating that the integrated force and torque on each fiber must balance the external forces and torques applied to the fibers,
+The unknowns in equations~\eqref{eq:velocity_centerline} are the translational and rotational velocities, $\dot{\POS}_m$ and $\dot{\ORIENT}_m$ and the force distribution along the fiber $\mathbf{f}_m(s)$. To close the formulation of equation~\eqref{eq:velocity_centerline}, we se the additional conditions stating that the integrated force and torque on each fiber must balance the external forces and torques applied to the fibers,
 \begin{equation}
-  \mathbf{F} = \int_{-1}^{1} \mathbf{f}_m(s) \, ds \text{,} \quad \mathbf{M} = \int_{-1}^{1} s(\ORIENT_m \times \mathbf{f}_m(s)) \, ds \text{.}
+	\label{eq:slender_boundary_constraints}
+  \mathbf{F}_m = \int_{-1}^{1} \mathbf{f}_m(s) \, ds = \mathbf{F}_g \text{,} \quad \mathbf{T}_m = \int_{-1}^{1} s(\ORIENT_m \times \mathbf{f}_m(s)) \, ds = 0 \text{.}
 \end{equation}
 
-The external torque is set to zero in this work.
+In this work the external force is just gravity and the external torque is set to zero. Together with this the system is now closed and we can solve our rigid fiber simulation using equations~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints}.

@@ -5,7 +5,7 @@
 % arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
-\DeclareMathSizes{10.95}{11}{9}{7}
+% \DeclareMathSizes{10.95}{11}{9}{7}
 
 % Math and code packages
 \usepackage{amsmath}   % all things math
@@ -26,8 +26,7 @@
 % Bibliographies
 \usepackage[
   backend=biber,
-  style=numeric,
-  sorting=nty
+  style=numeric
 ]{biblatex} % modern bibliographies
 \addbibresource{thesis.bib}
 \usepackage{csquotes}
@@ -122,7 +121,7 @@
 
 \usepackage{modifications}
 
-\linespread{1.2}
+\linespread{1.22}
 
 \title{GPU Simulation of Rigid Fibers}
 
