@@ -5,7 +5,7 @@
 % arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
-\DeclareMathSizes{10.95}{12}{9}{7}
+\DeclareMathSizes{10.95}{11}{9}{7}
 
 % Math and code packages
 \usepackage{amsmath}   % all things math
@@ -13,7 +13,7 @@
 \usepackage{xfrac}     % nice fractions in body of text
 \usepackage{siunitx}   % typesets numbers with units
 \usepackage{mathtools} % extensions for amsmath
-\usepackage[section]{minted}    % advanced code examples
+\usepackage[chapter]{minted}    % advanced code examples
 
 % Tables
 \usepackage{booktabs} % professionally looking tables
@@ -49,6 +49,8 @@
 \usepackage{microtype}	  % advanced typesetting
 \DisableLigatures{family=tt*}
 \usepackage[main=english, swedish]{babel} % language-specific conventions
+\widowpenalty=300
+\clubpenalty=300
 
 % Graphics
 \usepackage{graphicx} % all things graphics
@@ -60,7 +62,7 @@
 \pgfplotsset{
   compat=1.11, % avoid running in backwards compatibility mode
   width=\textwidth,
-  tick label style = {font=\ttfamily},
+  tick label style = {font=\sffamily},
   every axis label = {font=\sffamily},
   legend style = {font=\sffamily},
   label style = {font=\sffamily},
@@ -140,25 +142,17 @@ The previous serial implementation is rewritten for parallel execution. The algo
 
 Furthermore, we have performed a number of simulations of known experiments for sedimenting fibers to validate the algorithm and to explore the numerical precision of the results. The results show an excellent agreement with results from prior experiments in the field.
 \end{abstract}
-
 \clearpage
-
 
 \begin{foreignabstract}{swedish}
 
-\begin{itemize}
-\item Nummerierung Listing vs Figure Ebene
-\item Figure/Listing/Table immer Groß Equation?!?
-\item Hurenkind und Schusterjunge
-\item LAPACK bekannt?
-\end{itemize}
-
 \end{foreignabstract}
+\clearpage
 
+\section*{Acknowledgements}
 \clearpage
 
 \tableofcontents*
-
 \clearpage
 
 \listoffigures
@@ -584,9 +578,9 @@ The deciding factor for the performance is how well the application can be paral
       \addlegendentry{NVIDIA GPU Single Precision}
 
     \end{axis}
-    \setmathfont{XITS Math}
+	\setmathfont{Asana-Math.otf}
   \end{tikzpicture}
-  \caption{Increase in floating-point operations per second for CPUs versus GPUs over time.\cite{CudaProgrammingGuide}}
+  \caption[Year over year increase in theoretical floating-point operations per second for CPUs and GPUs.]{Year over year increase in theoretical floating-point operations per second for CPUs and GPUs\cite{CudaProgrammingGuide}.}
   \label{fig:gpu_performance}
 \end{figure}
 
@@ -609,7 +603,7 @@ The CUDA platform allows developers to use a variety of different options to pro
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=.9\textwidth]{img/cuda_overview.png}
-  \caption{Overview of the CUDA platform.}
+  \caption[Overview of the CUDA platform.]{Overview of the CUDA platform\cite{CudaProgrammingGuide}.}
   \label{fig:cuda_overview}
 \end{figure}
 
@@ -653,7 +647,7 @@ In order to efficiently distribute the different threads across the compute core
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/automatic_scaling.pdf}
-  \caption{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.}
+  \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors\cite{CudaProgrammingGuide}.}
   \label{fig:automatic_scaling}
 \end{figure}
 
@@ -696,22 +690,24 @@ Finally, as the resources of each Streaming Multiprocessor are limited, there is
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{img/grid_blocks.pdf}
-  \caption{2D grid with 2D thread blocks.}
+  \caption[CUDA block addressing using 2D grid with 2D thread blocks.]{CUDA block addressing using 2D grid with 2D thread blocks.\cite{CudaProgrammingGuide}}
   \label{fig:grid_blocks}
 \end{figure}
 
 \paragraph{Memory hierarchy}
 
-In addition to the Thread hierarchy CUDA also implements a 3 layer memory hierarchy as illustrated in Figure~\ref{fig:memory_hierarchy}. Each level of this hierarchy differs in size, latency and scope. The fastest and smallest memory local is private memory. Each thread has its own area of private memory and only it can read and write this area. How much space each thread has is determined by how many threads are executed on each SM. The more memory an individual thread requires the fewer thread can run in parallel on a SM. Optimizing this trade-off is important for an achieving good performance. On the newest GPUs each SM has $65536 * 32\text{-bit} = 256\text{KB}$ to divide among the threads.
+In addition to the Thread hierarchy CUDA also implements a 3 layer memory hierarchy as illustrated in Figure~\ref{fig:memory_hierarchy}. Each level of this hierarchy differs in size, latency and scope. The fastest and smallest memory is private memory. Each thread has its own area of private memory and only it can read and write this area. How much space each thread has is determined by how many threads are executed on each SM. The more memory an individual thread requires the fewer threads can run in parallel on a SM. Optimizing this trade-off is important for achieving a good performance. On the newest GPUs each SM has $65536 * 32\text{-bit} = 256\text{KB}$ to divide among the threads.
 
-The second level is called shared memory, or sometimes confusingly local memory. Also it is slower than private memory, it has the advantage that all threads executing on an SM have simultaneous access to it. This allows different threads to cooperate and share work. It is important to analyze each algorithm if it can take advantage of this shared memory, as it allows saving computing time. The size of this memory level on current GPUs is around $64\text{KB}$ to $96\text{KB}$.
+The second level is called shared memory, or sometimes confusingly local memory. Although it is slower than private memory, it has the advantage that all threads executing on an SM have simultaneous access to it. This allows different threads to cooperate and share work. 
 
-The final and largest memory area is called global memory. This is the amount of memory advertised for the GPU, like $2\text{GB}$ or $4\text{GB}$. It is accessible by all threads and stores all data relating to the current application. However, accessing it can be quite slow compared to the other levels of the memory hierarchy. Additionally one has to be careful to avoid memory conflicts when accessing the same memory location form different threads at the same time further reducing the performance. It is an important optimization steps to makes access to global memory as efficient as possible. This can be achieved by intelligently packing data, or caching data in a higher level of the hierarchy. If the required data for each individual thread from global memory is small enough the associated latency with accessing it can also be hidden when enough calculation are performed on this data. The GPU is then able to quickly switch to another set of threads and continue the computation while waiting on data from global memory.
+Depending on the characteristics of the algorithm, this can save a lot of computing time. Therefore it is important to analyze whether shared memory can actually improve the performance. The size of this memory level on current GPUs is around $64\text{KB}$ to $96\text{KB}$.
+
+The final and largest memory area is called global memory. This is the amount of memory used to advertise the GPU. Nowadays it is usually $2\text{GB}$ or $4\text{GB}$. It is accessible by all threads and stores all data relating to the current application. However, accessing it can be quite slow compared to the other levels of the memory hierarchy. Additionally, one has to be careful to avoid memory conflicts when accessing the same memory location form different threads at the same time. This is especially important since this can further reduce the performance. Taking everything into account, it can be said that it is an important optimization step to make access to global memory as efficient as possible. This can be achieved by intelligently packing data, or caching data in a lower level of the hierarchy. Another option to avoid the slow the performance can be used, if the required data for each individual thread from global memory is small enough. The associated latency when reading data from global memory can be hidden when enough calculation are performed on this data. The GPU is then able to quickly switch to another set of threads and continue the computation while waiting on data from global memory.
 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{img/memory_hierarchy.pdf}
-  \caption{CUDA memory hierarchy.}
+  \caption[CUDA memory hierarchy.]{CUDA memory hierarchy\cite{CudaProgrammingGuide}.}
   \label{fig:memory_hierarchy}
 \end{figure}
 
@@ -970,9 +966,9 @@ For this thesis we looked at the Thread Block dimension in particular and how ch
 
 The most straight forward approach is to simply parallelize the algorithm with regard to a single fiber. This means each kernel invocation is responsible for calculating all the interactions for this fibers with all other fibers. In this way a single kernel is responsible for multiple rows of the resulting linear system matrix. Additionally, this approach does not have any memory access conflict as each kernel only writes to the memory location belonging to its unique fiber. The potential disadvantage for a one-dimensional thread block, however, is that the resulting code can be more resource intensive for each single kernel and potentially hinder the performance on each multiprocessor.
 
-For a two-dimensional thread block each kernel invocation is responsible for a pair of fibers interacting. While this decreases the necessary resources, it also required atomics which can potential slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are a further extension of the two-dimensional thread block, as now each kernel invocation is responsible not for the complete interaction but only the interaction resulting from a specific point from the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
+For a two-dimensional thread block each kernel invocation is responsible for a pair of interacting fibers. While this decreases the necessary resources, it also requires atomics which can potentially slow down the execution. Three-dimensional thread blocks are the maximum allowed dimensions for a CUDA thread block. They are a further extension of the two-dimensional thread block, as now each kernel invocation is not responsible for the complete interaction but only the interaction resulting from a specific point of the force expansion. This results in even more potential memory conflicts and also increases the total number of thread blocks which have to be distributed.
 
-The kernel invocations for the one-dimensional and two-dimensional thread block approach be visualized using the matrix structure in equation~\eqref{eq:matrix_structure}, as shown in Figure~\ref{fig:thread_block}. In the one-dimensional case each invocation is responsible for all sub matrices $\bar{A}_{ml}$ describing the contribution from the force coefficients on fiber $l$ on to the force coefficients for fiber $m$. Thus in total this results in $M$ kernel invocations, one for each fiber. For the two-dimensional case each invocation is only responsible for a single sub matrix. Here the total number of invocations is $M \times M$. The three-dimensional case than divides the calculation for the sub matrix further, one additional invocation per force index for a total of $M \times M \times N$ invocations.
+The kernel invocations for the one-dimensional and two-dimensional thread block approach are visualized using the matrix structure in equation~\eqref{eq:matrix_structure}, as shown in Figure~\ref{fig:thread_block}. In the one-dimensional case each invocation is responsible for all sub matrices $\bar{A}_{ml}$ describing the contribution from the force coefficients on fiber $l$ on to the force coefficients for fiber $m$. Thus in total this results in $M$ kernel invocations, one for each fiber. For the two-dimensional case each invocation is only responsible for a single sub matrix. Here the total number of invocations is $M \times M$. The three-dimensional case then divides the calculation for the sub matrix further, one additional invocation per force index for a total of $M \times M \times N$ invocations.
 
 \begin{figure}[!htbp]
   \centering
@@ -986,11 +982,11 @@ The kernel invocations for the one-dimensional and two-dimensional thread block 
     \includegraphics[width=\textwidth]{img/thread_block2D.pdf}
     \caption{2D}\label{fig:thread_block_2D}
   \end{subfigure}
-  \caption{Illustration Thread Block Dimension}
+  \caption{Illustration of 1D and 2D thread block dimension using simulation system matrix.}
   \label{fig:thread_block}
 \end{figure}
 
-How exactly each decision for the thread-block dimension affects performance is not clear. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm. We will later show in section~\ref{subsec:bench_thread_block}, that for our GPU implementation the two-dimensional approach is the most efficient.
+It is not clear, how exactly the performance is affected by each decision for the thread block dimension. Only trial-and-error benchmarking combined with metrics from CUDA can find the optimal setting for the specific algorithm. We will later show in section~\ref{subsec:bench_thread_block}, that for our GPU implementation the two-dimensional approach is the most efficient one.
 
 \section{OpenMP}
 
@@ -1035,7 +1031,7 @@ All benchmarks were run on the same workstation with specifications listed in Ta
 \label{tab:workstation}
 \end{table}
 
-The Intel Core i7 4770 processor is an 4-Core CPU based on Intel's Haswell Architecture. With its 8 parallel threads and $3.4$ GHz it was one of the top-of-line processor from 2013 and 2014 and is currently still available for around $300\$$ dollars. The NVIDIA GTX 970 4GB is part of NVIDIA newest lineup of graphics cards based on the Maxwell Architecture. The main advantage of these new cards is the large memory of $4$ GB allowing for larger simulations. With a current price of slightly above $300\$$ it fills the middle price class for all Maxwell cards. Overall this can be considered to be a balanced system.
+The Intel Core i7 4770 processor is an 4-Core CPU based on Intel's Haswell Architecture. With its 8 parallel threads and $3.4$ GHz it was one of the top-of-line processor from 2013/14 and is currently still available for around $300\$$. The NVIDIA GTX 970 4GB is part of NVIDIA newest lineup of graphics cards based on the Maxwell Architecture. The main advantage of these new cards is the large memory of $4$ GB allowing for larger simulations. With a current price of slightly above $300\$$ it fills the middle price class for all Maxwell cards. Overall this can be considered to be a balanced system.
 
 \subsection{Benchmark scheme}
 
@@ -1117,7 +1113,7 @@ The first benchmark tests the performance of the two different approaches to com
 
       \legend{Numerical, Analytical}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark computing integrals using OpenMP.}
   \label{fig:openmp_num_vs_anal}
@@ -1145,7 +1141,7 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
 
       \legend{Numerical, Analytical}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark computing integrals using CUDA.}
   \label{fig:cuda_num_vs_anal}
@@ -1181,7 +1177,7 @@ During testing and benchmarking the shared memory implementation of the \emph{As
 
 The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the 2D thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation. 
 
-While waiting for this data from global memory, CUDA is able to quickly switch between different sets of threads and continue computation there. Thus the only waiting time occurs when the very first of data has to be loaded. After the first data has arrived computation can be performed on it. While these longer running computation are happening other threads can already issue data loading request. Once the first computation finish and the next set of threads is executed the data has already been fetched. As there was no advantage in using shared memory in the compute bound \emph{Assemble System} step, we opted for the simpler implementation without it for all our simulations.
+While waiting for this data from global memory, CUDA is able to quickly switch between different sets of threads and continue the computation there. Thus the only waiting time occurs when the very first set of data has to be loaded. After the first data has arrived computations can be performed on it. While these longer running computations are happening, other threads can already issue data loading requests. Once the first computation finishes and the next set of threads is executed the data has already been fetched. As there was no advantage in using shared memory in the compute bound \emph{Assemble System} step, we opted for the simpler implementation without it for all our simulations.
 
 \subsection{Thread Block Dimension}
 
@@ -1208,13 +1204,13 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
 
     \legend{1D, 2D, 3D}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of assemble system step for different thread block dimensions.}
   \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
-The results in Figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. The three-dimensional thread block is always slower and the performance gap grows with the number of fibers. The reason for this performance gap is the increased usage of atomics in the three-dimensional case. The overall usage of atomic functions and be inspected with the NVIDIA profiler \emph{nvprof} and the profiling metric \emph{Atomic Transactions}. This metric simply counts the total number of atomic transaction performed by calling atomic functions. Table~\ref{tab:atomic_transactions} lists the \emph{Atomic Transactions} counts for both the two-dimensional and three-dimensional simulation for a simple sedimenting sphere setup. The required \emph{Atomic Transactions} in the three-dimensional case are almost two times larger than for the two-dimensional case. These additional transactions incur a performance penalty, because they serialize the access to memory and threads have to wait while other threads finish writing to memory.
+The results in Figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. The three-dimensional thread block is always slower and the performance gap grows with the number of fibers. The reason for this performance gap is the increased usage of atomics in the three-dimensional case. The overall usage of atomic functions can be inspected with the NVIDIA profiler \emph{nvprof} and the profiling metric \emph{Atomic Transactions}. This metric simply counts the total number of atomic transactions performed by calling atomic functions. Table~\ref{tab:atomic_transactions} lists the \emph{Atomic Transactions} counts for both the two-dimensional and three-dimensional simulation for a simple sedimenting sphere setup. The required \emph{Atomic Transactions} in the three-dimensional case are almost two times larger than for the two-dimensional case. These additional transactions incur a performance penalty, because they serialize the access to memory and threads have to wait while other threads finish writing to memory.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -1260,7 +1256,7 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
 
       \legend{Direct Solver, GMRES}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different Fortran solvers.}
   \label{fig:bench_openmp_solvers}
@@ -1291,7 +1287,7 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
 
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different GPU linear solvers.}
   \label{fig:bench_cuda_solvers}
@@ -1323,7 +1319,7 @@ The next benchmark explores the relative time taken by each step of the algorith
 
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark for individual steps with OpenMP.}
   \label{fig:bench_openmp_steps}
@@ -1351,7 +1347,7 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
 
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark for individual steps with CUDA.}
   \label{fig:bench_cuda_steps}
@@ -1396,7 +1392,7 @@ The results for average time required to take a single time step is illustrated 
 
       \legend{CUDA GMRES, CUDA Direct, OpenMP GMRES, OpenMP Direct}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of overall timestep for both OpenMP and CUDA.}
   \label{fig:overall}
@@ -1486,7 +1482,7 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 
       \legend{Single Precision, Double Precision}
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
   \label{fig:ring_sedimentation_velocity}
@@ -1517,9 +1513,9 @@ As alluded to in the discussion about the performance of direct solvers versus i
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Average] {charts/concentration_gmres.csv};
 
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
-  \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
+  \caption{Effect of fiber concentration on GMRES iterations.}
   \label{fig:concentration_gmres}
 \end{figure}
 
@@ -1560,21 +1556,21 @@ The next example showcases a more chaotic system with a large number of interact
   \label{fig:sphere_simulation}
 \end{figure}
 
-This sphere of packed fibers is then allowed to sediment due to gravity. Beginning from the spherical shape the interacting fibers slowly begin to form a continuously turning torus. Even though the behavior is more chaotic die to the large number of fibers and the random initial setup, this turning torus resembles the result for the tumbling orbits in section~\ref{sec:example_ring}.
+This sphere of packed fibers is then allowed to sediment due to gravity. Beginning from the spherical shape the interacting fibers slowly begin to form a continuously turning torus. Even though the behavior is more chaotic due to the large number of fibers and the random initial setup, this turning torus resembles the result for the tumbling orbits in section~\ref{sec:example_ring}.
 
 After some time the torus breaks and the fibers are split into multiple smaller clusters. Each cluster continues to sediment separately and slowly forms its own smaller torus again. However, due to tiny variations these toruses can be harder to see.
 
-The calculation of the presented example only takes $~7.7$ seconds with the GPU simulation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow new research of this interesting phenomena. One such interesting research question is determining what influences the stability of the torus. 
+The calculation of the presented example only takes $~7.7$ seconds with the GPU simulation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow new research of this interesting phenomenon. One interesting research question is for example determining what influences the stability of the torus.
 
 To begin investigating this question we first define the stability of the torus in terms of the break up time. How to determine the exact break up time of the torus is quite challenging. This problem and question was also examined by Park et al. \cite{Park2010}. They define the break up as the moment when the torus starts to bend prior to actually breaking. Additionally, they describe an algorithm that determines which fibers are part of the torus. Consequently, they compute metrics such as the remaining fibers, the radius and velocity of the sedimenting torus. Unfortunately, they don't define a metric that determines the exact break up time. Thus we came up with our own measure of the break up time based on their work.
 
-We use the same definition for the torus as described by Park et al. \cite{Park2010}. First we compute the initial radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are removed from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each direction and normalize by the initial radius $R_0$.
+We use the same definition for the torus as described by Park et al. \cite{Park2010}. First we compute the initial radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are removed from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each direction and normalize it by the initial radius $R_0$.
 
-We observe that the standard deviation of the radius in the direction of gravity continuously decreases as time goes on. The standard deviation then reaches its minimum a few moment before the break up can be identified visually. We can now define this minimum of the standard deviation of the radius as a metric for the break up time. We verified this metric manually against many simulation and it showed great agreement with the visual break up. Using this metric we are now able to investigate the effect of some simulation parameters on the stability and break up time of the torus.
+We observe that the standard deviation of the radius in the direction of gravity continuously decreases as time passes. The standard deviation then reaches its minimum a few moments before the break up can be identified visually. We can now define this minimum of the standard deviation of the radius as a metric for the break up time. We verified this metric manually against many simulations and it showed great agreement with the visual break up. Using this metric we are now able to investigate the effect of some simulation parameters on the stability and break up time of the torus.
 
 \subsection{Fiber concentration effect on break up time}
 
-The first parameter we explore was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Figure~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al. \cite{Park2010}.
+The first parameter we explored was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Figure~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al. \cite{Park2010}.
 
 \begin{figure}[!htbp]
   \centering
@@ -1596,9 +1592,9 @@ The first parameter we explore was the concentration of the fibers. Concentratio
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Break] {charts/concentration_breakup.csv};
 
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
-  \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
+  \caption{Effect of fiber concentration on torus break up time.}
   \label{fig:concentration_breakup}
 \end{figure}
 
@@ -1625,9 +1621,9 @@ The second parameter we looked at was the number of fibers. For this experiment 
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=M,y=Break] {charts/number_breakup.csv};
 
     \end{axis}
-    \setmathfont{XITS Math}
+    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
-  \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
+  \caption{Effect of number of fibers on torus break up time.}
   \label{fig:number_breakup}
 \end{figure}
 
