@@ -116,6 +116,9 @@
 % \definecolor{set18_light}{cmyk}{.0 ,.15 ,.0 ,.0 }
 % \definecolor{set19_light}{cmyk}{.0 ,.0 ,.0 ,.05 }
 
+\newcommand{\POS}{\mathbf{x}}
+\newcommand{\ORIENT}{\mathbf{t}}
+
 \usepackage{modifications}
 
 \linespread{1.2}
@@ -170,118 +173,94 @@ Furthermore, we have performed a number of simulations of known experiments for 
 
 \chapter{Introduction}
 
-Predicting the physical behavior of particles suspended in fluid is of great interest in a variety of different field. The ability to accurately model different kind of materials allows their properties to be analyzed and optimized for a large number of applications. Examples include medical applications were the deliver and distribution of the active agent has to be modeled, waste management to efficiently extract waste from water and the paper industry which is trying to improve the properties of their material. Simulating these complex behaviors usually requires a large number of particles and being able to do so efficient is very important.
+Predicting the physical behavior of particles suspended in fluid is of great interest in a variety of different field. The ability to accurately model and simulate different kind of particle suspensions allows their properties to be analyzed and optimized for a large number of applications. Examples include medical applications were the deliver and distribution of the active agent has to be modeled, waste management to efficiently extract waste from water and the paper industry which is trying to improve the properties of their material.
 
-The work in this thesis focus on the numerical simulation on micro-scale. Rigid and fibers are allowed to sediment in a viscous fluid due to gravity. The fibers are simulated in a free-space Stokes flow. The model is expressed using a boundary integral formulation to simply and increase the performance of the simulation. This setup resembles the simplified model for paper pulp, where the quality of the paper is determined by individual fibers. By optimizing the fiber alignment and distribution different properties of the paper can be influenced. Accurately modeling the interaction requires many fibers to be simulated.
+Even in the simplest flow cases, the flow of a particle suspension exhibits very complex and complicated dynamical behavior. The rheological properties of the suspension depend strongly on features such as the concentration of particles, particle shapes and particle interactions. In order to accurately capture the complex dynamics of a suspension using numerical simulations, a large number of particles are required in the simulation. Hence, the ability of the numerical algorithm to efficiently handle a large amount of particles is of crucial importance.
 
-In this thesis we present a high performance GPU implementation of the rigid fiber suspension simulation. By taking advantage of the massively parallel architecture of modern GPUs many more fibers than before with a CPU based implementation can be simulated. We focus our work on the ability to easily and efficiently perform simulation on a high-end desktop computer or workstation readily accessible by the researcher. This approach allows the researcher to explore the huge problem space and simulate a relatively large number of fibers in a short amount of time. They can rapidly iterate to find and discover interesting test cases. Theses cases can than be used as a starting point for large scale simulation using computing clusters.
+The work in this thesis focuses on increasing and optimizing the efficiency of a numerical algorithm of the simulation of sedimenting rigid and slender fibers in a viscous fluid. The fibers are modeled and simulated on a particle-level in a 3D free-space Stokes fluid. The mathematical model is based on a boundary integral formulation and a non-local slender body approximation\cite{Tornberg2006}. There are many numerical studies of fiber suspension, see e.g. Guazzelli and Hinch\cite{Guazzelli2011} and references therein.
 
-We limit ourselves to the naive algorithm for simulating the fibers, were the interactions between every pair is computed. The development of such an naive algorithm is not only easier and more cost effective but the potentially large overhead introduced by a complex fast summation method, like multipoles might not result in desired performance increase. Additionally, because we are limited to a single precision simulation by our choice of consumer-grade GPU hardware, maintaining the accuracy of the simulation is a major concern. However, exploring theses questions is an interesting future research direction.
+In this thesis we present a high performance GPU implementation of the numerical algorithm for simulating fiber suspension. By taking advantage of the massively parallel architecture of modern GPUs many more fibers can be simulated compared to the previous CPU based implementation of the algorithm. We focus the development on the ability to easily and efficiently perform simulation on a high-end desktop computer or workstation readily accessible by the researcher. This approach allows the researcher to explore the huge problem space and simulate a relatively large number of fibers in a short amount of time. Hence, it enhances the capacity to rapidly iterate, to find and discover interesting test cases. Theses cases can than be used as a starting point for large scale simulation using computing clusters.
 
-\begin{enumerate}
-\item Prior research:
-\item Two general approaches full 3d body simulation vs boundary integral formulation
-\item Brief Examples/discussion for both
-\item Parallel CPU/GPU research available for 3D Bodies?
-\item Based on serial fortran implementation
-\item OpenMPI version only interesting for computing clusters not desktop computers
-\item Suffers from having to collect matrix to single node
-\end{enumerate}
+The most costly part of the numerical algorithm is to account for the interactions between all fibers in the system. Here we limit ourselves to the naive algorithm for simulating the fibers, were the interactions between every pair is computed. The development of such a naive algorithm is not only easier and more cost effective but the potentially large overhead introduced by a complex fast summation method, like the fast multipole method, might not result in desired performance increase. Additionally, because we are limited to a single precision simulation by our choice of consumer-grade GPU hardware, maintaining the accuracy of the simulation is a major concern. However, exploring theses questions is an interesting future research direction.
 
-
-This thesis into three major parts. First we introduce the theoretical foundation of the numerical method in chapter~\ref{cha:theoretical_foundation} and refer to the original paper by Tornberg and Gustavsson for in-depth details. We conclude the description of the previous work by discussing the numerical algorithm and the serial implementation on the CPU in chapter~\ref{cha:serial_implementation}. In the following chapter~\ref{cha:gpu_programming} we briefly introduce the topic of general purpose computing on GPUs. Based on this we than describe our new parallel GPU implementation of the rigid fibers simulation in detail in chapter~\ref{cha:parallel_implementation}. The last part of this thesis presents the benchmarking result and achieved performance increase of the GPU implementation in chapter~\ref{cha:benchmarks}. Finally, we performed and compared our simulation results to a number of known experiments in chapter~\ref{cha:experiments}.
+This thesis is divided into three major parts. First we introduce the theoretical foundation of the numerical method in Chapter~\ref{cha:theoretical_foundation} and refer to the original paper by Tornberg and Gustavsson\cite{Tornberg2006} for in-depth details. We conclude the description of the previous work by discussing the numerical algorithm and the serial implementation on the CPU in Chapter~\ref{cha:serial_implementation}. In the following Chapter~\ref{cha:gpu_programming} we briefly introduce the topic of general purpose computing on GPUs. Based on this we than describe our new parallel GPU implementation of the rigid fibers simulation in detail in Chapter~\ref{cha:parallel_implementation}. The last part of this thesis presents the benchmarking result and achieved performance increase of the GPU implementation in Chapter~\ref{cha:benchmarks}. Finally, we performed and compared our simulation results to a few known experiments in Chapter~\ref{cha:experiments}.
 
 \chapter{Theoretical Foundation}
 \label{cha:theoretical_foundation}
-The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate as many fibers as possible to generate the various patterns found in real world experiments.
+The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate a large number of fibers in order to generate the various patterns found in real world experiments.
 
-In this chapter, we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the method is only presented in a reduced summary for more details please refer to \cite{}.
-
-We will begin by introducing the Stokes flow and its fundamental solutions as they apply to suspended fibers. Afterwards, we will focus on the implications this has and how the flow properties can be calculated for the special case of straight and rigid fibers.
+In this chapter, we will present the theoretical foundation of the physics the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the model is only presented in a reduced summary, and for more details please refer to Tornberg and Gustavsson\cite{Tornberg2006}.
 
 \section{Stokes flow}
+\label{sec:stokes_flow}
 
-The aim of the presented simulation is to model the behavior of objects immersed in a fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a viscous fluid due to gravity. The velocity of these rigid objects is only dependent on their orientation and the resulting drag. The interaction between multiple objects is only modeled through the surrounding fluid as collision are completely excluded from the model.
+We are interested in modeling the behavior of objects immersed in an incompressible fluid. We restrict ourselves to rigid bodies, which are slowly sedimenting in a fluid due to gravity. In the most general case, the flow can be modeled by the Navier-Stokes equations,
 
 \begin{equation}
   \label{eq:naviar_stokes_equations}
   \begin{aligned}
     \rho(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f} \\
-    \nabla \cdot \mathbf{u} &= 0
+    \nabla \cdot \mathbf{u} &= 0 \text{.}
   \end{aligned}
 \end{equation}
+where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$. The constant $\mu$ is the viscosity of the fluid. Solving these equations is quite challenging due to their time dependence and non-linearity. However, in this work we are only concerned with slowly moving objects and the Reynolds number $Re = \frac{\rho U L}{\mu} is assumed to be very small. Given the constraint that $Re \ll 1$, the inertial and acceleration terms in the Navier-Stokes equations~\eqref{eq:naviar_stokes_equations} can be neglected and we arrive at the Stokes equations,
 
-The Naviar-Stokes equations describe the motion of fluids and allow to model the flow around an object. Using and solving theses equations is however quite challenging due to their time dependence and non-linearity. Fortunately, we can make a number of simplification due to the restriction we placed on our model. Our model is characterized by three properties.
-
-\begin{enumerate}
-  \item{\textit{Newtonian fluid} — The viscosity $\mu$ of the fluid does not depend on the stress.}
-  \item{\textit{Incompressible flow} — The density of the fluid does not change.}
-  \item{\textit{Low Reynolds number $Re = \frac{\rho U L}{\mu} \ll 1$} — The fluid velocities are very slow and/or the viscosity is very large.}
-\end{enumerate}
-
-Given these constraints and especially the very low Reynolds number due to slowly sedimenting objects in a viscous fluid the Naviar-Stokes equations can be linearized to arrive at the Stokes Equations
 \begin{equation}
 \label{eq:stokes_equations}
 \begin{aligned}
     \nabla p - \mu \Delta \mathbf{u} &= \mathbf{f} \quad &\text{in} \quad \Omega \text{,}\\
-    \nabla \cdot \mathbf{u} &= 0 \quad &\text{in} \quad \Omega \text{,}
+    \nabla \cdot \mathbf{u} &= 0 \quad &\text{in} \quad \Omega \text{.}
 \end{aligned}
 \end{equation}
-where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$. The constant $\mu$ is the viscosity of the fluid.
 
-\section{Stokeslet}
-
-The Stokes Equations are linear in both the velocity and pressure, which allow them to be solved using a number of different methods for linear differential equations. Additionally, the equations are time independent and time dependence is only reintroduced due to the motion of the immersed objects and the boundary conditions. Thus given the boundary conditions the structure of the flow can be calculated.
-
-For our model we define two boundary conditions. First we force the fluid velocity at the boundary of the object to be equal to the velocity of the object itself. These no-slip conditions on the surface of the objects are defined as
+In addition to the equations we need two boundary conditions. The first boundary condition accounts for the influence on the fluid from the presence of the particle. Hence, we force the fluid velocity at the boundary of the object to be equal to the velocity of the object itself. These no-slip conditions on the surface of the objects are defined as
 \begin{equation}
   \label{eq:boundary_condition_surface}
   \mathbf{u} = \mathbf{u}_\Gamma  \quad \text{on} \quad  \Gamma \text{,}
 \end{equation}
 where $\Gamma$ denotes the union of all body surfaces and $\mathbf{u}_\Gamma$ the corresponding surface velocity, thus constraining the fluid to have zero velocity relative to the surface boundary.
 
-The second boundary condition models the fact that the fluid velocity far from the object is not affected by its presence. This is modeled by the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
+The second boundary condition models the fact that the fluid velocity far from the object is not affected by its presence. This is modeled by stating that the velocity field should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity
 \begin{equation}
   \label{eq:boundary_condition_background}
-  \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{,}
+  \mathbf{u} \rightarrow \mathbf{U}_0 \quad \text{as} \quad ||\mathbf{u}|| \rightarrow \infty \text{.}
 \end{equation}
-enforcing that the velocity field $\mathbf{u}$ should be equal to a background velocity $\mathbf{U}_0(\mathbf{x})$ at infinity. In our simulations this background velocity is always set to $0$.
-
-By taking advantage of the linearity of the Stokes equations and these boundary conditions so-called fundamental solution can be found. For this the force term in Stokes equation~\eqref{eq:stokes_equations} is replaced by a point force acting at the origin $\mathbf{x}_0$
-\begin{equation}
-  \label{eq:stokes_equations_point}
-  \begin{aligned}
-    \nabla p - \mu \Delta \mathbf{u} &= \mathbf{F} \cdot \delta(\mathbf{x} - \mathbf{y}) \text{,} \\
-    \nabla \cdot \mathbf{u}) &= 0\text{,}
-  \end{aligned}
-\end{equation}
-where $\delta(\mathbf{x}-\mathbf{y})$ is Dirac delta function. Solving these equations for the velocity field $\mathbf{u}(\mathbf{x})$ yields
-\begin{equation}
-  \label{eq:stokeslet}
-  \begin{aligned}
-    u_i(\mathbf{x}) &= \frac{1}{8\pi\mu}S_{ij}(\mathbf{x},\mathbf{y})F_j \\
-    S_{ij}F_j &= S_{i1}F_1 + S_{i2}F_2 + S_{i3}F_3 \quad \text{where,} \quad \\
-    S_{ij}(\mathbf{x} - \mathbf{y}) &= \frac{\delta_{ij}}{|\mathbf{x}-\mathbf{y}|} + \frac{}{|\mathbf{x}-\mathbf{y}|^3}\quad \text{,} \quad i,j=1,2,3\text{.}
-  \end{aligned}
-\end{equation}
-The term $S_{ij}$ is called the Stokeslet and is the fundamental solution for the Stokes equations. Figure~\ref{fig:stokeslet} illustrates an example of the force $\mathbf{F}$ at the source point $\mathbf{x}_0$ and resulting velocity $\mathbf{u}$ at the observation point $\mathbf{x}$.
-
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/stokeslet.pdf}
-  \caption{Singular point force embedded in stokes flow.}
-  \label{fig:stokeslet}
-\end{figure}
-
-Additionally, we will later need higher order fundamental solutions which can be obtained by simply differentiating the Stokeslet, e.g. the so-called doublet is defined as
-\begin{equation}
-  \label{eq:doublet}
-  \mathbf{D}(\mathbf{r}) = \frac{1}{2} \Delta\mathbf{S}(\mathbf{r}) = \frac{1}{8\pi\mu} \left(\frac{\mathbf{I}}{|r|^3} - \frac{3rr}{|r|^5}\right) \text{.}
-\end{equation}
+In our simulations this background velocity is always set to $0$. Even though the Stokes equations are time independent, a dependency on time will be reintroduced through the motion of the immersed particles via the no-slip boundary conditions~\eqref{eq:boundary_condition_surface}.
 
 \section{Boundary integral formulation}
+\label{sec:boundary_integral_formulation}
 
-Using the Stokeslet from equation~\eqref{eq:stokeslet} we can now model the influence of an immersed object on the Stokes flow. For a given point $y$ as well as the the force distribution $f$ on the surface of the object we can now calculate the resulting velocity at any point in the flow. The velocity $u$ at the observation point $x$ is then given by
+The Stokes equations are linear in both velocity and pressure, which allows them to be solved using a number of different methods for linear partial differential equations. The approach used in this thesis is the boundary integral method by Pozrikidis\cite{Pozrikidis1992}.
+
+\subsection{Fundamental solutions}
+\label{subsec:fundamental_solutions}
+
+We start from a boundary integral formulation of the Stokes equations, for which analytical solutions can be derived, the so-called fundamental solutions. One such solution is the Stokeslet. If $\mathbf{f}$ in equation~\eqref{eq:stokes_equations} is given by a point force acting at $\mathbf{y}$, i.e. $\mathbf{f} = \mathbf{F} \cdot \delta(\mathbf{x} - \mathbf{y})$, where $\delta(\mathbf{x} - \mathbf{y})$ is the Dirac delta function, the velocity field
+\begin{equation}
+  \label{eq:stokeslet_velocity_field}
+  u_i(\mathbf{x}) &= \frac{1}{8\pi\mu}S_{ij}(\mathbf{x},\mathbf{y})F_j \quad i,j=1,2,3 \text{,}
+\end{equation}
+where the tensor product
+\begin{equation}
+  \label{eq:stokeslet_tensor_product}
+  S_{ij}F_j &= S_{i1}F_1 + S_{i2}F_2 + S_{i3}F_3
+\end{equation}
+is a solution to the Stokes equations. The term $S_{ij}$ is the Stokeslet and is given by
+\begin{equation}
+  \label{eq:stokeslet_stokeslet}
+  S_{ij}(\mathbf{x} - \mathbf{y}) &= \frac{\delta_{ij}}{|\mathbf{x}-\mathbf{y}|} + \frac{(x_i - y_i)(x_j-y_j)}{|\mathbf{x}-\mathbf{y}|^3}\text{.}
+\end{equation}
+
+Later, we will need higher order fundamental solutions to the Stokes equations~\eqref{eq:stokes_equations}. These can be obtained by simply differentiating the Stokeslet. One example is the so-called doublet
+\begin{equation}
+  \label{eq:doublet}
+  D_{ij}(\mathbf{x} - \mathbf{y}) = \frac{1}{2} \DeltaS_{ij}(\mathbf{x} - \mathbf{y}) = \frac{1}{8\pi\mu} \left\(\frac{\mathbf{I}}{|\mathbf{x} - \mathbf{y}|^3} - \frac{3((x_i - y_i)(x_j-y_j))^2}{|\mathbf{x} - \mathbf{y}|^5}\right\) \text{.}
+\end{equation}
+
+\subsection{Formulation for objects immersed in a fluid}
+\label{subsec:formulation_objects_in_fluid}
+
+Using the Stokeslet from equation~\eqref{eq:stokeslet} we can now model the influence of immersed objects on the Stokes flow. For a given point $y$ as well as the the force distribution $f$ on the surface of the object we can now calculate the resulting velocity at any point in the flow. The velocity $u$ at the observation point $x$ is then given by
 \begin{equation}
   \label{eq:boundary_integral_formulation}
   u_i(\mathbf{x}) = \frac{1}{8\pi\mu}\int_{\Omega}S_{ij}(\mathbf{x},\mathbf{y})f_j(\mathbf{y}) \, dS \text{,} \quad i=1,2,3\text{,}
@@ -329,10 +308,9 @@ we obtain the final boundary integral formulation. Until now we only looked at t
 Reformulating the problem in form of a boundary integral reduced the original 3-dimensional partial differential equation to the 2-dimensional equation over the surface of the body. However for this many-body problem this is still expensive to solve. The next step to reduce the dimensionality of the model simplifies the rigid bodies to slender fibers.
 
 \section{Slender fibers}
+\label{sec:slender_fibers}
 
-The goal of the simulation is to simulate many very slender fibers. For slender fibers the 2D-dimensional boundary integral formulation would be very expensive to solve numerically. We thus simplify the formulation of arbitrary rigid fibers by replacing them with ellipsoids, or more precisely in our case prolate spheroids. They are defined by two parameters, $2*L$ corresponds to the length of the major axis and $a$ to the length of the minor axis or simply the fiber radius.
-
-Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as the slenderness parameter. As illustrated in Figure~\ref{fig:slenderness}, when $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitesimal slender fiber.
+Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon = a / 2 L$ denote a slenderness parameter. If $\epsilon \ll 1$ the body is referred to as a slender body (slender fiber) as illustrated in Figure~\ref{fig:slenderness}.
 
 \begin{figure}[!htbp]
   \centering
@@ -356,9 +334,89 @@ Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as 
     \includegraphics[width=\textwidth]{img/slender/1_100.png}
     \caption{$\epsilon=1/100$}\label{fig:slenderness_1_100}
   \end{subfigure}
-  \caption{Illustration slenderness parameters.}
+  \caption{Illustration of the slenderness parameters, when $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitesimal slender fiber.}
   \label{fig:slenderness}
 \end{figure}
+
+The goal is to simulate many fibers and the 2D boundary integral formulation would be very expensive to solve numerically. As the aspect ratio, $1/\epsilon$, of the fiber increases, the requirement of the number of quadrature points increases in order to accurately resolve the flow field around the fibers as shown in Figure~\ref{fig:slenderness}.
+
+However, for slender bodies a slender body approximation can be used. The slender body approximation is derived from the integral formulation of the Stokes equations~\ref{eq:stokes_equations}. Using asymptotic analysis the governing 2D equations are reduced to 1D equations along the centerline of the fiber by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$
+
+The reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
+
+The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations~\eqref{eq:stokes_equations}, the Stokeslet~\eqref{eq:stokeslet_stokeslet} and the doublet~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using a boundary integral method from Pozrikidis\cite{Pozrikidis1992}. Details of the model are given by Tornberg and Gustavsson\cite{Tornberg2006}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/slender.pdf}
+  \caption{Slender fiber approximation.}
+  \label{fig:slender_fiber}
+\end{figure}
+
+Assume that we have $M$ fibers immersed in the fluid. As shown in Figure~\ref{fig:slender_fiber} each fiber is now defined by its centerline and parameterized by the arc-length, $s \in [-L,L]$. For fiber $m$ the coordinates of the center is given by $\POS_m(s,t) = \POS_m(t) + s\ORIENT_m(t)$, where $\POS_m$ is the center point and $\ORIENT_m$ the unit tangent vector of the fiber and $m=1,2,\dots,M$.
+
+If the fluid exerts a force per unit length $\mathbf{f}_m$ on fiber $m$, the slender body approximation for the velocity of the centerline of fiber $m$ is given by
+\begin{equation}
+  \label{eq:velocity_centerline}
+  \begin{aligned}
+	d(\dot{\POS}_m + s \dot{\ORIENT}_m) &= \left\[ d(\mathbf{I} + \ORIENT_m\ORIENT_m^\top) + 2(\mathbf{I} - \ORIENT_m\ORIENT_m^\top\right\]\mathbf{f}_m(s) \\
+	&+ (\mathbf{I} + \ORIENT_m\ORIENT_m^\top)\bar{\mathbf{K}}[\mathbf{f}_m](s) + \mathbf{V}_m(s) \text{.}
+  \end{aligned}
+\end{equation}
+Here $d$ is a geometry parameter
+\begin{equation}
+	\label{eq:geometry_parameter}
+	d = -\ln{\epsilon^2e} \text{,}
+\end{equation}
+and $\bar{\mathbf{K}}[\mathbf{f}_m](s)$ is an integral operator given by
+\begin{equation}
+	\label{eq:integral_operator}
+	\bar{\mathbf{K}}[\mathbf{f}_m](s) = \int_{-1}^{1} \frac{\mathbf{f}(s') - \mathbf{f}(s)}{|s' - s|} \, ds' \text{.}
+\end{equation}
+
+The contribution to the velocity of fiber $m$ from the other fibers in the system is accounted for in $\mathbf{V}_m(s)$ as
+\begin{equation}
+	\label{eq:velocity_contribution}
+	\mathbf{V}_m(s) = \sum_{l=1}^M \int_{-1}^{1} \mathbf{G}(\mathbf{R}_{lm}(s,s'))\mathbf{f}_l(s') \, ds' \text{,}
+\end{equation}
+where $\mathbf{R}_{lm}(s,s') = \POS_m + s\ORIENT_m - (\POS_l + s'\ORIENT_m)$ is the distance between one point on fiber $m$ and one point on fiber $l$ as illustrated in Figure~\ref{fig:fiber_contribution}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.3819660112501450000000\textwidth]{img/fiber_contribution.pdf}
+  \caption{Two fibers with five quadrature points each. The interaction between two fibers is given by the term $\mathbf{V}_m$} and depends solely on the distance between the two. The integral in equation~\eqref{eq:velocity_contribution} can not be evaluated analytically and will be approximated by a quadrature rule.
+  \label{fig:fiber_contribution}
+\end{figure}
+
+The Green's function in this case is a linear combination of two fundamental solutions and reads
+\begin{equation}
+	\label{eq:green_function}
+	\mathbf{G}(\mathbf{R} = \left\{
+		\begin{array}{lr}
+			\mathbf{S}(\mathbf{R}) + \frac{r^2}{2}\mathbf{D}(\mathbf{R}) & \text{if} l \neq m \\
+			0 & \text{if} l = m
+		\end{array}
+	\right,
+\end{equation}
+with $\mathbf{R}$ and $\mathbf{D}$ as defined in equations~\eqref{eq:doublet} and~\eqref{eq:velocity_contribution}.
+
+The equations are stated in non-dimensional form using the half-length of the fiber as a characteristic length, $L_c = L$. This will give use a characteristic velocity and time as
+\begin{equation}
+	U_C = \frac{d \Delta \rho g V}{4\pi\mu_fL} \text{,} \quad T_C = \frac{2\pi\mu_fL^2}{d \Delta \rho g V} \text{.}
+\end{equation}
+
+The unknowns in equations~\eqref{} are the translational and rotational velocities, $\dot{\POS}_m$ and $\dot{\ORIENT}_m$ and the force distribution along the fiber $\mathbf{f}_m(s)$. To close the formulation of equation~\eqref{}, we se the additional conditions stating that the integrated force and torque on each fiber must balance the external forces and torques applied to the fibers,
+\begin{equation}
+	\mathbf{F} = \int_{-1}^{1} \mathbf{f}_m(s) \, ds \text{,} \quad \mathbf{M} = \int_{-1}^{1} s(\ORIENT_m \times \mathbf{f}_m(s)) \, ds \text{.}
+\end{equation}
+
+The external torque is set to zero in this work.
+
+
+
+The goal of the simulation is to simulate many very slender fibers. For slender fibers the 2D-dimensional boundary integral formulation would be very expensive to solve numerically. We thus simplify the formulation of arbitrary rigid fibers by replacing them with ellipsoids, or more precisely in our case prolate spheroids. They are defined by two parameters, $2*L$ corresponds to the length of the major axis and $a$ to the length of the minor axis or simply the fiber radius.
+
+Additionally, we define the ratio $\epsilon = a / 2 L \ll 1$ and refer to it as the slenderness parameter. As illustrated in Figure~\ref{fig:slenderness}, when $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitesimal slender fiber.
 
 Without this approximation the fundamental solution have been evaluated on the surface of the rigid body. However, as \cite{} showed the fluid velocity $\mathbf{U}(\mathbf{x})$ at any point $x$ outside the fiber can be also be computed up to an accuracy of $O(\epsilon)$ by placing the fundamental solution on a 1-dimensional fiber centerline. The formulation remains closed for no-slip boundary condition and no angular variation in the fiber velocity.
 
@@ -368,13 +426,6 @@ Thus as shown in Figure~\ref{fig:slender_fiber} each fiber is only defined by it
   x_m(s,t) = x_m(t) + s * t_m(t) \quad \text{with} \quad s \in [-1, 1] \text{,}
 \end{equation}
 where $x_m$ is the center coordinate and $t_m$ the unit tangent vector representing the orientation.
-
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/slender.pdf}
-  \caption{Slender fiber approximation.}
-  \label{fig:slender_fiber}
-\end{figure}
 
 By approximating the slender bodies using slender fibers we can reduce the dimensionality of the boundary formulation from 2D to a 1D integral equation. This allows for a much cheaper numerical simulation. The next step is to combine the equations~\eqref{eq:boundary_integral_formulation_specific} and ~\eqref{eq:force_torque} with non-dimensionalized rigid fiber model in equation~\eqref{eq:rigid_fiber_model} to arrive at the final mathematical model of the rigid fiber simulation.
 
@@ -399,12 +450,6 @@ By discretizing the integral with a quadrature rule we can calculate the equatio
   \mathbf{R}(s, s') = \mathbf{x}_m + s \mathbf{t}_m - (\mathbf{x}_l + s'\mathbf{t}_l) \text{,}
 \end{equation}
 simply compute the difference vector between the two points on the fiber. Figure~\ref{fig:fiber_contribution} illustrates the case of only two fibers with $5$ quadrature points each.
-\begin{figure}[!htbp]
-  \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/fiber_contribution.pdf}
-  \caption{Contribution between fibers.}
-  \label{fig:fiber_contribution}
-\end{figure}
 
 Right now we have the we have only one equation but three unknowns. The translational velocity $\mathbf{\dot{x}}_m$, the rotational velocity $\mathbf{\dot{t}}_m$ and the force $\mathbf{f}_m$ acting on the fibers. To close the system we again constrain the force and the torque for each fiber as
 \begin{equation}
@@ -458,7 +503,7 @@ In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix encapsulating 
 For each $\bar{A}_{ml}$ we need to compute the $3\times3$ matrix $\Theta_{lm}^{kn}$ from equation~\eqref{}
 \begin{equation}
   \label{eq:inner_integral}
-  \Theta_{lm}^{kn} = \int_{-1}^{1} \left[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right]P_n(s) \, ds \text{,}
+  \Theta_{lm}^{kn} = \int_{-1}^{1} \left\[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right\]P_n(s) \, ds \text{,}
 \end{equation}
 for each force index $k,n = 1,2,\dots,N$ which integrate the Legendre polynomials along each fiber. $G$ and $R$ are defined as in equation~\eqref{eq:G}~and~\eqref{eq:fiber_distance}, respectively. Both the inner and the outer integral have to be evaluated for each fiber pair. This can be achieved by using a standard gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
 
@@ -499,7 +544,7 @@ The original paper implemented this algorithm using Fortran. The computation wer
   \item Update Fibers
 \end{enumerate}
 
-Empirical results show that the majority of the required computation time is spent on the 1.~\emph{Assemble System} and 3.~\emph{Update Velocities} steps. The time required for advancing the simulation state in step 4.~\emph{Update Fibers} is completely negligible. We will see later in chapter~\ref{cha:benchmarks} that the same holds true for the new parallel implementation.
+Empirical results show that the majority of the required computation time is spent on the 1.~\emph{Assemble System} and 3.~\emph{Update Velocities} steps. The time required for advancing the simulation state in step 4.~\emph{Update Fibers} is completely negligible. We will see later in Chapter~\ref{cha:benchmarks} that the same holds true for the new parallel implementation.
 
 Since we won't be writing our own implementation of linear solvers on the GPU we have only limited influence on the performance of the 2.~\emph{Solve System} step. We instead treat it as a black box and rely on the efficiency of pre-existing libraries. The only control we have is the choice which library and solver to use. For direct solvers the computation time only depends on the number of unknowns and is approximately constant throughout the simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
 
@@ -513,7 +558,7 @@ In the previous chapter the numerical algorithm and its serial implementation wa
 To further increase the efficiency modern GPUs offer a massively parallel architecture to accelerate many different applications. We will begin with a short introduction to general purpose computing on GPUs. Afterwards, different Application Programming Interfaces (API) for programming on GPUs are discussed regarding their advantages and disadvantages. The chosen API, CUDA, will be presented with its programming model at the end of this chapter.
 
 \section{General Purpose Computing on GPUs}
-In the beginning Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. A good overview of the evolution of GPU computing can be found in Owens et al. \cite{Owens2008}. 
+In the beginning Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. A good overview of the evolution of GPU computing can be found in Owens et al. \cite{Owens2008}.
 
 The deciding factor for the performance is how well the application can be parallelized to take advantage of the massively parallel architectures of GPUs. This has lead to potentially large performance advantages of GPUs over CPUs as illustrated in Figure~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (FLOP/s). The FLOP/s number is calculated by combining information of the number of compute cores, core frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to visualize the potential GPUs have.
 
@@ -698,7 +743,7 @@ Finally, as the resources of each Streaming Multiprocessor are limited, there is
 
 In addition to the Thread hierarchy CUDA also implements a 3 layer memory hierarchy as illustrated in Figure~\ref{fig:memory_hierarchy}. Each level of this hierarchy differs in size, latency and scope. The fastest and smallest memory is private memory. Each thread has its own area of private memory and only it can read and write this area. How much space each thread has is determined by how many threads are executed on each SM. The more memory an individual thread requires the fewer threads can run in parallel on a SM. Optimizing this trade-off is important for achieving a good performance. On the newest GPUs each SM has $65536 * 32\text{-bit} = 256\text{KB}$ to divide among the threads.
 
-The second level is called shared memory, or sometimes confusingly local memory. Although it is slower than private memory, it has the advantage that all threads executing on an SM have simultaneous access to it. This allows different threads to cooperate and share work. 
+The second level is called shared memory, or sometimes confusingly local memory. Although it is slower than private memory, it has the advantage that all threads executing on an SM have simultaneous access to it. This allows different threads to cooperate and share work.
 
 Depending on the characteristics of the algorithm, this can save a lot of computing time. Therefore it is important to analyze whether shared memory can actually improve the performance. The size of this memory level on current GPUs is around $64\text{KB}$ to $96\text{KB}$.
 
@@ -826,9 +871,9 @@ __global__ void AssembleSystem1D(
   \label{lst:pseudo_assemble_system}
 \end{listing}
 
-The \emph{Assemble System} kernel is the most important step of the algorithm, as it is the most time consuming step. This was already discussed in section~\ref{sec:algorithm_summary} and we will also be shown during benchmarking in chapter~\ref{cha:benchmarks}. The goal of this step is to build the matrix and vector in memory for the linear system of equations. As an example Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the \emph{Assemble System} step. This means the code is parallelized for each fiber and each thread calculates the contributions to this fiber from all other fibers. Looking at the matrix in equation~\eqref{eq:matrix_structure} each thread is thus responsible for $3*N$ rows of the matrix, where $N$ is the total number of terms in the force expansion. Alongside the one-dimensional implementation other options exist. They will be discussed in the optimization section~\ref{sec:parallel_optimizations}.
+The \emph{Assemble System} kernel is the most important step of the algorithm, as it is the most time consuming step. This was already discussed in section~\ref{sec:algorithm_summary} and we will also be shown during benchmarking in Chapter~\ref{cha:benchmarks}. The goal of this step is to build the matrix and vector in memory for the linear system of equations. As an example Listing~\ref{lst:pseudo_assemble_system} shows the pseudocode for the one-dimensional implementation of the \emph{Assemble System} step. This means the code is parallelized for each fiber and each thread calculates the contributions to this fiber from all other fibers. Looking at the matrix in equation~\eqref{eq:matrix_structure} each thread is thus responsible for $3*N$ rows of the matrix, where $N$ is the total number of terms in the force expansion. Alongside the one-dimensional implementation other options exist. They will be discussed in the optimization section~\ref{sec:parallel_optimizations}.
 
-The kernel requires two inputs, the current position of each fiber and its orientation. Using these combined with the equations outlined in chapter~\ref{cha:theoretical_foundation} and chapter~\ref{cha:serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
+The kernel requires two inputs, the current position of each fiber and its orientation. Using these combined with the equations outlined in Chapter~\ref{cha:theoretical_foundation} and Chapter~\ref{cha:serial_implementation} the matrix and vector elements are computed and used in the next step to solve the linear system they define.
 
 \paragraph{Solve System}
 As this thesis does not aim to implement generic linear solvers, this step is treated as a black box. During the previous \emph{Assemble System} kernel two arrays containing the matrix and right hand side of the linear system have been computed. These two arrays are now passed to the respective function of the library containing the linear solver. This is the MAGMA library in case of the direct solver and the ViennaCL library in case of the two tested iterative solvers BiCGStab and GMRES. Both libraries are able to directly use the already allocated memory regions and no additional allocations have to be performed. In order to conserve memory space the resulting solution vector is stored in the same memory location as the $b$-vector and is passed on to the subsequent steps.
@@ -888,7 +933,7 @@ __global__ void UpdateVelocities2D(...)
   \label{lst:pseudo_update_velocities}
 \end{listing}
 
-After solving the linear system the solution coefficients are used to update the velocities of the fibers. The \emph{Update Velocities} kernel accumulates the exerted forces for all fibers and updates both the translational and the rotational velocities simultaneously. In this particular instance the 2D thread block version of the kernel is illustrated in Listing~\ref{lst:pseudo_update_velocities}. This means each individual kernel invocation is responsible for a single pair of fiber interactions. In case two different threads calculate the interactions for the same fiber, it might happen that they try to write their results to the same memory location. When this happens, it could to undefined behavior and incorrect results for the velocities. Fortunately CUDA provides a mechanism to circumvent this issue. 
+After solving the linear system the solution coefficients are used to update the velocities of the fibers. The \emph{Update Velocities} kernel accumulates the exerted forces for all fibers and updates both the translational and the rotational velocities simultaneously. In this particular instance the 2D thread block version of the kernel is illustrated in Listing~\ref{lst:pseudo_update_velocities}. This means each individual kernel invocation is responsible for a single pair of fiber interactions. In case two different threads calculate the interactions for the same fiber, it might happen that they try to write their results to the same memory location. When this happens, it could to undefined behavior and incorrect results for the velocities. Fortunately CUDA provides a mechanism to circumvent this issue.
 
 By using the so-called atomic functions CUDA streamlines and serializes the memory access. Thus the \emph{atomicAdd} function accumulates different velocity contributions to a fiber from all the other fibers. This ensures that each update to the memory location is handled in a serial manner, guaranteeing the correct value in memory. Of course this implies a potential performance degradation, however, newer GPUs with new CUDA versions have been very well optimized to only have a minimal impact. Benchmarking for the fibers simulation shows that using a 2D thread block and the associated performance increases far outweigh the potential performance hit of using atomics.
 
@@ -927,7 +972,7 @@ __global__ void UpdateFibers()
   \label{lst:pseudo_update_fibers}
 \end{listing}
 
-The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudocode in Listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:serial_update_fibers}. As it will be shown later during benchmarking in chapter~\ref{cha:benchmarks}, the required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
+The final simulation step takes care of advancing the position and orientation of the fibers in time. The pseudocode in Listing~\ref{lst:pseudo_update_fibers} implements the second-order multi-step method introduced in section~\ref{sec:serial_update_fibers}. As it will be shown later during benchmarking in Chapter~\ref{cha:benchmarks}, the required time for this kernel is minuscule compared to the other steps. The kernel only scales linearly and in addition has a perfectly aligned memory access resulting in close to optimal usage of the GPU hardware.
 
 \section{Optimizations}
 \label{sec:parallel_optimizations}
@@ -938,7 +983,7 @@ Additionally, more advanced optimization were made like rearranging calculations
 
 Throughout the optimization phase the benchmark suite was run after each step. This ensures that optimizations were only included if they had a measurable impact on the overall performance of the simulation. Moreover, with this approach potential performance regressions could be identified early and be avoided.
 
-Many optimizations performed during this process are applicable to both the CPU and GPU, since they showed performance improvements for both. However, some optimizations and algorithm variations are uniquely suited to the GPU hardware. For this thesis we will look into three different optimizations on the GPU in more detail. The performance results for each will then later be discussed in chapter~\ref{cha:benchmarks}.
+Many optimizations performed during this process are applicable to both the CPU and GPU, since they showed performance improvements for both. However, some optimizations and algorithm variations are uniquely suited to the GPU hardware. For this thesis we will look into three different optimizations on the GPU in more detail. The performance results for each will then later be discussed in Chapter~\ref{cha:benchmarks}.
 
 \subsection{Numeric vs. Analytic Integration}
 \label{subsec:numeric_analytic}
@@ -1166,7 +1211,7 @@ To confirm that Branch Divergence is the reason for the slowdown of the analytic
 \label{tab:branch_divergence}
 \end{table}
 
-On the one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. As already discussed in section~\ref{subsec:numeric_analytic} the analytical solution of the inner integral potentially suffers from numerical instabilities. Closer inspection of the source code reveals that the steps taken to minimize these instabilities are responsible for the Branch Divergence. The steps involve a simple \emph{if} statement, that switches between two code path depending on how far apart the two fibers are. Unfortunately, this workaround is unavoidable to ensure numeric stability and explains the decreased performance on the GPU. 
+On the one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. As already discussed in section~\ref{subsec:numeric_analytic} the analytical solution of the inner integral potentially suffers from numerical instabilities. Closer inspection of the source code reveals that the steps taken to minimize these instabilities are responsible for the Branch Divergence. The steps involve a simple \emph{if} statement, that switches between two code path depending on how far apart the two fibers are. Unfortunately, this workaround is unavoidable to ensure numeric stability and explains the decreased performance on the GPU.
 
 \subsection{Shared Memory}
 \label{subsec:bench_shared_memory}
@@ -1175,7 +1220,7 @@ The second optimization tried to use shared memory to reduce the amount of data 
 
 During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in section~\ref{subsec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
 
-The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the 2D thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation. 
+The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the 2D thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation.
 
 While waiting for this data from global memory, CUDA is able to quickly switch between different sets of threads and continue the computation there. Thus the only waiting time occurs when the very first set of data has to be loaded. After the first data has arrived computations can be performed on it. While these longer running computations are happening, other threads can already issue data loading requests. Once the first computation finishes and the next set of threads is executed the data has already been fetched. As there was no advantage in using shared memory in the compute bound \emph{Assemble System} step, we opted for the simpler implementation without it for all our simulations.
 
@@ -1297,7 +1342,7 @@ The same fact that the iterative solvers are faster than the direct solver holds
 
 \section{Individual Steps}
 
-The next benchmark explores the relative time taken by each step of the algorithm, which were described in section~\ref{sec:algorithm_summary}~and~\ref{sec:kernels}. This gives valuable insight into the time allocation of the overall run time. Thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Figure~\ref{fig:bench_openmp_steps} and for CUDA in Figure~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in equation~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead. This is done to use the fastest algorithm variation on both the CPU and GPU as we showed in section~\ref{subsec:bench_numeric_vs_analytic}.	
+The next benchmark explores the relative time taken by each step of the algorithm, which were described in section~\ref{sec:algorithm_summary}~and~\ref{sec:kernels}. This gives valuable insight into the time allocation of the overall run time. Thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Figure~\ref{fig:bench_openmp_steps} and for CUDA in Figure~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in equation~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead. This is done to use the fastest algorithm variation on both the CPU and GPU as we showed in section~\ref{subsec:bench_numeric_vs_analytic}.
 
 \begin{figure}[!htbp]
   \centering
@@ -1519,7 +1564,7 @@ As alluded to in the discussion about the performance of direct solvers versus i
   \label{fig:concentration_gmres}
 \end{figure}
 
-We can see that for an increasing average pair-wise distance, i.e. a lower fiber concentration, the number of iterations decreases. The average iteration count for the concentration (average distance of $0.4$) we used during our benchmarks in chapter~\ref{cha:benchmarks} lies between $3$ and $10$. However, as the average pair-wise distance decreases we observe an exponential increase in the number of iterations.
+We can see that for an increasing average pair-wise distance, i.e. a lower fiber concentration, the number of iterations decreases. The average iteration count for the concentration (average distance of $0.4$) we used during our benchmarks in Chapter~\ref{cha:benchmarks} lies between $3$ and $10$. However, as the average pair-wise distance decreases we observe an exponential increase in the number of iterations.
 
 To find the reason for this we have again have to look at the integral in equation~\eqref{eq:inner_integral} which has to be solved for each fiber pair during the \emph{Assemble System} step. The required Stokeslet computations in equation~\eqref{eq:stokeslet} include the distance between the fibers in the denominator. As the distance gets very small the value of the Stokeslet becomes large. These large terms can then cause the assembled matrix to become ill-conditioned and thus increase the number of iterations GMRES requires to settle on a solution.
 
@@ -1600,7 +1645,7 @@ The first parameter we explored was the concentration of the fibers. Concentrati
 
 \subsection{Number of fibers effect on break up time}
 
-The second parameter we looked at was the number of fibers. For this experiment only the number of fibers was changed. Every other parameter was fixed. For the concentration we chose the same value of $0.4$ as during our benchmarks in chapter~\ref{cha:benchmarks}. The resulting chart is shown in Figure~\ref{fig:number_breakup}. It shows a positive correlation for the number of fibers and the break up.
+The second parameter we looked at was the number of fibers. For this experiment only the number of fibers was changed. Every other parameter was fixed. For the concentration we chose the same value of $0.4$ as during our benchmarks in Chapter~\ref{cha:benchmarks}. The resulting chart is shown in Figure~\ref{fig:number_breakup}. It shows a positive correlation for the number of fibers and the break up.
 
 \begin{figure}[!htbp]
   \centering
