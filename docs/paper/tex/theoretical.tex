@@ -112,7 +112,7 @@ Additionally, given the force distribution $\mathbf{f}_m$ of each fiber we can c
 \section{Slender fibers}
 \label{sec:slender_fibers}
 
-The formulation developed in the previous section is now applied to the objects which are of interest. In our case these are slender rigid fibers. Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon = a / 2 L$ denote a slenderness parameter. If $\epsilon \ll 1$ the body is referred to as a slender body (slender fiber) as illustrated in Figure~\ref{fig:slenderness}.
+The formulation developed in the previous section is now specialized for a particular rigid suspension. In our case these are suspended slender fibers. Consider a straight, rigid body of length $2L$ and radius $a$, and let $\epsilon = a / 2 L$ denote a slenderness parameter. If $\epsilon \ll 1$ the body is referred to as a slender body (slender fiber) as illustrated in Figure~\ref{fig:slenderness}.
 
 \begin{figure}[!htbp]
   \centering
@@ -140,11 +140,11 @@ The formulation developed in the previous section is now applied to the objects 
   \label{fig:slenderness}
 \end{figure}
 
-The goal is to simulate many fibers and the 2D boundary integral formulation would be very expensive to solve numerically. As the aspect ratio, $1/\epsilon$, of the fiber increases, the requirement of the number of quadrature points increases in order to accurately resolve the flow field around the fibers as shown in Figure~\ref{fig:slenderness}. However, for slender bodies a slender body approximation can be used instead. 
+The goal is to simulate many slender fibers, but using the 2D boundary integral formulation would be very expensive to solve numerically. As the aspect ratio $1/\epsilon$ of the fiber increases, the requirement of the number of quadrature points also increases in order to accurately resolve the flow field around the fibers as shown in Figure~\ref{fig:slenderness}. However, for slender bodies a slender body approximation can be used instead. 
 
-The slender body approximation is derived from the boundary integral formulation of the Stokes equations~\ref{eq:objects_velocity_field}. Using asymptotic analysis the governing 2D equations are reduced to 1D equations along a centerline of the fiber by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity~\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$ This reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
+The slender body approximation is derived from the boundary integral formulation of the Stokes equations~\ref{eq:objects_velocity_field}. Using asymptotic analysis the governing 2D equations are reduced to 1D equations along a centerline of the fiber. This could be achieved by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity~\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$ This reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
 
-The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations, the Stokeslet~\eqref{eq:stokeslet_stokeslet} and the doublet~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using the boundary integral method from Pozrikidis~\cite{Pozrikidis1992}. Details of the model are given by Tornberg and Gustavsson~\cite{Tornberg2006}.
+The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations, the Stokeslet~\eqref{eq:stokeslet_stokeslet} and the Doublet~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using the boundary integral method from Pozrikidis~\cite{Pozrikidis1992}. Details of the model are given by Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 \begin{figure}[!htbp]
   \centering
@@ -153,9 +153,9 @@ The slender body approximation yields a coupled system of 1D integral equations 
   \label{fig:slender_fiber}
 \end{figure}
 
-Assume that we have $M$ fibers immersed in the fluid. As shown in Figure~\ref{fig:slender_fiber} each fiber is now defined by its centerline and parameterized by the arc-length, $s \in [-L,L]$. For fiber $m$ the coordinates of the center is given by $\POS_m(s,t) = \POS_m(t) + s\ORIENT_m(t)$, where $\POS_m$ is the center point and $\ORIENT_m$ the unit tangent vector of the fiber and $m=1,2,\dots,M$.
+Assume that we have $M$ fibers immersed in the fluid. As shown in Figure~\ref{fig:slender_fiber} each fiber is now defined by its centerline and parameterized by the arc-length, $s \in [-L,L]$. For fiber $m$ the coordinates of the centerline are given by $\POS_m(s,t) = \POS_m(t) + s\ORIENT_m(t)$, where $\POS_m$ is the center point and $\ORIENT_m$ the unit tangent vector of the fiber and $m=1,2,\dots,M$.
 
-If the fluid exerts a force per unit length $\mathbf{f}_m$ on fiber $m$, the slender body approximation for the velocity of the centerline of fiber $m$ is given by
+If the fluid exerts a force per unit length, $\mathbf{f}_m$ on fiber $m$, the slender body approximation for the velocity of the centerline of fiber $m$ is given by
 \begin{equation}
   \label{eq:velocity_centerline}
   \begin{aligned}
@@ -163,7 +163,6 @@ If the fluid exerts a force per unit length $\mathbf{f}_m$ on fiber $m$, the sle
     &+ (\mathbf{I} + \ORIENT_m\ORIENT_m^\top)\bar{\mathbf{K}}[\mathbf{f}_m](s) + \mathbf{V}_m(s) \text{.}
   \end{aligned}
 \end{equation}
-
 Here $d$ is a geometry parameter
 \begin{equation}
   \label{eq:geometry_parameter}
@@ -180,7 +179,7 @@ The contribution to the velocity of fiber $m$ from the other fibers in the syste
   \label{eq:velocity_contribution}
   \mathbf{V}_m(s) = \sum_{l=1}^M \int_{-1}^{1} \mathbf{G}(\mathbf{R}_{lm}(s,s'))\mathbf{f}_l(s') \, ds' \text{,}
 \end{equation}
-where $\mathbf{R}_{lm}(s,s') = \POS_m + s\ORIENT_m - (\POS_l + s'\ORIENT_m)$ is the distance between one point on fiber $m$ and one point on fiber $l$ as illustrated in Figure~\ref{fig:fiber_contribution}.
+where $\mathbf{R}_{lm}(s,s') = \POS_m + s\ORIENT_m - (\POS_l + s'\ORIENT_l)$ is the distance between one point on fiber $m$ and one point on fiber $l$ as illustrated in Figure~\ref{fig:fiber_contribution}.
 
 \begin{figure}[!htbp]
   \centering
@@ -204,10 +203,10 @@ The equations are stated in non-dimensional form using the half-length of the fi
   U_C = \frac{d \Delta \rho g V}{4\pi\mu_fL} \text{,} \quad T_C = \frac{2\pi\mu_fL^2}{d \Delta \rho g V} \text{.}
 \end{equation}
 
-The unknowns in equations~\eqref{eq:velocity_centerline} are the translational and rotational velocities, $\dot{\POS}_m$ and $\dot{\ORIENT}_m$ and the force distribution along the fiber $\mathbf{f}_m(s)$. To close the formulation of equation~\eqref{eq:velocity_centerline}, we se the additional conditions stating that the integrated force and torque on each fiber must balance the external forces and torques applied to the fibers,
+The unknowns in equations~\eqref{eq:velocity_centerline} are the translational and rotational velocities, $\dot{\POS}_m$ and $\dot{\ORIENT}_m$ and the force distribution along the fiber $\mathbf{f}_m(s)$. To close the formulation of equation~\eqref{eq:velocity_centerline}, we use the additional conditions stating that the integrated force and torque on each fiber must balance the external forces and torques applied to the fibers,
 \begin{equation}
 	\label{eq:slender_boundary_constraints}
   \mathbf{F}_m = \int_{-1}^{1} \mathbf{f}_m(s) \, ds = \mathbf{F}_g \text{,} \quad \mathbf{T}_m = \int_{-1}^{1} s(\ORIENT_m \times \mathbf{f}_m(s)) \, ds = 0 \text{.}
 \end{equation}
 
-In this work the external force is just gravity and the external torque is set to zero. Together with this the system is now closed and we can solve our rigid fiber simulation using equations~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints}.
+For our simulation the external force is just gravity and the external torque is set to zero. Together with this the system is now closed and we can solve our rigid fiber simulation using equations~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints}.
