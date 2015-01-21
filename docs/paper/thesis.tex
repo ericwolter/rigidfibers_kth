@@ -6,6 +6,8 @@
 
 \documentclass[a4paper,11pt]{kth-mag}
 % \DeclareMathSizes{10.95}{11}{9}{7}
+%\DisemulatePackage{setspace}
+%\usepackage[onehalfspacing]{setspace}
 
 % Math and code packages
 \usepackage{amsmath}   % all things math
@@ -48,8 +50,10 @@
 \usepackage{microtype}	  % advanced typesetting
 \DisableLigatures{family=tt*}
 \usepackage[main=english, swedish]{babel} % language-specific conventions
-\widowpenalty=300
-\clubpenalty=300
+
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty = 10000
 
 % Graphics
 \usepackage{graphicx} % all things graphics
@@ -119,9 +123,9 @@
 \newcommand{\ORIENT}{\mathbf{t}}
 \newcommand{\DIFFPOINT}{\mathbf{x} - \mathbf{y}}
 
-\usepackage{modifications}
+\linespread{1.241}
 
-\linespread{1.22}
+\usepackage{modifications}
 
 \title{GPU Simulation of Rigid Fibers}
 
@@ -188,8 +192,10 @@ Furthermore, we have performed a number of simulations of known experiments for 
 \input{tex/conclusion}
 
 \printbibliography
+\clearpage
 
 \appendix
 \addappheadtotoc
+\input{tex/appendix}
 
 \end{document}

@@ -6,7 +6,7 @@ In the previous chapter the numerical algorithm and its serial implementation wa
 To further increase the efficiency modern GPUs offer a massively parallel architecture to accelerate many different applications. We will begin with a short introduction to general purpose computing on GPUs. Afterwards, different Application Programming Interfaces (API) for programming on GPUs are discussed regarding their advantages and disadvantages. The chosen API, CUDA, will be presented with its programming model at the end of this chapter.
 
 \section{General Purpose Computing on GPUs}
-In the beginning Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. A good overview of the evolution of GPU computing can be found in Owens et al. \cite{Owens2008}.
+In the beginning Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be able to run arbitrary code instead of being limited to graphics related computations. This allows them to achieve impressive performance increases across a wide range of different general purpose applications. A good overview of the evolution of GPU computing can be found in Owens et al.~\cite{Owens2008}.
 
 The deciding factor for the performance is how well the application can be parallelized to take advantage of the massively parallel architectures of GPUs. This has lead to potentially large performance advantages of GPUs over CPUs as illustrated in Figure~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (FLOP/s). The FLOP/s number is calculated by combining information of the number of compute cores, core frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to visualize the potential GPUs have.
 
@@ -73,7 +73,7 @@ The deciding factor for the performance is how well the application can be paral
     \end{axis}
     \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
-  \caption[Year over year increase in theoretical floating-point operations per second for CPUs and GPUs.]{Year over year increase in theoretical floating-point operations per second for CPUs and GPUs\cite{CudaProgrammingGuide}.}
+  \caption[Year over year increase in theoretical floating-point operations per second for CPUs and GPUs.]{Year over year increase in theoretical floating-point operations per second for CPUs and GPUs~\cite{CudaProgrammingGuide}.}
   \label{fig:gpu_performance}
 \end{figure}
 
@@ -96,7 +96,7 @@ The CUDA platform allows developers to use a variety of different options to pro
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=.9\textwidth]{img/cuda_overview.png}
-  \caption[Overview of the CUDA platform.]{Overview of the CUDA platform\cite{CudaProgrammingGuide}.}
+  \caption[Overview of the CUDA platform.]{Overview of the CUDA platform~\cite{CudaProgrammingGuide}.}
   \label{fig:cuda_overview}
 \end{figure}
 
@@ -140,7 +140,7 @@ In order to efficiently distribute the different threads across the compute core
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/automatic_scaling.pdf}
-  \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors\cite{CudaProgrammingGuide}.}
+  \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors~\cite{CudaProgrammingGuide}.}
   \label{fig:automatic_scaling}
 \end{figure}
 
@@ -183,7 +183,7 @@ Finally, as the resources of each Streaming Multiprocessor are limited, there is
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{img/grid_blocks.pdf}
-  \caption[CUDA block addressing using 2D grid with 2D thread blocks.]{CUDA block addressing using 2D grid with 2D thread blocks.\cite{CudaProgrammingGuide}}
+  \caption[CUDA block addressing using 2D grid with 2D thread blocks.]{CUDA block addressing using 2D grid with 2D thread blocks~\cite{CudaProgrammingGuide}.}
   \label{fig:grid_blocks}
 \end{figure}
 
@@ -200,6 +200,6 @@ The final and largest memory area is called global memory. This is the amount of
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{img/memory_hierarchy.pdf}
-  \caption[CUDA memory hierarchy.]{CUDA memory hierarchy\cite{CudaProgrammingGuide}.}
+  \caption[CUDA memory hierarchy.]{CUDA memory hierarchy~\cite{CudaProgrammingGuide}.}
   \label{fig:memory_hierarchy}
 \end{figure}
