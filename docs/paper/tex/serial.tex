@@ -1,12 +1,12 @@
 \chapter{Numerical algorithm and serial implementation}
 \label{cha:serial_implementation}
 
-In the last chapter, we presented the theoretical foundation of the physics and mathematics involved in simulating rigid fibers. Based on the Stokes Equation, we introduced the framework to efficiently model the behavior of rigid fibers. Using this background we will now review the approach used for the numerical simulation.
+In the last chapter, we presented the theoretical foundation of the physics and mathematics involved in simulating rigid fibers. Based on the Stokes Equation, we introduced the framework of boundary integral methods to efficiently model the behavior of rigid fibers. Using this background we will now review the numerical approach used for the simulation.
 
-We will separate the algorithm into four steps and discuss each individually. Additionally, we will touch upon implementation details used in the original serial version. We close the chapter with a brief reflection of the performance characteristics of the serial implementation to guide the parallel implementation on the GPU.
+We will separate the overall algorithm into four steps and discuss each step individually. Additionally, we will touch upon implementation details used in the original serial version. We close the chapter with a brief reflection of the performance characteristics of the serial implementation to guide the parallel implementation on the GPU.
 
 \section{Assemble System}
-In the previous chapter we obtained the final closed system and the equations~\eqref{eq:slender_fibers_velocity}~and~\eqref{eq:force_torque_2}. By integrating equation~\eqref{eq:slender_fibers_velocity} from $-1$ to $1$ we can derive two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $1,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to the original paper by Tornberg and Gustavsson~\cite{Tornberg2006}.
+In the previous chapter we obtained the final closed system and the equations~\eqref{eq:velocity_centerline}~and~\eqref{eq:slender_boundary_constraints}. By integrating equation~\eqref{eq:velocity_centerline} from $-1$ to $1$ we can derive two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $m=1,2,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to the original paper by Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 In order to be able to solve these equations for $\mathbf{f}_m$ we have to discretize them. For this we expand the force as a sum of $N+1$ Legendre polynomials $P_n(s)$
 \begin{equation}
@@ -19,7 +19,7 @@ where the coefficients $a_{m}^{n}$ are vectors with three components. The number
 
 Using the force expansion from equation~\ref{eq:force_discretization} in equation~\ref{eq:slender_fibers_velocity} we get a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
 
-For a 3-dimensional simulation, this results in a linear system of size $3MN\times3MN$. The first step of the algorithm is thus to compute and assemble the linear system in memory. Writing the system in the standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure for the matrix $A$
+For a 3-dimensional simulation, this results in a linear system of size $3MN\times3MN$. The first step of the algorithm is thus to compute and assemble the linear system in memory. Writing the system in the standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure for the matrix $A$ and the right-hand side $b$
 \begin{equation}
   \label{eq:matrix_structure}
   \renewcommand\arraystretch{1.5}
@@ -29,6 +29,12 @@ For a 3-dimensional simulation, this results in a linear system of size $3MN\tim
     \bar{A}_{21} & \mathbf{I} & \cdots & \bar{A}_{2M} \\
     \vdots & \vdots & \ddots & \vdots \\
     \bar{A}_{M1} & \bar{A}_{M2} & \cdots & \mathbf{I}
+  \end{bmatrix} \text{,} \quad \mathbf{b} =
+  \begin{bmatrix}
+    \bar{b}_{1} \\
+    \bar{b}_{2} \\
+    \vdots \\
+    \bar{b}_{M} \\
   \end{bmatrix} \text{.}
 \end{equation}
 In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix encapsulating the contribution from the force coefficients on fiber $l$ onto the force coefficients for fiber $m$.
@@ -36,12 +42,12 @@ In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix encapsulating 
 \subsection{Inner integral}
 \label{subsec:inner_integral}
 
-For each $\bar{A}_{ml}$ we need to compute the $3\times3$ matrix $\Theta_{lm}^{kn}$ from equation~\eqref{}
+For each $\bar{A}_{ml}$, a $3\times3$ matrix, $\Theta_{lm}^{kn}$, where
 \begin{equation}
   \label{eq:inner_integral}
   \Theta_{lm}^{kn} = \int_{-1}^{1} \left[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right]P_n(s) \, ds \text{,}
 \end{equation}
-for each force index $k,n = 1,2,\dots,N$ which integrate the Legendre polynomials along each fiber. $G$ and $R$ are defined as in equation~\eqref{eq:G}~and~\eqref{eq:fiber_distance}, respectively. Both the inner and the outer integral have to be evaluated for each fiber pair. This can be achieved by using a standard gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
+has to be evaluated for each force index $k,n = 1,2,\dots,N$. $G$ and $R$ are defined as in equation~\eqref{eq:G}~and~\eqref{eq:fiber_distance}, respectively. This can be achieved by using a standard Gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
 
 Another option is to find an analytical solution for the inner integral and only solve the outer integral numerically. We will not discuss the detailed derivation of the analytical solution, for an in-depth discussion please see~\cite{Tornberg2006}. In theory this approach allows for perfect accuracy for the inner integral, however in practice this is limited by the numerical precision of the simulation. The obtained formulas are recursive and thus sensitive to round off errors. To minimize the accumulation of round off errors, the original serial implementation uses a trick and switches the direction of the recursion, depending on how far apart the fibers are. This improves the practical accuracy and did not have a negative effect on performance.
 
@@ -49,9 +55,9 @@ Choosing between both options requires a careful examination of the accuracy and
 
 \section{Solve System}
 
-After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step is solving it. This can be achieved using standard linear equation solvers. This step is treated as a black box by the simulation, simply plugging in the matrix $\mathbf{A}$ and the vector $\mathbf{b}$ and getting back the solution vector $\mathbf{\bar{a}}$ representing the force coefficients.
+After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers. This step is treated as a black box by the simulation, simply plugging in the matrix $\mathbf{A}$ and the vector $\mathbf{b}$ and getting back the solution vector $\mathbf{\bar{a}}$ representing the force coefficients.
 
-The linear system can either be solved using a direct solver or an iterative method like GMRES. Unfortunately the matrix is neither symmetric nor sparse so we can't take advantage of specialized solvers for these cases. As long as the fibers are sufficiently far apart and the matrix is not ill-conditioned, GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in section~\ref{sec:bench_linear_solvers}.
+The linear system can either be solved using a direct solver or an iterative method like GMRES. Unfortunately the matrix is neither symmetric nor sparse so we can't take advantage of specialized solvers for these cases~\cite{Tornberg2006}. As long as the fibers are sufficiently far apart and the matrix is not ill-conditioned, GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in section~\ref{sec:bench_linear_solvers}.
 
 \section{Update Velocities}
 
@@ -72,13 +78,13 @@ At the end of this step the state of the fibers can optionally be written to an 
 \section{Algorithm summary}
 \label{sec:algorithm_summary}
 
-The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are
-\begin{enumerate}
-  \item Assemble System
-  \item Solve System
-  \item Update Velocities
-  \item Update Fibers
-\end{enumerate}
+The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are at each timestep $t=t^n$ given the fiber configuration in terms of position, $x_m$, and orientation, $t_m$, 
+\begin{description}
+  \item[1. Assemble System] Computes all interactions between fibers and yields linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
+  \item[2. Solve System] 
+  \item[3. Update Velocities] Computes velocities $\mathbf{\dot{x}}$ and $\mathbf{\dot{t}}$
+  \item[4. Update Fibers] Yields new fiber configuration at $t=t^{n+1}$
+\end{description}
 
 Empirical results show that the majority of the required computation time is spent on the 1.~\emph{Assemble System} and 3.~\emph{Update Velocities} steps. The time required for advancing the simulation state in step 4.~\emph{Update Fibers} is completely negligible. We will see later in Chapter~\ref{cha:benchmarks} that the same holds true for the new parallel implementation.
 
