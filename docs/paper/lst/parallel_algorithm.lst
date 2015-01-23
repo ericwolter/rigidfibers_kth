@@ -1,0 +1,17 @@
+int main()
+{
+  // Parsing algorithm parameters and initial fiber positions
+  readParameters();
+  readFiberConfiguration();
+  allocateGPUMemory();
+  ...
+
+  for (int step = 0; step < max_timestep; step++)
+  {
+    AssembleSystem<<<numBlocks, threadsPerBlock>>>(...);
+    SolveSystem<<<numBlocks, threadsPerBlock>>>(...);
+    UpdateVelocities<<<numBlocks, threadsPerBlock>>>(...);
+    UpdateFibers<<<numBlocks, threadsPerBlock>>>(...);
+  }
+  ...
+}

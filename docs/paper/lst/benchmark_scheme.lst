@@ -1,0 +1,23 @@
+for(int N = 100; N <= 2000; N += 100)
+{
+  array timings;
+
+  int runs = 4;
+  while (runs <= MAX_RUNS)
+  {
+    for(int r = 0; r < runs; ++r)
+    {
+      generateRandomInitialFiberConfiguration();
+      run(10); // execute 10 timesteps
+      timings.add(getTiming());
+    }
+
+    rse = calculateRelativeStandardError();
+
+    if (rse <= 0.2) break;
+
+    iterations = timings.count();
+  }
+
+  reportTimings();
+}

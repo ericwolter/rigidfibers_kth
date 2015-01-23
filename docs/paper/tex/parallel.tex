@@ -14,7 +14,7 @@ The development was done exclusively on a Linux workstation running Ubuntu as th
 In order to facilitate easier usage of the application both during development and later real-world usage a Python wrapper script is also available. The script completely automates the building process and dynamically customizes the application code to support three different modes of operation. The first is a simple \emph{run} mode which takes the supplied parameters and executes the simulation. The second mode is \emph{validate}, which allows for a fully automated way to test and validate different algorithm variations against a known correct simulation run. The \emph{validate} mode automatically computes the error and makes debugging of changes easier. The last mode is \emph{benchmark} which executes a particular simulation multiple times and collects and aggregates the timings for each simulation step as well as the total time.
 
 \section{Linear Solvers}
-In addition to the CUDA platform, the application also requires support libraries for different linear solvers. During a simulation, a linear system of equations~\eqref{} has to be solved in each timestep. This can be one of the most time consuming parts of the algorithm. Hence, the overall simulation time relies heavily on the ability to solve large and dense systems as fast as possible. Therefore, it is very important to weight all the available options carefully when choosing a particular linear solver algorithm or library.
+In addition to the CUDA platform, the application also requires support libraries for different linear solvers. During a simulation, a linear system of equations~\eqref{eq:matrix_structure} has to be solved in each timestep. This can be one of the most time consuming parts of the algorithm. Hence, the overall simulation time relies heavily on the ability to solve large and dense systems as fast as possible. Therefore, it is very important to weight all the available options carefully when choosing a particular linear solver algorithm or library.
 
 In this work we have compared the performance of a direct solver to certain iterative solvers for solving the system. For the direct solver, the MAGMA library is used~\cite{MagmaDocumentation} and for the iterative we use the ViennaCL library~\cite{ViennaCLDocumentation}. Both libraries will be introduced below.
 
@@ -41,23 +41,23 @@ The overall parallel algorithm is very similar to the serial version, however, e
     fontsize=\footnotesize,
     frame=lines,
     framesep=2mm]{c}
-    int main()
-    {
-    // Parsing algorithm parameters and initial fiber positions
-    readParameters();
-    readFiberConfiguration();
-    allocateGPUMemory();
-    ...
-
-    for (int step = 0; step < max_timestep; step++)
-    {
-    AssembleSystem<<<numBlocks, threadsPerBlock>>>(...);
-    SolveSystem<<<numBlocks, threadsPerBlock>>>(...);
-    UpdateVelocities<<<numBlocks, threadsPerBlock>>>(...);
-    UpdateFibers<<<numBlocks, threadsPerBlock>>>(...);
-    }
-    ...
-    }
+int main()
+{
+	// Parsing algorithm parameters and initial fiber positions
+	readParameters();
+	readFiberConfiguration();
+	allocateGPUMemory();
+	...
+	
+	for (int step = 0; step < max_timestep; step++)
+	{
+		AssembleSystem<<<numBlocks, threadsPerBlock>>>(...);
+		SolveSystem<<<numBlocks, threadsPerBlock>>>(...);
+		UpdateVelocities<<<numBlocks, threadsPerBlock>>>(...);
+		UpdateFibers<<<numBlocks, threadsPerBlock>>>(...);
+	}
+	...
+}
   \end{minted}
   \caption{Pseudocode for parallel algorithm on the host.}
   \label{lst:pseudo_parallel_algorithm}
@@ -71,44 +71,12 @@ Each of the parallelized sub steps are now discussed in more detail. The purpose
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    __global__ void AssembleSystem1D(
-    in float *positions,
-    in float *orientations,
-    out float *a_matrix,
-    out float *b_vector)
-    {
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i >= NUMBER_OF_FIBERS) return;
-
-    for (int j = 0; j < NUMBER_OF_FIBERS ++j)
-    {
-    for (int force_index_j = 0;
-    force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
-    ++force_index_j)
-    {
-    computeInnerIntegral(...);
-
-    for (int force_index_i = 0;
-    force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
-    ++force_index_i)
-    {
-    // Only 1D thread block
-    // Each thread updates unique memory locations, thus
-    // no need for atomics
-    setMatrix(...)
-    setVector(...)
-    }
-    }
-    }
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/assemble_system.lst}
   \caption{Pseudocode for the assemble system step with a 1D thread block.}
   \label{lst:pseudo_assemble_system}
 \end{listing}
@@ -126,53 +94,12 @@ As this thesis does not aim to implement generic linear solvers, this step is tr
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    __global__ void UpdateVelocities2D(...)
-    {
-    const int i = blockIdx.x * blockDim.x + threadIdx.x;
-    const int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (i >= NUMBER_OF_FIBERS) return;
-    if (j >= NUMBER_OF_FIBERS) return;
-    if (i==j) return;
-
-    for (int quadrature_index_i = 0;
-    quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
-    ++quadrature_index_i)
-    {
-    for (int quadrature_index_j = 0;
-    quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
-    ++quadrature_index_j)
-    {
-    force = computeForce(coefficients, ...)
-    computeDeltaVelocities(force)
-    }
-    }
-
-    // 2D thread block
-    // Each thread responsible for an interaction pair, thus
-    // result is written to the same memory location
-    // Using atomics to avoid conflicts
-    atomicAdd(&(translational_velocities[i].x),
-    delta_translational_velocity.x);
-    atomicAdd(&(translational_velocities[i].y),
-    delta_translational_velocity.y);
-    atomicAdd(&(translational_velocities[i].z),
-    delta_translational_velocity.z);
-
-    atomicAdd(&(rotational_velocities[i].x),
-    delta_rotational_velocity.x);
-    atomicAdd(&(rotational_velocities[i].y),
-    delta_rotational_velocity.y);
-    atomicAdd(&(rotational_velocities[i].z),
-    delta_rotational_velocity.z);
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/update_velocities.lst}
   \caption{Pseudocode for the updating velocities simulation step.}
   \label{lst:pseudo_update_velocities}
 \end{listing}
@@ -183,33 +110,12 @@ By solving the linear system of equations we obtain the coefficients in the forc
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    __global__ void UpdateFibers()
-    {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (i >= NUMBER_OF_FIBERS) return;
-
-    next_positions[i] = 4/3 * current_positions[i]
-    - 1/3 * previous_positions[i]
-    + 2/3 * TIMESTEP
-    * (2 * current_translational_velocities[i]
-    - previous_translational_velocities[i]))
-
-    next_orientations[i] = 4/3 * current_orientations[i]
-    - 1/3 * previous_orientations[i]
-    + 2/3 * TIMESTEP
-    * (2 * current_rotational_velocities[i]
-    - current_rotational_velocities[i]))
-
-    normalize(next_orientations)
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/update_fibers.lst}
   \caption{Pseudocode for the updating fibers simulation step.}
   \label{lst:pseudo_update_fibers}
 \end{listing}

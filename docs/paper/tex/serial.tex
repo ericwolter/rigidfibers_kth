@@ -48,7 +48,7 @@ For each $\bar{A}_{ml}$, a $3\times3$ matrix, $\Theta_{lm}^{kn}$, where
   \label{eq:inner_integral}
   \Theta_{lm}^{kn} = \int_{-1}^{1} \left[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right]P_n(s) \, ds \text{,}
 \end{equation}
-has to be evaluated for each force index $k,n = 1,2,\dots,N$. $G$ and $R$ are defined as in equation~\eqref{eq:G}~and~\eqref{eq:fiber_distance}, respectively. This can be achieved by using a standard Gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
+has to be evaluated for each force index $k,n = 1,2,\dots,N$. $G$ and $R$ are defined as in equation~\eqref{eq:green_function}~and~\eqref{eq:fiber_distance}, respectively. This can be achieved by using a standard Gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
 
 Another option is to find an analytical solution for the inner integral and only solve the outer integral numerically. We will not discuss the detailed derivation of the analytical solution, for an in-depth discussion please see~\cite{Tornberg2006}. In theory this approach allows for perfect accuracy for the inner integral, however in practice this is limited by the numerical precision of the simulation. The obtained formulas are recursive and thus sensitive to round off errors. To minimize the accumulation of round off errors, the original serial implementation uses a trick and switches the direction of the recursion, depending on how far apart the fibers are. This improves the practical accuracy and did not have a negative effect on performance.
 
@@ -81,10 +81,13 @@ At the end of this step the state of the fibers can optionally be written to an 
 
 The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are at each timestep $t=t^n$ given the fiber configuration in terms of position, $x_m$, and orientation, $t_m$, 
 \begin{description}
-  \item[1. Assemble System] Computes all interactions between fibers and yields linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
+  \item[1. Assemble System] \hfill \\
+Computes all interactions between fibers and yields linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
   \item[2. Solve System] 
-  \item[3. Update Velocities] Computes velocities $\mathbf{\dot{x}}$ and $\mathbf{\dot{t}}$
-  \item[4. Update Fibers] Yields new fiber configuration at $t=t^{n+1}$
+  \item[3. Update Velocities] \hfill \\
+Computes velocities $\mathbf{\dot{x}}$ and $\mathbf{\dot{t}}$
+  \item[4. Update Fibers] \hfill \\
+Yields new fiber configuration at $t=t^{n+1}$
 \end{description}
 
 Empirical results show that the majority of the required computation time is spent on the 1.~\emph{Assemble System} and 3.~\emph{Update Velocities} steps. The time required for advancing the simulation state in step 4.~\emph{Update Fibers} is completely negligible. We will see later in Chapter~\ref{cha:benchmarks} that the same holds true for the new parallel implementation.

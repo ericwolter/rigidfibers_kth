@@ -104,27 +104,12 @@ The basic building blocks of the CUDA Programming Model from a development persp
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    // Kernel definition
-    __global__ void VecAdd(float *A, float *B, float *C)
-    {
-    int i = threadIdx.x;
-    C[i] = A[i] + B[i];
-    }
-
-    int main()
-    {
-    ...
-    // Kernel invocation with N threads
-    VecAdd<<<1,N>>>(A,B,C);
-    ...
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/cuda_vector_add.lst}
   \caption{Pseudocode for CUDA vector addition.}
   \label{lst:code_vector_addition}
 \end{listing}
@@ -150,30 +135,12 @@ In order to make programming easier, CUDA blocks can be addressed using either a
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    // Kernel definition
-    __global__ void MatAdd(float A[N][N], float B[N][N], float C[N][N])
-    {
-    int i = threadIdx.x;
-    int j = threadIdx.y;
-    C[i][j] = A[i][j] + B[i][j];
-    }
-
-    int main()
-    {
-    ...
-    // Kernel invocation with one block of N * N * 1 threads
-    int numBlocks = 1;
-    dim3 threadsPerBlock(N, N);
-    MatAdd<<<numBlocks, threadsPerBlock>>>(A,B,C);
-    ...
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/cuda_matrix_add.lst}
   \caption{Pseudocode for CUDA matrix addition, illustrating 2D thread blocks.}
   \label{lst:code_matrix_addition}
 \end{listing}

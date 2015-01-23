@@ -49,39 +49,12 @@ To further improve the statistical significance of the result the benchmark sche
 
 \begin{listing}[!htbp]
   \centering
-  \begin{minted}[mathescape,
+  \inputminted[mathescape,
     linenos,
     numbersep=5pt,
     fontsize=\footnotesize,
     frame=lines,
-    framesep=2mm]{c}
-    for(int N = 100; N <= 2000; N += 100)
-    {
-    array timings;
-
-    int runs = 4;
-    while (runs <= MAX_RUNS)
-    {
-    for(int r = 0; r < runs; ++r)
-    {
-    generateRandomInitialFiberConfiguration();
-    run(10); // execute 10 timesteps
-    timings.add(getTiming());
-    }
-
-    rse = calculateRelativeStandardError();
-
-    if (rse <= 0.2)
-    {
-    break;
-    }
-
-    iterations = timings.count();
-    }
-
-    reportTimings();
-    }
-  \end{minted}
+    framesep=2mm]{c}{lst/benchmark_scheme.lst}
   \caption{Pseudocode for benchmark scheme.}
   \label{lst:pseudo_benchmark}
 \end{listing}

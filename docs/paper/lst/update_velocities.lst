@@ -1,0 +1,40 @@
+__global__ void UpdateVelocities2D(...)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+  const int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (i >= NUMBER_OF_FIBERS) return;
+  if (j >= NUMBER_OF_FIBERS) return;
+  if (i==j) return;
+
+  for (int quadrature_index_i = 0;
+       quadrature_index_i < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
+       ++quadrature_index_i)
+  {
+    for (int quadrature_index_j = 0;
+         quadrature_index_j < TOTAL_NUMBER_OF_QUADRATURE_POINTS;
+         ++quadrature_index_j)
+    {
+      force = computeForce(coefficients, ...)
+      computeDeltaVelocities(force)
+    }
+  }
+
+  // 2D thread block
+  // Each thread responsible for an interaction pair, thus
+  // result is written to the same memory location
+  // Using atomics to avoid conflicts
+  atomicAdd(&(translational_velocities[i].x),
+              delta_translational_velocity.x);
+  atomicAdd(&(translational_velocities[i].y),
+              delta_translational_velocity.y);
+  atomicAdd(&(translational_velocities[i].z),
+              delta_translational_velocity.z);
+
+  atomicAdd(&(rotational_velocities[i].x),
+              delta_rotational_velocity.x);
+  atomicAdd(&(rotational_velocities[i].y),
+              delta_rotational_velocity.y);
+  atomicAdd(&(rotational_velocities[i].z),
+              delta_rotational_velocity.z);
+}
