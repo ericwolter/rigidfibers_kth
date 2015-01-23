@@ -26,7 +26,8 @@ def read_parameters(args):
             # we only have 2 timesteps from the reference run so we can't validate
             # more timesteps than that
             "NUMBER_OF_TIMESTEPS": 2 if args.validate else config.getint("RUN","NUMBER_OF_TIMESTEPS"),
-            "SAVE_INTERVAL": config.getint("RUN","SAVE_INTERVAL"),
+            "STATE_SAVE_INTERVAL": config.getint("RUN","STATE_SAVE_INTERVAL"),
+            "VELOCITY_SAVE_INTERVAL": config.getint("RUN","STATE_SAVE_INTERVAL"),
             "TIMESTEP": config.getfloat("SIMULATION","TIMESTEP"),
             "SLENDERNESS": config.getfloat("SIMULATION","SLENDERNESS"),
             "NUMBER_OF_TERMS_IN_FORCE_EXPANSION": config.getint("SIMULATION","NUMBER_OF_TERMS_IN_FORCE_EXPANSION"),
@@ -86,6 +87,9 @@ def write_parameters(args, parameters):
                 constants.write(u'#define ANALYTICAL\n')
             constants.write(u'\n')
 
+            constants.write(u'#define STATE_SAVE_INTERVAL ('+str(parameters['STATE_SAVE_INTERVAL'])+')\n')
+            constants.write(u'#define VELOCITY_SAVE_INTERVAL ('+str(parameters['VELOCITY_SAVE_INTERVAL'])+')\n')
+            constants.write(u'\n')
             constants.write(u'#define DIMENSIONS (3)\n')
             constants.write(u'#define NUMBER_OF_FIBERS ('+str(parameters['NUMBER_OF_FIBERS'])+')\n')
             constants.write(u'#define TIMESTEP ('+str(parameters['TIMESTEP'])+'f)\n')

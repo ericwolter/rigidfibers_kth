@@ -290,7 +290,14 @@ void Simulation::step(size_t current_timestep)
     TripleSwap(float4*, gpu_previous_positions_, gpu_current_positions_, gpu_next_positions_);
     TripleSwap(float4*, gpu_previous_orientations_, gpu_current_orientations_, gpu_next_orientations_);
 
-    //saveFibers(current_timestep);
+#if !defined(BENCHMARK) && !defined(VALIDATE)
+    if(STATE_SAVE_INTERVAL > 0 && current_timestep % STATE_SAVE_INTERVAL == 0) {
+      saveFibers(current_timestep);
+    }
+    if(VELOCITY_SAVE_INTERVAL > 0 && current_timestep % VELOCITY_SAVE_INTERVAL == 0) {
+      saveVelocities(current_timestep);
+    }
+#endif
 
 #ifdef VALIDATE
     dumpFibers(current_timestep);
@@ -536,6 +543,43 @@ void Simulation::saveFibers(size_t current_timestep)
   delete[] o;
 }
 
+void Simulation::saveVelocities(size_t current_timestep)
+{
+  float4 *t = new float4[NUMBER_OF_FIBERS];
+  float4 *r = new float4[NUMBER_OF_FIBERS];
+
+  checkCuda(cudaMemcpy(t, gpu_current_translational_velocities_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+  checkCuda(cudaMemcpy(r, gpu_current_rotational_velocities_, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyDeviceToHost));
+
+  std::string executablePath = Resources::getExecutablePath();
+
+  std::stringstream output_path;
+  output_path << executablePath << "/TcR_res_" << std::setfill('0') << std::setw(5) << (current_timestep+1) << ".out";
+
+  std::ofstream output_file;
+
+  output_file.open (output_path.str().c_str());
+
+  output_file << NUMBER_OF_FIBERS << std::endl;
+  output_file << std::fixed << std::setprecision(8);
+
+  for (size_t row_index = 0; row_index < NUMBER_OF_FIBERS; ++row_index)
+  {
+    float4 t_value = t[row_index];
+    float4 r_value = r[row_index];
+
+    output_file << t_value.x << " ";
+    output_file << t_value.y << " ";
+    output_file << t_value.z << std::endl;
+    output_file << r_value.x << " ";
+    output_file << r_value.y << " ";
+    output_file << r_value.z << std::endl;
+  }
+  output_file.close();
+
+  delete[] t;
+  delete[] r;
+}
 
 void Simulation::dumpFibers(size_t current_timestep)
 {

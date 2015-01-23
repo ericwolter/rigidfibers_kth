@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang=en>
+<head>
+    <meta charset=utf-8>
+    <title>Performance - RigidFibers</title>
+    <style>
+        * { 
+        }
+        body {
+            font-size: 10px;
+            font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        }
+    </style>
+    <script type="text/javascript" src="dygraph-combined.js"></script>
+</head>
+<body>
+<h1>Overall</h1>
+<div id="graphdiv_overall" style="width:1200px; height:750px;"></div>
+<h1>Only assembling matirx + rhs</h1>
+<div id="graphdiv_assemble" style="width:1200px; height:750px;"></div>
+<script type="text/javascript">
+  new Dygraph(
+    document.getElementById("graphdiv_overall"),"overall.csv",
+	{
+		legend: "always"
+	}
+  );
+  new Dygraph(
+    document.getElementById("graphdiv_assemble"),"assemble_system.txt",
+	{
+		legend: "always",
+		valueRange: [0,20]
+	}
+  );
+</script>
+</body>
+</html>
