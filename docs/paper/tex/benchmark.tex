@@ -1,17 +1,17 @@
 \chapter{Benchmarks}
 \label{cha:benchmarks}
 
-The last chapter introduced the parallel implementation of the numerical simulation. It contained a practical overview of the implementation of the algorithm using NVIDIA's CUDA framework. Additionally, possible optimizations to take advantage of the unique properties of the GPU architecture were outlined.
+The previous chapter introduced the parallel implementation of the numerical algorithm using NVIDIA's CUDA framework. It presented a practical overview of the GPU implementation and discussed various strategies for optimizing the algorithm.
 
-Using all the available implementations of the algorithm this chapter will showcase a multitude of different results and benchmarks performed. This is done to illustrate the achieved performance increases on the GPU over the original serial CPU implementation and the parallel OpenMP implementation.
+In this chapter we will present a number of benchmark tests. The main goal of the benchmarks is to measure the performance of the GPU implementation and compare it to the performance of the OpenMP-based CPU implementation. In addition to the comparison between the two different implementations, benchmark tests are also performed to investigate the different optimizations presented in the previous chapter.
 
 \section{Methodology}
 
-The methodology used for the benchmark suite is the same for all presented benchmarks. This ensures comparable results and fairest comparison possible. To give a brief overview of the hardware and benchmark scheme used, both are described in the next sections. This allows to better understand the conditions for the benchmarks and thereby put them in the right context.
+The methodology used for the benchmark suite is the same for all presented benchmarks. This ensures comparable results and the fairest comparison possible. A brief overview of the hardware and benchmark scheme used are described in the next sections.
 
 \subsection{Hardware}
 
-All benchmarks were run on the same workstation with specifications listed in Table~\ref{tab:workstation}. The components were chosen to provide a balanced system. This was done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
+All benchmarks are run on the same workstation with specifications listed in Table~\ref{tab:workstation}. These hardware components can be considered a balanced system. This is done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -35,13 +35,17 @@ The Intel Core i7 4770 processor is an 4-Core CPU based on Intel's Haswell Archi
 
 \subsection{Benchmark scheme}
 
-The main goal of the benchmark system was to generate statistical significant and reproducible performance numbers. To ensure this, all benchmarks for both the GPU and the CPU were run using the exact same scheme like the number of iterations and stop criteria. In order to obtain the timings, the built-in CUDA timing events were used for each individual kernel. For Fortran the \emph{SYSTEM\_CLOCK} function was used.
+In order to generate statistically significant and reproducible execution times, all benchmakrs tests for both the CPU and GPU implementation uses exactly the same run-scheme.
 
-For all different benchmarks timings were obtained for a different number of fibers starting from $100$ up to $2000$ in $100$ increments. For each separate number of fibers a number of iterations are run to obtain the average over multiple runs. For each iteration a completely new and random initial fiber configuration is generated with the current number of fibers. In order to exclude illegal configurations where fibers overlap and intersect an additional correction pass is done over the fibers to ensure a minimal and average distance between all fibers. For the configurations in this thesis the minimal distance was always set to $0.2$ and the average to $0.4$.
+For each benchmark run we start with a configuration of M fibers randomly distributed in space. In order to exclude configurations where fibers overlap and/or intersect, the random process is modified such that there always is a fixed minimum distance between two fibers. Furthermore, on order to ensure a fair comparison between e.g. different linear solvers, the average distance between fibers are kept fixed for all runs independently of the number of fibers. As will be shown in Section~, the number of iterations of the iterative solvers depend on the average distance between the fibers. As the average distance become smaller, the condition number of the matrix increases and more iterations are needed for the iterative solver to converge. Thus by keeping the average distance fixed, we minimize the influence of the number of iterations in the iterative solver on the comparison.
 
-Using this semi-random generation the rigid fiber simulation is run for exactly $10$ time steps. To avoid remaining outliers in the configuration potentially causing variations in the timings the first time step is excluded. The first time step is thus used as a simple warmup step for the simulation. So the final average time for each run is taken from the last $9$ time steps.
+Using the semi-random fiber configuration, the simulation is run for 10 time steps. To avoid remaining outliers in the configuration potentially causing variations in the timings the first time step is excluded. The first time step is thus used as a simple warmup step for the simulation. So, the final average time for each run is measured using the last $9$ time steps.
 
-In order to ensure a statistical significant result, the number of iterations is not fixed. Instead it is determined dynamically and based on the relative standard error of the already collected timings for the particular number of fibers. A minimum number of iterations is always executed first and their relative standard error of the total times is calculated. If the relative standard error of the dataset is larger than a specified threshold, the number of iterations is doubled and run again.
+To measure how the execution time depends on the number of fibers in the simulation, all tests are run with varying number of fibers starting from $100$ fibers up to $2000$ fibers using an increment of $100$.
+
+In addition, every run is repeated a number of times where each run uses a new random fiber configuration. The final execution time is computed as the average time over the runs The execution time is measured using the built-in CUDA timing events for the GPU implementation and the Fortran \emph{SYSTEM\_CLOCK} function is used for the CPU implementation.
+
+To further improve the statistical significance of the result the benchmark scheme dynamically adjusts the number of runs measured for each test. If the relative standard error (RSE) of timings collected is too high after a minimum number of runs, more runs are scheduled. This repeats until the relative standard error falls below $20\%$ and reliable timings have been obtained.  The algorithm for collecting the benchmark results is illustrated using pseudocode in Listing. 
 
 \begin{listing}[!htbp]
   \centering
@@ -55,10 +59,10 @@ In order to ensure a statistical significant result, the number of iterations is
     {
     array timings;
 
-    int iterations = 4;
-    while (iterations <= MAX_ITER)
+    int runs = 4;
+    while (runs <= MAX_RUNS)
     {
-    for(int i = 0; i < iterations; ++i)
+    for(int r = 0; r < runs; ++r)
     {
     generateRandomInitialFiberConfiguration();
     run(10); // execute 10 timesteps
@@ -81,8 +85,6 @@ In order to ensure a statistical significant result, the number of iterations is
   \caption{Pseudocode for benchmark scheme.}
   \label{lst:pseudo_benchmark}
 \end{listing}
-
-The benchmark suite uses a minimum of $4$ iterations to obtain the initial timings. In case the relative standard error (RSE) is not below a threshold of $20\%$ an additional set of timings is measured. For the new run the number of iterations equals the number of already obtained timings, which means that the total number of timings is doubled in each round. This process repeats until the threshold is not exceeded and more reliable benchmark timings have been obtained. This algorithm for collecting the benchmark results is illustrated using pseudocode in Listing~\ref{lst:pseudo_benchmark}.
 
 \section{Optimizations}
 
