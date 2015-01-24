@@ -71,7 +71,6 @@ The first benchmark tests the performance of the two different approaches to com
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=OpenMP Numeric vs. Analytic Integration,
       xlabel={number of fibers},
@@ -88,7 +87,6 @@ The first benchmark tests the performance of the two different approaches to com
 
       \legend{Numerical, Analytical}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark computing integrals using OpenMP.}
   \label{fig:openmp_num_vs_anal}
@@ -99,7 +97,6 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=CUDA Numeric vs Analytic Integration,
       xlabel={number of fibers},
@@ -116,7 +113,6 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
 
       \legend{Numerical, Analytical}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark computing integrals using CUDA.}
   \label{fig:cuda_num_vs_anal}
@@ -161,7 +157,6 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=CUDA Thread Block Dimension,
       xlabel={number of fibers},
@@ -179,7 +174,6 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
 
       \legend{1D, 2D, 3D}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of assemble system step for different thread block dimensions.}
   \label{fig:bench_cuda_thread_blocks}
@@ -214,7 +208,6 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=OpenMP Linear Solver,
       xlabel={number of fibers},
@@ -231,7 +224,6 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
 
       \legend{Direct Solver, GMRES}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different Fortran solvers.}
   \label{fig:bench_openmp_solvers}
@@ -244,7 +236,6 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=CUDA Linear Solver,
       xlabel={number of fibers},
@@ -262,7 +253,6 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
 
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of solve system step for different GPU linear solvers.}
   \label{fig:bench_cuda_solvers}
@@ -277,7 +267,6 @@ The next benchmark explores the relative time taken by each step of the algorith
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=OpenMP Individual Steps,
       xlabel={number of fibers},
@@ -294,7 +283,6 @@ The next benchmark explores the relative time taken by each step of the algorith
 
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark for individual steps with OpenMP.}
   \label{fig:bench_openmp_steps}
@@ -305,7 +293,6 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=CUDA Individual Steps,
       xlabel={number of fibers},
@@ -322,7 +309,6 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
 
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark for individual steps with CUDA.}
   \label{fig:bench_cuda_steps}
@@ -347,7 +333,6 @@ The results for average time required to take a single time step is illustrated 
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=Overall,
       xlabel={number of fibers},
@@ -367,7 +352,6 @@ The results for average time required to take a single time step is illustrated 
 
       \legend{CUDA GMRES, CUDA Direct, OpenMP GMRES, OpenMP Direct}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Benchmark of overall timestep for both OpenMP and CUDA.}
   \label{fig:overall}

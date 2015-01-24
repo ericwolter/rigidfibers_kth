@@ -45,7 +45,6 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=Sedimentation Velocity,
       xlabel={timestep},
@@ -61,7 +60,6 @@ Figure~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation 
 
       \legend{Single Precision, Double Precision}
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
   \label{fig:ring_sedimentation_velocity}
@@ -75,10 +73,9 @@ As alluded to in the discussion about the performance of direct solvers versus i
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
       title=Effect of fiber concentration on number of GMRES iterations,
-      xlabel={concentration},
+      xlabel={average distance},
       ylabel={GMRES iterations},
       width={0.8\textwidth},
       unbounded coords=discard,
@@ -92,7 +89,6 @@ As alluded to in the discussion about the performance of direct solvers versus i
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Average] {charts/concentration_gmres.csv};
 
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Effect of fiber concentration on GMRES iterations.}
   \label{fig:concentration_gmres}
@@ -135,17 +131,109 @@ The next example showcases a more chaotic system with a large number of interact
   \label{fig:sphere_simulation}
 \end{figure}
 
-This sphere of packed fibers is then allowed to sediment due to gravity. Beginning from the spherical shape the interacting fibers slowly begin to form a continuously turning torus. Even though the behavior is more chaotic due to the large number of fibers and the random initial setup, this turning torus resembles the result for the tumbling orbits in section~\ref{sec:example_ring}.
+This sphere of packed fibers is then allowed to sediment due to gravity. Beginning from the spherical shape the interacting fibers slowly begin to form a continuously turning torus. Even though the behavior is more chaotic due to the large number of fibers and the random initial setup, this turning torus resembles the result for the tumbling orbits in Section~\ref{sec:example_ring}.
 
 After some time the torus breaks and the fibers are split into multiple smaller clusters. Each cluster continues to sediment separately and slowly forms its own smaller torus again. However, due to tiny variations these toruses can be harder to see.
 
 The calculation of the presented example only takes $~7.7$ seconds with the GPU simulation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow new research of this interesting phenomenon. One interesting research question is for example determining what influences the stability of the torus.
 
+\subsection{Sphere Break Up}
 To begin investigating this question we first define the stability of the torus in terms of the break up time. How to determine the exact break up time of the torus is quite challenging. This problem and question was also examined by Park et al.~\cite{Park2010}. They define the break up as the moment when the torus starts to bend prior to actually breaking. Additionally, they describe an algorithm that determines which fibers are part of the torus. Consequently, they compute metrics such as the remaining fibers, the radius and velocity of the sedimenting torus. Unfortunately, they don't define a metric that determines the exact break up time. Thus we came up with our own measure of the break up time based on their work.
 
-We use the same definition for the torus as described by Park et al.~\cite{Park2010}. First we compute the initial radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are removed from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each direction and normalize it by the initial radius $R_0$.
+We use the same definition for the torus as described by Park et al.~\cite{Park2010}. First we compute the initial horizontal radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are removed from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each horizontal direction and the mean sedimentation velocity $V_z$. The torus metrics are illustrated for a sample run with $2000$ fibers and an average distance of $0.4$ in Figure~\ref{fig:torus}. The horizontal radii $R_x$ and $R_y$ of the torus and the percentage of fibers remaining in the torus are shown in Figure~\ref{fig:torus_radius} and Figure~\ref{fig:torus_fibers}.
 
-We observe that the standard deviation of the radius in the direction of gravity continuously decreases as time passes. The standard deviation then reaches its minimum a few moments before the break up can be identified visually. We can now define this minimum of the standard deviation of the radius as a metric for the break up time. We verified this metric manually against many simulations and it showed great agreement with the visual break up. Using this metric we are now able to investigate the effect of some simulation parameters on the stability and break up time of the torus.
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{.48\textwidth}
+	  \begin{tikzpicture}
+	    \begin{axis}[
+	      xlabel={timestep},
+	      ylabel={radius},
+	      width={\textwidth},
+	      unbounded coords=discard,
+	      xmin=0,xmax=500,
+	      grid=major,
+	      every axis label/.append style={font=\sffamily\footnotesize},
+	      ]
+	
+	      \addplot[color=set11, very thick] table[x=Timestep,y=RadiusX,col sep=comma] {charts/sphere_2000_0040.csv};
+	      \addplot[color=set12, very thick] table[x=Timestep,y=RadiusY,col sep=comma] {charts/sphere_2000_0040.csv};
+	
+	      \legend{$R_x$,$R_y$}
+	    \end{axis}
+	  \end{tikzpicture}
+    \caption{Torus radius.}\label{fig:torus_radius}
+  \end{subfigure}
+  \begin{subfigure}[h]{.48\textwidth}
+	  \begin{tikzpicture}
+	    \begin{axis}[
+	      xlabel={timestep},
+	      ylabel={fibers in torus},
+	      width={\textwidth},
+	      unbounded coords=discard,
+	      xmin=0,xmax=500,
+	      ymin=0.9,ymax=1.0,
+	      grid=major,
+	      legend pos=north east,
+	      every axis label/.append style={font=\sffamily\footnotesize},
+	      ]
+	
+	      \addplot[color=set11, very thick] table[x=Timestep,y=NormalizedN,col sep=comma] {charts/sphere_2000_0040.csv};
+	
+	      \legend{$M / M_0$}
+	
+	    \end{axis}
+	  \end{tikzpicture}
+    \caption{Remaining fibers}\label{fig:torus_fibers}
+  \end{subfigure}
+  \begin{subfigure}[h]{.48\textwidth}
+	  \begin{tikzpicture}
+	    \begin{axis}[
+	      xlabel={timestep},
+	      ylabel={radius},
+	      width={\textwidth},
+	      unbounded coords=discard,
+	      xmin=0,xmax=500,
+	      grid=major,
+	      every axis label/.append style={font=\sffamily\footnotesize},
+	      ]
+	
+	      \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Timestep,y=RadiusZStd,col sep=comma] {charts/sphere_2000_0040_highlight.csv}
+	node[pos=444, pin={[pin edge={color=set11, very thick}]min}]{};
+	      \addplot[color=set11, very thick] table[x=Timestep,y=RadiusZStd,col sep=comma] {charts/sphere_2000_0040.csv};
+	      \legend{$R_z^{std}$}
+	    \end{axis}
+	  \end{tikzpicture}
+    \caption{Torus $\text{Radius}_z$ Deviation.}\label{fig:torus_deviation}
+  \end{subfigure}
+  \begin{subfigure}[h]{.48\textwidth}
+	  \begin{tikzpicture}
+	    \begin{axis}[
+	      xlabel={timestep},
+	      ylabel={fibers in torus},
+	      width={\textwidth},
+	      unbounded coords=discard,
+	      xmin=0,xmax=500,
+	      grid=major,
+	      legend pos=north east,
+	      every axis label/.append style={font=\sffamily\footnotesize},
+	      ]
+	
+	      \addplot[color=set11, very thick] table[x=Timestep,y=VelocityZ,col sep=comma] {charts/sphere_2000_0040.csv};
+	
+	      \legend{$V_z$}
+	
+	    \end{axis}
+	  \end{tikzpicture}
+    \caption{Mean sedimentation velocity.}\label{fig:torus_velocity}
+  \end{subfigure}
+  \caption{Torus composition.}
+  \label{fig:torus}
+\end{figure}
+
+We observe that the standard deviation of the radius in the direction of gravity in Figure~\ref{fig:torus_deviation} continuously decreases as time passes. The standard deviation then reaches its minimum a few moments before the break up can be identified visually. We can now define this minimum of the standard deviation of the radius as a metric for the break up time. We verified this metric manually against many simulations and it showed great agreement with the visual break up. Using this metric we are now able to investigate the effect of some simulation parameters on the stability and break up time of the torus.
+
+We also looked at the fact that the standard deviation of the radius $R_z$ seems to oscillate in Figure~\ref{fig:torus_deviation}. This oscillation in the direction of gravity means that the torus is periodically expanding and shrinking until it breaks up. This effect can also be seen in the mean sedimentation velocity $V_z$ of the torus in Figure~\ref{fig:torus_velocity}. This periodical change in velocity is similar to the motion observed in the simple tumbling orbits experiment in Section~\ref{sec:example_ring}. This result strongly supports the idea that the turning torus with $2000$ fibers resembles a more chaotic version of the simplified tumbling orbits.
 
 \subsection{Fiber concentration effect on break up time}
 
@@ -154,24 +242,19 @@ The first parameter we explored was the concentration of the fibers. Concentrati
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Effect of fiber concentration on break up time,
-      xlabel={concentration},
+      xlabel={average distance},
       ylabel={break-up time step},
       width={0.618033989\textwidth},
       unbounded coords=discard,
       xmin=0,xmax=3,
       ymin=0,ymax=1800,
-      xmode=log,
-      ymode=log,
       grid=major,
       ]
 
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Break] {charts/concentration_breakup.csv};
 
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Effect of fiber concentration on torus break up time.}
   \label{fig:concentration_breakup}
@@ -184,26 +267,84 @@ The second parameter we looked at was the number of fibers. For this experiment 
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
-    \setmathfont{FiraSans-Book.otf}
     \begin{axis}[
-      title=Effect of number of fibers on break up time,
       xlabel={number of fibers},
       ylabel={break-up time step},
       width={0.618033989\textwidth},
       unbounded coords=discard,
       xmin=0,xmax=2000,
       ymin=0,ymax=500,
-      xmode=log,
-      ymode=log,
       grid=major,
       ]
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=M,y=Break] {charts/number_breakup.csv};
 
     \end{axis}
-    \setmathfont{Asana-Math.otf}
   \end{tikzpicture}
   \caption{Effect of number of fibers on torus break up time.}
   \label{fig:number_breakup}
 \end{figure}
 
 These two results show that both the concentration and the number of fibers have an effect on the break up time of the torus. Future research should explore these correlations closer as our tests only looked at two parameters in isolation. How other parameters, like external forces, the numerical accuracy and the initial fiber distribution affect the stability of the torus are promising questions.
+
+\section{Mixed Density Sphere}
+\label{sec:mixed_density_sphere}
+
+The final experiment we performed resembles the setup investigated by Bülow et al.~\cite{Bulow2015}. In this setup instead of identical fibers, we instead look at the mixing of fibers with different densities. We divide the total number of fibers into two different density groups. The two groups are arranged inside a sphere which sediments due to gravity. The two different groups are colored in red and blue. The blue group has the lower density and the red group the higher density. The ratio between the densities is set to $\text{blue} / \text{red}= 0.75 / 1.0$.
+
+Figure~\ref{fig:unmixed_sphere} shows a simulation where the two density groups are separated into the top and bottom half of the sphere. The higher density group is on top and the lower density group is at the bottom (Figure~\ref{fig:mixing_top_a}. After a few timesteps the higher density fibers have almost completely dropped through the lower density fibers (Figure~\ref{fig:mixing_top_b}. The falling high density fibers cause a large number of low density fibers to be ejected from the sphere. Both groups then proceed to almost independently form the characteristic torus observed in the previous experiment in Section~\ref{sec:example_sphere} (Figure~\ref{fig:mixing_top_c}. The higher density fibers, however, form a larger torus with a lower fiber concentration. This lower concentration also causes them to lose velocity, which in turn allows the lower density fibers to drop through the larger outer torus (Figure~\ref{fig:mixing_top_d}. Both the lower and the higher density toruses are not very stable and soon afterwards break down.
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/top_00000.pdf}
+    \caption{$t=0$}\label{fig:mixing_top_a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/top_00020.pdf}
+    \caption{$t=20$}\label{fig:mixing_top_b}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/top_00060.pdf}
+    \caption{$t=60$}\label{fig:mixing_top_c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/top_00100.pdf}
+    \caption{$t=100$}\label{fig:mixing_top_d}
+  \end{subfigure}
+  \caption[Unmixed sphere]{Unmixed sphere. Higher density red group is the top half of the sphere. Lower density blue group is the bottom half of the sphere.}
+  \label{fig:unmixed_sphere}
+\end{figure}
+
+Figure~\ref{fig:mixed_sphere} shows a similar simulation, however, instead of an unmixed sphere, the two groups of fibers are randomly mixed (Figure~\ref{fig:mixing_random_a}). The beginning of the simulation behaves similar to the unmixed case, but the separation does not happen as fast and far fewer lower density fibers are lost from the sphere (Figure~\ref{fig:mixing_random_b}. Both the larger higher density and the smaller lower density torus form again. Yet in contrast to the unmixed case both groups stay closer together. The close proximity prevents the groups from completely separating and causes the higher density torus to be sucked down by the passing lower density torus (Figure~\ref{fig:mixing_random_c}. The two toruses appear to form an interlocked torus, which continues to sediment  (Figure~\ref{fig:mixing_random_d}. Eventually the interlocked torus breaks up and fibers scatter. 
+
+\begin{figure}[!htbp]
+  \centering
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/random_00000.pdf}
+    \caption{$t=0$}\label{fig:mixing_random_a}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/random_00020.pdf}
+    \caption{$t=20$}\label{fig:mixing_random_b}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/random_00100.pdf}
+    \caption{$t=100$}\label{fig:mixing_random_c}
+  \end{subfigure}
+  \begin{subfigure}[h]{0.24\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{img/mixing/random_00150.pdf}
+    \caption{$t=150$}\label{fig:mixing_random_d}
+  \end{subfigure}
+  \caption[Mixed sphere]{Mixed sphere. Higher density red group and lower density blue group are randomly mixed in the sphere.}
+  \label{fig:mixed_sphere}
+\end{figure}
+
+The results for the mixed and unmixed sphere with rigid straight fibers do largely agree with the results of spherical particles from Bülow et al.~\cite{Bulow2015}. However, both simulation methods and setups are very different which makes a comparison very challenging. Furthermore our experiment are only a first step and many more experiments have to be cared out to get a deeper understanding on the behavior of rigid fibers in a mixed sphere. Exploring the impact of initial fiber configuration, the density ratio and the fiber concentration all are exciting future research opportunities.
