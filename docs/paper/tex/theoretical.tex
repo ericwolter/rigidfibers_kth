@@ -82,7 +82,7 @@ where $\mathbf{U}^m$ is the translational velocity of the object and $\mathbf{\o
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=.8\textwidth]{img/immersed_rigid.png}
-  \caption{Two immersed objects in stokes flow, using a rigid body motion.}
+  \caption[Two immersed objects in stokes flow.]{Two immersed objects in stokes flow, using a rigid body motion. Each fiber is characterized by the positions $\POS^1, \POS^2$ and the orientations $\ORIENT^1,\ORIENT^2$. The velocity of each point the surfaces $\Gamma^1, \Gamma^2$ is given by the rigid body motion described in Eqn~\eqref{eq:rigid_body_motion}.}
   \label{fig:immersed_rigid}
 \end{figure}
 
@@ -149,7 +149,7 @@ The slender body approximation yields a coupled system of 1D integral equations 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.5\textwidth]{img/slender.pdf}
-  \caption{Slender fiber approximation.}
+  \caption[Slender fiber approximation.]{Slender fiber approximation. Each fiber is described by the center points $\POS_m, \POS_l$ the orientations given by the unit tangent vectors $\ORIENT_m, \ORIENT_l$ and the center line parameterized by $s$ and $s'$. The points of each center line is thus given by $\POS_m(s) = \POS_m + s\ORIENT_m$.}
   \label{fig:slender_fiber}
 \end{figure}
 
@@ -183,7 +183,7 @@ where $\mathbf{R}_{lm}(s,s') = \POS_m + s\ORIENT_m - (\POS_l + s'\ORIENT_l)$ is 
 
 \begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.3819660112501450000000\textwidth]{img/fiber_contribution.pdf}
+  \includegraphics[width=0.3\textwidth]{img/fiber_contribution.pdf}
   \caption[Two interacting fibers with five quadrature points.]{Two fibers with five quadrature points each. The interaction between two fibers is given by the term $\mathbf{V}_m$ and depends solely on the distance between the two. The integral in Eqn.~\eqref{eq:velocity_contribution} can not be evaluated analytically and will be approximated by a quadrature rule.}
   \label{fig:fiber_contribution}
 \end{figure}

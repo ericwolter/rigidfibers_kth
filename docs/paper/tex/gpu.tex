@@ -14,7 +14,6 @@ The deciding factor for the performance is how well the application can be paral
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=Theoretical GFLOP/s,
       xlabel={Year},
       ylabel={GFLOP/s},
       date coordinates in=x,
@@ -71,7 +70,7 @@ The deciding factor for the performance is how well the application can be paral
 
     \end{axis}
   \end{tikzpicture}
-  \caption[Year over year increase in theoretical floating-point operations per second for CPUs and GPUs.]{Year over year increase in theoretical floating-point operations per second for CPUs and GPUs~\cite{CudaProgrammingGuide}.}
+  \caption[Theoretical GFLOP/s]{Theoretical GFLOP/s. Year over year increase in theoretical floating-point operations per second for CPUs and GPUs~\cite{CudaProgrammingGuide}.}
   \label{fig:gpu_performance}
 \end{figure}
 
@@ -94,7 +93,7 @@ The CUDA platform allows developers to use a variety of different options to pro
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=.9\textwidth]{img/cuda_overview.pdf}
-  \caption[Overview of the CUDA platform.]{Overview of the CUDA platform~\cite{CudaProgrammingGuide}.}
+  \caption[Overview of the CUDA platform.]{Overview of the CUDA platform~\cite{CudaProgrammingGuide} describing the available libraries, programming environments and application of general purpose computing using CUDA.}
   \label{fig:cuda_overview}
 \end{figure}
 
@@ -123,7 +122,7 @@ In order to efficiently distribute the different threads across the compute unit
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=\textwidth]{img/automatic_scaling.pdf}
-  \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors~\cite{CudaProgrammingGuide}.}
+  \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of thread blocks across an arbitrary number of Streaming Multiprocessors~\cite{CudaProgrammingGuide}.}
   \label{fig:automatic_scaling}
 \end{figure}
 
@@ -167,6 +166,6 @@ Another option to avoid the slow the performance of the global memory is to make
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{img/memory_hierarchy.pdf}
-  \caption[CUDA memory hierarchy.]{CUDA memory hierarchy~\cite{CudaProgrammingGuide}.}
+  \caption[CUDA memory hierarchy.]{CUDA memory hierarchy~\cite{CudaProgrammingGuide}. The hiearchy consists of three layers (private, shared, global). Each layer differs in size, latency and scope.}
   \label{fig:memory_hierarchy}
 \end{figure}

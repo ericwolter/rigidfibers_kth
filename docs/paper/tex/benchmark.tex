@@ -60,8 +60,9 @@ To further improve the statistical significance of the result the benchmark sche
 \end{listing}
 
 \section{Optimizations}
+\label{sec:bench_optimization}
 
-We now look at the performance results for the different optimizations previously outlined in Sec.~\ref{sec:serial_optimizations}. Where applicable, the results will be compared between the OpenMP and the CUDA version of the algorithm.
+We now look at the performance results for the different optimizations previously outlined in Sec.~\ref{sec:parallel_optimizations}. Where applicable, the results will be compared between the OpenMP and the CUDA version of the algorithm.
 
 \subsection{Numeric vs. Analytic Integration}
 \label{subsec:bench_numeric_vs_analytic}
@@ -72,9 +73,8 @@ The first benchmark tests the performance of the two different approaches to com
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=OpenMP Numeric vs. Analytic Integration,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       ymin=0,ymax=55,
       xmin=0,xmax=2000,
       unbounded coords=discard,
@@ -88,7 +88,7 @@ The first benchmark tests the performance of the two different approaches to com
       \legend{Numerical, Analytical}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark computing integrals using OpenMP.}
+  \caption[Benchmark computing inner integral on CPU.]{Benchmark comparing numerical and analytical integration of inner integral (Eqn.~\eqref{eq:inner_integral} using OpenMP.}
   \label{fig:openmp_num_vs_anal}
 \end{figure}
 
@@ -98,9 +98,8 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=CUDA Numeric vs Analytic Integration,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       ymin=0,ymax=5.5,
       xmin=0,xmax=2000,
       unbounded coords=discard,
@@ -114,7 +113,7 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
       \legend{Numerical, Analytical}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark computing integrals using CUDA.}
+  \caption[Benchmark computing inner integral on GPU.]{Benchmark comparing numerical and analytical integration of inner integral (Eqn.~\eqref{eq:inner_integral}) using CUDA.}
   \label{fig:cuda_num_vs_anal}
 \end{figure}
 
@@ -133,7 +132,7 @@ To confirm that Branch Divergence is the reason for the slowdown of the analytic
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption{Warp Exection Efficiency of Numerical vs. Analytical Integration.}
+  \caption[Warp Execution Efficiency of Numerical vs. Analytical Integration.]{CUDA performance metric \emph{Warp Exection Efficiency} comparison for the numerical and analytical integration of the inner integral (Eqn.~\eqref{eq:inner_integral}).}
   \label{tab:branch_divergence}
 \end{table}
 
@@ -146,11 +145,12 @@ The second optimization tried to use shared memory to reduce the amount of data 
 
 During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in Sec.~\ref{subsec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
 
-The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the 2D thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation.
+The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the two-dimensional thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation.
 
 While waiting for this data from global memory, CUDA is able to quickly switch between different sets of threads and continue the computation there. Thus the only waiting time occurs when the very first set of data has to be loaded. After the first data has arrived computations can be performed on it. While these longer running computations are happening, other threads can already issue data loading requests. Once the first computation finishes and the next set of threads is executed the data has already been fetched. As there was no advantage in using shared memory in the compute bound \emph{Assemble System} step, we opted for the simpler implementation without it for all our simulations.
 
 \subsection{Thread block dimension}
+\label{subsec:bench_thread_block}
 
 The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used and the overhead caused by an increased amount of memory writes to the same location. Writing to the same memory location from different threads would result in undefined behavior and avoiding this requires potentially slow atomic functions.
 
@@ -158,9 +158,8 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=CUDA Thread Block Dimension,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       ymin=0,ymax=1.4,
       xmin=0,xmax=2000,
       unbounded coords=discard,
@@ -175,7 +174,7 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
       \legend{1D, 2D, 3D}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark of assemble system step for different thread block dimensions.}
+  \caption[Benchmarking thread block dimensions.]{Benchmark comparing different parallelization options of the \emph{Assemble System} step using thread block dimensions as described in Sec.~\ref{subsec:parallel_thread_block}. }
   \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
@@ -192,7 +191,7 @@ The results in Fig.~\ref{fig:bench_cuda_thread_blocks} indicate that the best op
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption{Atomic transactions of 2D vs. 3D thread block dimensions.}
+  \caption[Atomic transactions of 2D vs. 3D thread block dimensions.]{CUDA performance metric \emph{Atomic transactions} comparison for the 2D and 3D thread block dimensions parallelization of the \emph{Assemble System} step.}
   \label{tab:atomic_transactions}
 \end{table}
 
@@ -209,9 +208,8 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=OpenMP Linear Solver,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
@@ -225,7 +223,7 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
       \legend{Direct Solver, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark of solve system step for different Fortran solvers.}
+  \caption[Benchmark linear solvers on CPU.]{Benchmarking comparing linear solvers on the CPU. Direct linear is provided by OpenBLAS~\cite{OpenBLAS} and iterative GMRES solver by Frayssé et al.~\cite{Fraysse2003}.}
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
@@ -237,9 +235,8 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=CUDA Linear Solver,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       ymin=0,
       xmin=0,xmax=2000,
       unbounded coords=discard,
@@ -254,7 +251,7 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark of solve system step for different GPU linear solvers.}
+  \caption[Benchmark linear solvers on GPU.]{Benchmarking comparing linear solvers on the GPU. Direct linear is provided by MAGMA~\cite{MagmaDocumentation} and iterative solvers, BiCGStab and GMRES, by ViennaCL~\cite{ViennaCLRupp2010}.}
   \label{fig:bench_cuda_solvers}
 \end{figure}
 
@@ -268,9 +265,8 @@ The next benchmark explores the relative time taken by each step of the algorith
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=OpenMP Individual Steps,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       stack plots=y,
       ymin=0,ymax=70,
       xmin=0,xmax=2000,
@@ -284,7 +280,7 @@ The next benchmark explores the relative time taken by each step of the algorith
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark for individual steps with OpenMP.}
+  \caption[Benchmark individual steps on CPU.]{Benchmark comparing the execution for each individual step of the algorithm using the OpenMP-based CPU implementation.}
   \label{fig:bench_openmp_steps}
 \end{figure}
 
@@ -294,9 +290,8 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=CUDA Individual Steps,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Simulation time (sec)},
       stack plots=y,
       ymin=0,ymax=1.4,
       xmin=0,xmax=2000,
@@ -310,7 +305,7 @@ The results for the OpenMP implementation show that for $2000$ fibers the \emph{
       \legend{Total, Assemble System, Solve System, Update Velocities, Update Fibers}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark for individual steps with CUDA.}
+  \caption[Benchmark individual steps on GPU.]{Benchmark comparing the execution for each individual step of the algorithm using the CUDA-based GPU implementation.}
   \label{fig:bench_cuda_steps}
 \end{figure}
 
@@ -334,9 +329,8 @@ The results for average time required to take a single time step is illustrated 
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=Overall,
-      xlabel={number of fibers},
-      ylabel={simulation time (sec)},
+      xlabel={Number of fibers},
+      ylabel={Execution time (sec)},
       xmin=0,xmax=2000,
       ymin=0,ymax=140,
       unbounded coords=discard,
@@ -353,7 +347,7 @@ The results for average time required to take a single time step is illustrated 
       \legend{CUDA GMRES, CUDA Direct, OpenMP GMRES, OpenMP Direct}
     \end{axis}
   \end{tikzpicture}
-  \caption{Benchmark of overall timestep for both OpenMP and CUDA.}
+  \caption[Benchmark overall execution time.]{Benchmark comparing overall execution time for OpenMP and CUDA. Both the CPU and GPU implementation are run using the fastest algorithm variation as determined in Sec~\ref{sec:bench_optimization} and each implementation is tested with a direct and iterative solver. The CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by $~40×$.}
   \label{fig:overall}
 \end{figure}
 
@@ -372,7 +366,7 @@ The required simulation time on the GPU outperforms the CPU by a wide margin. Th
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption{Overall speedup factor for $2000$ fibers.}
+  \caption[Speedup factors for overall execution time.]{The speedup factors for the overall execution time of a simulation with $2000$ fibers for the CPU and GPU implementation. In case of a direct solvers the GPU implementation shows a speedup of $16×$ compared to the CPU implementation. Comparing GMRES the CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by $39×$.}
   \label{tab:overall_speedup}
 \end{table}
 

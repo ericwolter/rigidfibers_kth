@@ -18,7 +18,7 @@ where the coefficients $a_{m}^{n}$ are vectors with three components. The number
 \subsection{Closed linear system}
 \label{subsec:closed_system}
 
-Using the force expansion from Eqn.~\eqref{eq:force_discretization} in Eqn.~\eqref{eq:slender_fibers_velocity} we get a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
+Using the force expansion from Eqn.~\eqref{eq:force_discretization} in Eqn.~\eqref{} we get a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
 
 For a 3-dimensional simulation, this results in a linear system of size $3MN\times3MN$. The first step of the algorithm is thus to compute and assemble the linear system in memory. Writing the system in the standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure for the matrix $A$ and the right-hand side $b$
 \begin{equation}
@@ -82,7 +82,7 @@ At the end of this step the state of the fibers can optionally be written to an 
 The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are at each timestep $t=t^n$ given the fiber configuration in terms of position, $x_m$, and orientation, $t_m$, 
 \begin{description}
   \item[1. Assemble System] \hfill \\
-Computes all interactions between fibers and yields the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
+Computes all interactions between fibers and yields the linear system ${\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}}$
   \item[2. Solve System]  \hfill \\
 Solves linear system, treated as black box
   \item[3. Update Velocities] \hfill \\

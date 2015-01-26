@@ -34,7 +34,7 @@ This simple but very interesting problem has also been simulated by Gustavsson a
     \includegraphics[width=\textwidth]{img/ring_00045.pdf}
     \caption{$t=45$}\label{fig:ring_simulation_1d}
   \end{subfigure}
-  \caption{Visualization Tumbling Orbits.}
+  \caption[Visualization of tumbling orbits.]{Visualization of tumbling orbits. Small number of perfectly symmetrically distributed fibers around a circle are allowed to sediment due to gravity. The fibers perform a periodical motion alternating between a vertical and horizontal orientation in the direction to gravity.}
   \label{fig:ring_simulation}
 \end{figure}
 
@@ -46,9 +46,8 @@ Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation ve
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=Sedimentation Velocity,
-      xlabel={timestep},
-      ylabel={velocity},
+      xlabel={Timestep},
+      ylabel={Velocity},
       height={207pt},
       unbounded coords=discard,
       xmin=0,xmax=200,
@@ -57,11 +56,9 @@ Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation ve
 
       \addplot[color=set12, very thick] table[x=Timestep,y=Single] {charts/ring_sedimentation.csv};
       \addplot[color=set11, loosely dashed, ultra thick] table[x=Timestep,y=Double] {charts/ring_sedimentation.csv};
-
-      \legend{Single Precision, Double Precision}
     \end{axis}
   \end{tikzpicture}
-  \caption{Comparison of sedimentation velocity for single- and double-precision simulation.}
+  \caption[Comparison of sedimentation velocity for single- and double-precision simulation.]{Comparison of sedimentation velocity for single precision (solid line) and double precision (dahsed line) simulation.}
   \label{fig:ring_sedimentation_velocity}
 \end{figure}
 
@@ -74,8 +71,7 @@ As alluded to in the discussion about the performance of direct solvers versus i
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      title=Effect of fiber concentration on number of GMRES iterations,
-      xlabel={average distance},
+      xlabel={Average distance},
       ylabel={GMRES iterations},
       width={0.8\textwidth},
       unbounded coords=discard,
@@ -90,7 +86,7 @@ As alluded to in the discussion about the performance of direct solvers versus i
 
     \end{axis}
   \end{tikzpicture}
-  \caption{Effect of fiber concentration on GMRES iterations.}
+  \caption[Effect of fiber concentration on GMRES iterations.]{Effect of fiber concentration on GMRES iterations. The number of GMRES iterations increases dramatically for close fibers.}
   \label{fig:concentration_gmres}
 \end{figure}
 
@@ -127,7 +123,7 @@ The next example showcases a more chaotic system with a large number of interact
     \includegraphics[width=\textwidth]{img/state_00380.pdf}
     \caption{$t=380$}\label{fig:sphere_simulation_1d}
   \end{subfigure}
-  \caption{Visualization Sedimenting Sphere.}
+  \caption[Visualization of sedimenting sphere.]{Visualization of sedimenting sphere. Fibers are randomly distributed inside a sphere and sediment due to gravity. The fibers proceed to form a turning torus. Eventually the torus breaks up into subclusters.}
   \label{fig:sphere_simulation}
 \end{figure}
 
@@ -147,8 +143,8 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
 	    \begin{axis}[
-	      xlabel={timestep},
-	      ylabel={radius},
+	      xlabel={Timestep},
+	      ylabel={Radius},
 	      width={\textwidth},
 	      unbounded coords=discard,
 	      xmin=0,xmax=500,
@@ -167,8 +163,8 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
 	    \begin{axis}[
-	      xlabel={timestep},
-	      ylabel={fibers in torus},
+	      xlabel={Timestep},
+	      ylabel={Fibers in torus (\%)},
 	      width={\textwidth},
 	      unbounded coords=discard,
 	      xmin=0,xmax=500,
@@ -184,13 +180,13 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	
 	    \end{axis}
 	  \end{tikzpicture}
-    \caption{Remaining fibers}\label{fig:torus_fibers}
+    \caption{Remaining fibers.}\label{fig:torus_fibers}
   \end{subfigure}
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
 	    \begin{axis}[
-	      xlabel={timestep},
-	      ylabel={radius},
+	      xlabel={Timestep},
+	      ylabel={Radius},
 	      width={\textwidth},
 	      unbounded coords=discard,
 	      xmin=0,xmax=500,
@@ -202,7 +198,7 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	node[pos=444, pin={[pin edge={color=set12, very thick}]min}]{};
 	\addlegendentry{}
 	      \addplot[color=set11, very thick] table[x=Timestep,y=RadiusZStd,col sep=comma] {charts/sphere_2000_0040.csv};
-		\legend{,$R_z^{std}$};
+		\legend{,$R_z^{\text{std}}$};
 	    \end{axis}
 	  \end{tikzpicture}
     \caption{Torus $\text{Radius}_z$ Deviation.}\label{fig:torus_deviation}
@@ -228,7 +224,7 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	  \end{tikzpicture}
     \caption{Mean sedimentation velocity.}\label{fig:torus_velocity}
   \end{subfigure}
-  \caption{Torus composition.}
+  \caption[Evolution of the sedimenting torus.]{Evolution of the sedimenting torus. In the beginning the torus loses some fibers and the horizontal radii $R_x$ and $R_y$ increase slowly. The vertical radius $R_z$ undergoes a periodical contraction and expansion, which can also be seen in the peridocal change in the sedimentation velocity $V_z$. The eventual moment of the break-up of the torus is defined as the minimum standard deviation of the vertical radius $R_z^{\text{std}}$.}
   \label{fig:torus}
 \end{figure}
 
@@ -237,6 +233,7 @@ We observe that the standard deviation of the radius in the direction of gravity
 A surprising insight was that the standard deviation of the radius $R_z$ seems to oscillate in Fig.~\ref{fig:torus_deviation}. This oscillation in the direction of gravity means that the torus is periodically expanding and shrinking until it breaks up. The same effect can also be seen in the mean sedimentation velocity $V_z$ of the torus in Fig.~\ref{fig:torus_velocity}. Since the periodical change in velocity is similar to the motion observed in the simple tumbling orbits experiment in Sec.~\ref{sec:example_ring},  this result strongly supports the idea that the turning torus with $2000$ fibers resembles a more chaotic version of the simplified tumbling orbits.
 
 \subsection{Fiber concentration effect on break-up time}
+\label{subsec:effect_concentration}
 
 The first parameter we explored was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Fig.~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al.~\cite{Park2010}.
 
@@ -244,8 +241,8 @@ The first parameter we explored was the concentration of the fibers. Concentrati
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      xlabel={average distance},
-      ylabel={break-up time step},
+      xlabel={Average distance},
+      ylabel={Break-up time step},
       width={0.618033989\textwidth},
       unbounded coords=discard,
       xmin=0,xmax=3,
@@ -257,11 +254,12 @@ The first parameter we explored was the concentration of the fibers. Concentrati
 
     \end{axis}
   \end{tikzpicture}
-  \caption{Effect of fiber concentration on torus break up time.}
+  \caption[Effect of fiber concentration on torus break up time.]{Effect of fiber concentration on torus break up time. Given a fixed number of fibers, if the average distance between fibers is very low, i.e. the fiber concentration is very high, than the break-up occurs earlier. If the average distance is high the break-up takes longer.}
   \label{fig:concentration_breakup}
 \end{figure}
 
 \subsection{Number of fibers effect on break up time}
+\label{subsec:effect_number}
 
 The second parameter we looked at was the number of fibers. For this experiment only the number of fibers was changed. Every other parameter was fixed. For the concentration we chose the same value of $0.4$ as during our benchmarks in Chapter~\ref{cha:benchmarks}. The resulting chart is shown in Fig.~\ref{fig:number_breakup}. It shows a positive correlation for the number of fibers and the break up.
 
@@ -269,8 +267,8 @@ The second parameter we looked at was the number of fibers. For this experiment 
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      xlabel={number of fibers},
-      ylabel={break-up time step},
+      xlabel={Number of fibers},
+      ylabel={Break-up time step},
       width={0.618033989\textwidth},
       unbounded coords=discard,
       xmin=0,xmax=2000,
@@ -281,6 +279,7 @@ The second parameter we looked at was the number of fibers. For this experiment 
 
     \end{axis}
   \end{tikzpicture}
+  \caption[Effect of number of fibers on torus break up time.]{Effect of number of fibers on torus break up time. Given a constant fiber concentration, if the number of fibers is small than the break-up occurs earlier. If the number of fibers is large the break-up takes longer.}
   \caption{Effect of number of fibers on torus break up time.}
   \label{fig:number_breakup}
 \end{figure}
