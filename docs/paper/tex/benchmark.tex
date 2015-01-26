@@ -139,7 +139,7 @@ To confirm that Branch Divergence is the reason for the slowdown of the analytic
 
 On the one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. As already discussed in Sec.~\ref{subsec:numeric_analytic} the analytical solution of the inner integral potentially suffers from numerical instabilities. Closer inspection of the source code reveals that the steps taken to minimize these instabilities are responsible for the Branch Divergence. The steps involve a simple \emph{if} statement, that switches between two code path depending on how far apart the two fibers are. Unfortunately, this workaround is unavoidable to ensure numeric stability and explains the decreased performance on the GPU.
 
-\subsection{Shared Memory}
+\subsection{Shared memory}
 \label{subsec:bench_shared_memory}
 
 The second optimization tried to use shared memory to reduce the amount of data that had to be transferred between the compute units and the global memory. For this each Streaming Multiprocessor has a small amount of locally shared memory. This memory can be accessed from all threads on the SM and in case data can be shared, it only has to be transferred slowly from global to shared memory once. Afterwards, in can be accessed from the faster local memory.
@@ -150,7 +150,7 @@ The reason for this is that the \emph{Assemble System} step is compute bound and
 
 While waiting for this data from global memory, CUDA is able to quickly switch between different sets of threads and continue the computation there. Thus the only waiting time occurs when the very first set of data has to be loaded. After the first data has arrived computations can be performed on it. While these longer running computations are happening, other threads can already issue data loading requests. Once the first computation finishes and the next set of threads is executed the data has already been fetched. As there was no advantage in using shared memory in the compute bound \emph{Assemble System} step, we opted for the simpler implementation without it for all our simulations.
 
-\subsection{Thread Block Dimension}
+\subsection{Thread block dimension}
 
 The next optimization looked at was the Thread Block Dimension on the GPU. Choosing the best option is a trade-off between the resources used and the overhead caused by an increased amount of memory writes to the same location. Writing to the same memory location from different threads would result in undefined behavior and avoiding this requires potentially slow atomic functions.
 
@@ -198,7 +198,7 @@ The results in Fig.~\ref{fig:bench_cuda_thread_blocks} indicate that the best op
 
 Fig.~\ref{fig:bench_cuda_thread_blocks} also shows that the one-dimensional approach is slower than either the two-dimensional or three-dimensional approach. However, it appears to scale linearly whereas the other two scale exponentially. It can already be observed that the performance of the one-dimensional thread block becomes faster than the three-dimensional thread block for close to $2000$ fibers. Unfortunately, the hardware of the workstation does not have enough memory to simulate more fibers, allowing the one-dimensional approach to overtake the two-dimensional approach. Thus at least for our simulation we always use the two-dimensional approach.
 
-\section{Linear Solvers}
+\section{Linear solvers}
 \label{sec:bench_linear_solvers}
 
 Next we compare the performance for different linear solvers. We explored two different types of solvers. The first type is a direct solver of the linear equations which is both implemented for OpenMP and the CUDA implementation. The second type are iterative solvers. Unfortunately, we can't make use of the iterative solvers main advantage to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system can be a very large part of the overall runtime, depending choice of solver and the fiber configuration as discussed in Sec.~\ref{sec:algorithm_summary}. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
@@ -260,7 +260,7 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
 
 The same fact that the iterative solvers are faster than the direct solver holds true for the GPU. However, compared to the CPU solvers the difference between the performance of the direct solver and the iterative solvers is not as large. At close to $2000$ fibers the iterative solvers are only about $25×$ faster than the direct solver. Looking at the difference between the two iterative solvers, BiCGStab and GMRES they perform almost exactly the same. Any small differences can be attributed to small measuring uncertainties. Regardless of these clear results, it is always important to keep in mind, that this particular performance ratio only holds true for the specific fiber concentration which was benchmarked. For other concentrations the iterative solvers might need more iterations to find the solution and might even perform worse than the linear solver.
 
-\section{Individual Steps}
+\section{Individual steps}
 
 The next benchmark explores the relative time taken by each step of the algorithm, which were described in Sec.~\ref{sec:algorithm_summary}~and Sec.~\ref{sec:kernels}. This gives valuable insight into the time allocation of the overall run time. Thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Fig.~\ref{fig:bench_openmp_steps} and for CUDA in Fig.~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in Eqn.~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead. This is done to use the fastest algorithm variation on both the CPU and GPU as we showed in Sec.~\ref{subsec:bench_numeric_vs_analytic}.
 

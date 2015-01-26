@@ -5,7 +5,7 @@ In the last chapter, we presented the theoretical foundation of the physics and 
 
 We will separate the overall algorithm into four steps and discuss each step individually. Additionally, we will touch upon implementation details used in the original serial version. We close the chapter with a brief reflection of the performance characteristics of the serial implementation to guide the parallel implementation on the GPU.
 
-\section{Assemble System}
+\section{Assemble system}
 In the previous chapter we obtained the final closed system and the Eqns.~\eqref{eq:velocity_centerline}~and~\eqref{eq:slender_boundary_constraints}. By integrating Eqn.~\eqref{eq:velocity_centerline} from $-1$ to $1$ we can derive two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $m=1,2,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to the original paper by Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 In order to be able to solve these equations for $\mathbf{f}_m$ we have to discretize them. For this we expand the force as a sum of $N+1$ Legendre polynomials $P_n(s)$
@@ -54,17 +54,17 @@ Another option is to find an analytical solution for the inner integral and only
 
 Choosing between both options requires a careful examination of the accuracy and performance trade-off and is depend on the simulation setup. For the original serial implementation the combined numerical and analytical approach for evaluation proved to be the fastest and was thus chosen as the default. We will later explore how is applies to the new parallel GPU implementation.
 
-\section{Solve System}
+\section{Solve system}
 
 After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers. This step is treated as a black box by the simulation, simply plugging in the matrix $\mathbf{A}$ and the vector $\mathbf{b}$ and getting back the solution vector $\mathbf{\bar{a}}$ representing the force coefficients.
 
 The linear system can either be solved using a direct solver or an iterative method like GMRES. Unfortunately the matrix is neither symmetric nor sparse so we can't take advantage of specialized solvers for these cases~\cite{Tornberg2006}. As long as the fibers are sufficiently far apart and the matrix is not ill-conditioned, GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in Sec.~\ref{sec:bench_linear_solvers}.
 
-\section{Update Velocities}
+\section{Update velocities}
 
 The force coefficients obtained by solving the linear system can now be used to calculate the remaining unknowns. By using the force expansion in the two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. The required implementation is thus similar to the computations for the \emph{Assemble System} step. The two integrals, again, can be evaluated either exclusively numerical or with the combined approach of solving the inner integral analytically.
 
-\section{Update Fibers}
+\section{Update fibers}
 \label{sec:serial_update_fibers}
 
 The final step takes care of advancing the fibers forward in time. The equations do not impose any strict stability restrictions, so an explicit time-stepping scheme can be used. We also use the same second order multi-step method used in the original paper. The update for the position of the center coordinate $\mathbf{x}_m$ is given by the following discretization in time

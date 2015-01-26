@@ -137,7 +137,7 @@ After some time the torus breaks and the fibers are split into multiple smaller 
 
 The calculation of the presented example only takes $~7.7$ seconds with the GPU simulation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow new research of this interesting phenomenon. One interesting research question is for example determining what influences the stability of the torus.
 
-\subsection{Sphere Break Up}
+\subsection{Sphere break-up}
 To begin investigating this question we first define the stability of the torus in terms of the break up time. How to determine the exact break up time of the torus is quite challenging. This problem and question was also examined by Park et al.~\cite{Park2010}. They define the break up as the moment when the torus starts to bend prior to actually breaking. Additionally, they describe an algorithm that determines which fibers are part of the torus. Consequently, they compute metrics such as the remaining fibers, the radius and velocity of the sedimenting torus. Unfortunately, they don't define a metric that determines the exact break up time. Thus we came up with our own measure of the break up time based on their work.
 
 We use the same definition for the torus as described by Park et al.~\cite{Park2010}. First we compute the initial horizontal radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are excluded from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each horizontal direction and the mean sedimentation velocity $V_z$. The torus metrics are illustrated for a sample run with $2000$ fibers and an average distance of $0.4$ in Fig.~\ref{fig:torus}. The horizontal radii $R_x$ and $R_y$ of the torus and the percentage of fibers remaining in the torus are shown in Fig.~\ref{fig:torus_radius} and Fig.~\ref{fig:torus_fibers}. The curves show the expected loss of fibers and the increasing torus radius.
@@ -236,7 +236,7 @@ We observe that the standard deviation of the radius in the direction of gravity
 
 A surprising insight was that the standard deviation of the radius $R_z$ seems to oscillate in Fig.~\ref{fig:torus_deviation}. This oscillation in the direction of gravity means that the torus is periodically expanding and shrinking until it breaks up. The same effect can also be seen in the mean sedimentation velocity $V_z$ of the torus in Fig.~\ref{fig:torus_velocity}. Since the periodical change in velocity is similar to the motion observed in the simple tumbling orbits experiment in Sec.~\ref{sec:example_ring},  this result strongly supports the idea that the turning torus with $2000$ fibers resembles a more chaotic version of the simplified tumbling orbits.
 
-\subsection{Fiber concentration effect on break up time}
+\subsection{Fiber concentration effect on break-up time}
 
 The first parameter we explored was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Fig.~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al.~\cite{Park2010}.
 
@@ -287,7 +287,7 @@ The second parameter we looked at was the number of fibers. For this experiment 
 
 These two results show that both the concentration and the number of fibers have an effect on the break up time of the torus. Future research should explore these correlations closer as our tests only looked at two parameters in isolation. How other parameters, like external forces, the numerical accuracy and the initial fiber distribution affect the stability of the torus are promising questions.
 
-\section{Mixed Density Sphere}
+\section{Mixed density sphere}
 \label{sec:mixed_density_sphere}
 
 The final experiment we performed resembles the setup investigated by Bülow et al.~\cite{Bulow2015}. In this setup instead of identical fibers, we look at the mixing of fibers with different densities. We divide the total number of fibers into two different density groups and arrange them inside a sphere, which again sediments due to gravity. To separate the two groups visually, they are colored in red and blue. The blue group has the lower density and the red group the higher density. The ratio between the densities is set to $\text{blue} / \text{red}= 0.75 / 1.0$.

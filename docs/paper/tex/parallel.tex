@@ -1,19 +1,18 @@
-\chapter{Parallel Implementation}
+\chapter{Parallel implementation}
 \label{cha:parallel_implementation}
 
 Based on the previous two chapters describing the serial Fortran implementation and GPU programming we will now look at the algorithm in more detail and show, how it was adapted to take advantage of multi-core architectures. The main focus of this thesis is the implementation of the simulation on a modern massively parallel NVIDIA GPUs using CUDA. In order to gain a better understanding of the achievable performance improvements we additionally back-ported the finished GPU code of the algorithm to multi-core CPUs using the OpenMP framework.
 
 We will begin by introducing the software tools and libraries utilized. Afterwards, we will explain the practical implementation of the algorithm in CUDA. This is followed by the discussion of several potential optimization approaches to further improve the performance of the simulation. The chapter ends with a brief explanation of OpenMP and how the code was parallelized on the CPU.
 
-\section{Development Environment}
-
+\section{Development environment}
 The rigid fiber simulation algorithm developed as part of this thesis is only loosely based on the original serial Fortran implementation. This was done to ensure a clean starting point and avoid difficulties in adapting the existing code for parallel execution, as it was never intended to be run across multiple cores. This also provided the opportunity to learn from the shortcomings of the old code to not only parallelize it but also improve the efficiency in general.
 
 The development was done exclusively on a Linux workstation running Ubuntu as this will also be the exact same runtime environment used in the later experimental usage of the resulting application. The build system for compiling and linking the final application was CMake~\cite{CMake}. It was chosen because it is a widely used open-source and cross-platform build system, which allows for easy integration of the various required libraries in a well documented and straightforward manner. Under the hood the build system uses NVIDIA's CUDA platform tools to compile the code. For this NVIDIA includes the CUDA compiler, called \emph{nvcc}, capable of compiling C/C++ code together with the CUDA specific extensions.
 
 In order to facilitate easier usage of the application both during development and later real-world usage a Python wrapper script is also available. The script completely automates the building process and dynamically customizes the application code to support three different modes of operation. The first is a simple \emph{run} mode which takes the supplied parameters and executes the simulation. The second mode is \emph{validate}, which allows for a fully automated way to test and validate different algorithm variations against a known correct simulation run. The \emph{validate} mode automatically computes the error and makes debugging of changes easier. The last mode is \emph{benchmark} which executes a particular simulation multiple times and collects and aggregates the timings for each simulation step as well as the total time.
 
-\section{Linear Solvers}
+\section{Linear solvers}
 In addition to the CUDA platform, the application also requires support libraries for different linear solvers. During a simulation, a linear system of equations~(Eqn.~\eqref{eq:matrix_structure}) has to be solved in each timestep. This can be one of the most time consuming parts of the algorithm. Hence, the overall simulation time relies heavily on the ability to solve large and dense systems as fast as possible. Therefore, it is very important to weight all the available options carefully when choosing a particular linear solver algorithm or library.
 
 In this work we have compared the performance of a direct solver to certain iterative solvers for solving the system. For the direct solver, the MAGMA library is used~\cite{MagmaDocumentation} and for the iterative we use the ViennaCL library~\cite{ViennaCLDocumentation}. Both libraries will be introduced below.
@@ -115,13 +114,13 @@ Throughout the optimization phase a benchmark suite was run after each step. Thi
 
 Many optimizations performed during this process are applicable to both the CPU and GPU implementations, since they showed performance improvements for both. However, some optimizations and algorithm variations are uniquely suited to the GPU hardware. Below we will look into three different optimizations on the GPU in more detail. The performance results for each will then later be discussed in Chapter~\ref{cha:benchmarks}.
 
-\subsection{Numeric vs. Analytic Integration}
+\subsection{Numeric vs. analytic integration}
 \label{subsec:numeric_analytic}
 In the original paper~\cite{Tornberg2006} it was observed that the analytical integration of the inner integral~(Eqn.~\eqref{eq:inner_integral}) yielded a performance increase compared to purely numerical integration. Generally, using analytical integration should not only be preferred because of being faster but more importantly also because of being more accurate. However, for numerical precision reasons the actual implementation of the analytical integration can't achieve this theoretical level of accuracy. Especially for configurations with fibers that are very far apart the recursive implementation suffers from round-off errors and numerical instabilities. The steps taken to minimize these instabilities potentially affect the performance.
 
 Based on these considerations and the fact that the computation of the integrals is a very performance critical part of the implementation, exploring the performance implications of both approaches on the GPU is of great interest. In contrast to the serial CPU implementation of the original paper, our implementation on the GPU is actually faster when solving both integrals numerically. We will discuss the reason and consequences of this in more detail in Sec.~\ref{subsec:bench_numeric_vs_analytic}.
 
-\subsection{Shared Memory}
+\subsection{Shared memory}
 \label{subsec:shared_memory}
 
 As described in Sec.~\ref{sec:CUDA}, CUDA code is subject to a highly specialized memory hierarchy. Whereas traditional CPUs only have small caches and a large main memory pool, CUDA introduces the concept of a shared local memory space. The access time to this local memory is orders of magnitudes faster compared to accessing the global GPU memory. Additionally, local memory can be shared among the threads running on Streaming Multiprocessor and potentially save time by avoiding to constantly access the slow global memory. In order to test this, a shared memory version was implemented and tested for the \emph{Assemble System} step, since it is the most performance critical kernel.
@@ -132,7 +131,7 @@ How this affects performance is not always easy to tell, as various factors can 
 
 However, in general efficient exploitation of shared memory can be a huge advantage for parallel GPU implementations. This is especially true when comparing the performance to CPUs, as they do not have an equivalent fast and comparatively large memory space. Unfortunately, during our testing in Sec.~\ref{subsec:bench_shared_memory}, we did not see a performance advantage by using shared memory for our rigid fiber simulation.
 
-\subsection{Thread Block Dimension}
+\subsection{Thread block dimension}
 \label{subsec:bench_thread_block}
 
 There are many different factors that determine the performance of a particular GPU algorithm. This is especially true with regard to optimally taking advantage of the specific underlying GPU architecture, which change even between different models of graphics cards. How to best utilize the hardware depends on specific memory access patterns, avoiding too much register usage and choosing optimal settings for the thread block size. Each graphics card can have a different number of streaming multiprocessors with only limited resources and taking advantage of this can result in performance increases.
