@@ -8,7 +8,7 @@ To further increase the efficiency modern GPUs offer a massively parallel archit
 \section{General Purpose Computing on GPUs}
 In the beginning Graphics Processing Units were highly specialized pieces of hardware developed to exclusively improve the performance of real-time 3D graphics. However, in recent years GPUs have started to be used for running arbitrary code instead of being limited to graphics related computations. This allows for impressive performance increases across a wide range of different general purpose applications. A good overview of the evolution of GPU computing can be found in Owens et al.~\cite{Owens2008}.
 
-The deciding factor for the performance is how well the application can be parallelized to take advantage of the massively parallel architecture of GPUs. This massive parallelism has lead to potentially large performance advantages of GPUs over CPUs as illustrated in Figure~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (FLOP/s). The FLOP/s number is calculated by combining information of the number of compute units, frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to visualize the potential GPUs have.
+The deciding factor for the performance is how well the application can be parallelized to take advantage of the massively parallel architecture of GPUs. This massive parallelism has lead to potentially large performance advantages of GPUs over CPUs as illustrated in Fig.~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (FLOP/s). The FLOP/s number is calculated by combining information of the number of compute units, frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to visualize the potential GPUs have.
 
 \begin{figure}[!htbp]
   \centering
@@ -89,11 +89,11 @@ For this thesis we chose to go with NVIDIA's CUDA framework mainly because of th
 \label{sec:CUDA}
 The abbreviation CUDA stands for Compute Unified Device Architecture and was introduced by NVIDIA in 2006 as a general purpose parallel computing platform. It leverages the highly parallel architecture of modern NVIDIA GPUs to solve many different computational problems, which can lead to potentially large performance improvements compared to traditional CPUs.
 
-The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accelerated library and simply using the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java, Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. Figure~\ref{fig:cuda_overview} illustrated the different components of the overall CUDA platform.
+The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accelerated library and simply using the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java, Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. Fig.~\ref{fig:cuda_overview} illustrated the different components of the overall CUDA platform.
 
 \begin{figure}[!htbp]
   \centering
-  \includegraphics[width=.9\textwidth]{img/cuda_overview.png}
+  \includegraphics[width=.9\textwidth]{img/cuda_overview.pdf}
   \caption[Overview of the CUDA platform.]{Overview of the CUDA platform~\cite{CudaProgrammingGuide}.}
   \label{fig:cuda_overview}
 \end{figure}
@@ -118,7 +118,7 @@ It is important to remember that each kernel invocation is executed independentl
 
 \paragraph{Thread Hierarchy}
 
-In order to efficiently distribute the different threads across the compute units of the GPU, CUDA defines a thread hierarchy. As discussed previously a GPU consists of many independent compute units. On NVIDIA GPUs these units are referred to as Streaming Multiprocessors (SMs). During execution of the application each SM is tasked with running a distinct set of threads. In CUDA these sets of threads are called thread blocks. Each thread block is distributed to all the available SMs, which allows for automatic scalability depending on the number of SMs available  as illustrated in Figure~\ref{fig:automatic_scaling}. Thus the developer only has to divide the workload into appropriately sized blocks of threads and invoke the kernel.
+In order to efficiently distribute the different threads across the compute units of the GPU, CUDA defines a thread hierarchy. As discussed previously a GPU consists of many independent compute units. On NVIDIA GPUs these units are referred to as Streaming Multiprocessors (SMs). During execution of the application each SM is tasked with running a distinct set of threads. In CUDA these sets of threads are called thread blocks. Each thread block is distributed to all the available SMs, which allows for automatic scalability depending on the number of SMs available  as illustrated in Fig.~\ref{fig:automatic_scaling}. Thus the developer only has to divide the workload into appropriately sized blocks of threads and invoke the kernel.
 
 \begin{figure}[!htbp]
   \centering
@@ -143,7 +143,7 @@ In order to make programming easier, CUDA blocks can be addressed using either a
   \label{lst:code_matrix_addition}
 \end{listing}
 
-Finally, as the resources of each Streaming Multiprocessor are limited, there is an upper bound of how many threads a block can contain. Currently this maximum number of threads is $1024$. This means that the maximum size of matrices, that can be added with the two-dimensional thread block code sample in Listing~\ref{lst:code_matrix_addition} is $32\times32 = 1024$. To solve this problem CUDA introduces another layer above blocks called a grid. A grid organizes thread blocks again into either one, two, or three dimensions. The number of thread blocks in a grid is unlimited and thus solely dependent on the size of the workload. Figure~\ref{fig:grid_blocks} shows an example configuration of a 2D grid with 2D blocks.
+Finally, as the resources of each Streaming Multiprocessor are limited, there is an upper bound of how many threads a block can contain. Currently this maximum number of threads is $1024$. This means that the maximum size of matrices, that can be added with the two-dimensional thread block code sample in Listing~\ref{lst:code_matrix_addition} is $32\times32 = 1024$. To solve this problem CUDA introduces another layer above blocks called a grid. A grid organizes thread blocks again into either one, two, or three dimensions. The number of thread blocks in a grid is unlimited and thus solely dependent on the size of the workload. Fig.~\ref{fig:grid_blocks} shows an example configuration of a 2D grid with 2D blocks.
 
 \begin{figure}[!htbp]
   \centering
@@ -154,7 +154,7 @@ Finally, as the resources of each Streaming Multiprocessor are limited, there is
 
 \paragraph{Memory Hierarchy}
 
-In addition to the \emph{Thread Hierarchy} CUDA also implements a 3 layer memory hierarchy as illustrated in Figure~\ref{fig:memory_hierarchy}. Each level of this hierarchy differs in size, latency and scope. The sizes refers to amount of bytes that can be stored in the level and latency to the time it between requesting data and being able to actually use it. Additionally each level is confined to a specific scope, restricting from where the data can be accessed.
+In addition to the \emph{Thread Hierarchy} CUDA also implements a 3 layer memory hierarchy as illustrated in Fig.~\ref{fig:memory_hierarchy}. Each level of this hierarchy differs in size, latency and scope. The sizes refers to amount of bytes that can be stored in the level and latency to the time it between requesting data and being able to actually use it. Additionally each level is confined to a specific scope, restricting from where the data can be accessed.
 
 The first level contains the fastest and smallest memory. This is a private memory where each thread has its own area and only this thread can read from and write to this area. How much space each thread has is determined by how many threads are executed on each SM. The more memory an individual thread requires the fewer threads can run in parallel on a SM. Optimizing this trade-off is important for achieving a good performance. On the newest GPUs each SM has $65536 * 32\text{-bit} = 256\text{KB}$ to divide among the threads.
 

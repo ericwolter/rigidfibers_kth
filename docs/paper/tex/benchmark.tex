@@ -11,7 +11,7 @@ The methodology used for the benchmark suite is the same for all presented bench
 
 \subsection{Hardware}
 
-All benchmarks are run on the same workstation with specifications listed in Table~\ref{tab:workstation}. These hardware components can be considered a balanced system. This is done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
+All benchmarks are run on the same workstation with specifications listed in Tab.~\ref{tab:workstation}. These hardware components can be considered a balanced system. This is done to come as close as possible to a fair comparison between the CPU and GPU, as comparing a high-end CPU against a low-end GPU would only be of limited value.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -61,12 +61,12 @@ To further improve the statistical significance of the result the benchmark sche
 
 \section{Optimizations}
 
-We now look at the performance results for the different optimizations previously outlined in section~\ref{sec:serial_optimizations}. Where applicable, the results will be compared between the OpenMP and the CUDA version of the algorithm.
+We now look at the performance results for the different optimizations previously outlined in Sec.~\ref{sec:serial_optimizations}. Where applicable, the results will be compared between the OpenMP and the CUDA version of the algorithm.
 
 \subsection{Numeric vs. Analytic Integration}
 \label{subsec:bench_numeric_vs_analytic}
 
-The first benchmark tests the performance of the two different approaches to compute the inner integral from equation~\eqref{eq:inner_integral}. It can be solved either numerically or analytically. Figure~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation~\cite{Tornberg2006} the parallel version of the analytic integration is always faster than the numeric integration.
+The first benchmark tests the performance of the two different approaches to compute the inner integral from Eqn.~\eqref{eq:inner_integral}. It can be solved either numerically or analytically. Fig.~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation~\cite{Tornberg2006} the parallel version of the analytic integration is always faster than the numeric integration.
 
 \begin{figure}[!htbp]
   \centering
@@ -92,7 +92,7 @@ The first benchmark tests the performance of the two different approaches to com
   \label{fig:openmp_num_vs_anal}
 \end{figure}
 
-In contrast to the expected results of the OpenMP implementation the CUDA implementation shows a very different picture. When we look at the graph for the CUDA implementation in Figure~\ref{fig:cuda_num_vs_anal}, we can observe that the results are reversed. The numerical integration outperforms the analytical integration by a large margin increasing with the number of fibers.
+In contrast to the expected results of the OpenMP implementation the CUDA implementation shows a very different picture. When we look at the graph for the CUDA implementation in Fig.~\ref{fig:cuda_num_vs_anal}, we can observe that the results are reversed. The numerical integration outperforms the analytical integration by a large margin increasing with the number of fibers.
 
 \begin{figure}[!htbp]
   \centering
@@ -120,7 +120,7 @@ In contrast to the expected results of the OpenMP implementation the CUDA implem
 
 The reason for this result lies in the scheduling and execution of work on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means each line of code is executed for each thread in parallel. However, if the code encounters a branch in the execution path, like a simple \emph{if} statement, the threads diverge. First, all threads for which the condition is true are executed while the other threads have to wait. Then all threads for which the condition is false are executed while the others are not used. Finally, after all divergent code paths have been executed the code continuous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code~\cite{CudaBestPracticeGuide}.
 
-To confirm that Branch Divergence is the reason for the slowdown of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in section~\ref{sec:example_sphere} can be seen in Table~\ref{tab:branch_divergence}.
+To confirm that Branch Divergence is the reason for the slowdown of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in Sec.~\ref{sec:example_sphere} can be seen in Tab.~\ref{tab:branch_divergence}.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -137,14 +137,14 @@ To confirm that Branch Divergence is the reason for the slowdown of the analytic
   \label{tab:branch_divergence}
 \end{table}
 
-On the one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. As already discussed in section~\ref{subsec:numeric_analytic} the analytical solution of the inner integral potentially suffers from numerical instabilities. Closer inspection of the source code reveals that the steps taken to minimize these instabilities are responsible for the Branch Divergence. The steps involve a simple \emph{if} statement, that switches between two code path depending on how far apart the two fibers are. Unfortunately, this workaround is unavoidable to ensure numeric stability and explains the decreased performance on the GPU.
+On the one hand the numerical integration is almost $100\%$ efficient, meaning all warps execute in complete lockstep. The analytical integration on the other hand is only $50\%$ efficient, meaning that most of the time only half of the threads actually perform work while the other half is just waiting. This results in the observed performance difference. As already discussed in Sec.~\ref{subsec:numeric_analytic} the analytical solution of the inner integral potentially suffers from numerical instabilities. Closer inspection of the source code reveals that the steps taken to minimize these instabilities are responsible for the Branch Divergence. The steps involve a simple \emph{if} statement, that switches between two code path depending on how far apart the two fibers are. Unfortunately, this workaround is unavoidable to ensure numeric stability and explains the decreased performance on the GPU.
 
 \subsection{Shared Memory}
 \label{subsec:bench_shared_memory}
 
 The second optimization tried to use shared memory to reduce the amount of data that had to be transferred between the compute units and the global memory. For this each Streaming Multiprocessor has a small amount of locally shared memory. This memory can be accessed from all threads on the SM and in case data can be shared, it only has to be transferred slowly from global to shared memory once. Afterwards, in can be accessed from the faster local memory.
 
-During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in section~\ref{subsec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
+During testing and benchmarking the shared memory implementation of the \emph{Assemble System} step as described in Sec.~\ref{subsec:shared_memory}, no performance effect could be observed. Even though data can theoretically be shared among different threads is does not result in saved execution time.
 
 The reason for this is that the \emph{Assemble System} step is compute bound and not memory bound. This means that the time it takes to execute the computations, e.g. solving the integrals, takes substantially longer than reading and writing to global memory. This can be explained by looking at the 2D thread block version, where each kernel is responsible for a pair of fibers. Each kernel only needs to read $4$ vectors from global memory, the position and orientation of both fibers. Assuming single precision this is a total of just $4 * 3 * 4\text{bytes} = 48\text{bytes}$ per kernel invocation.
 
@@ -179,7 +179,7 @@ The next optimization looked at was the Thread Block Dimension on the GPU. Choos
   \label{fig:bench_cuda_thread_blocks}
 \end{figure}
 
-The results in Figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. The three-dimensional thread block is always slower and the performance gap grows with the number of fibers. The reason for this performance gap is the increased usage of atomics in the three-dimensional case. The overall usage of atomic functions can be inspected with the NVIDIA profiler \emph{nvprof} and the profiling metric \emph{Atomic Transactions}. This metric simply counts the total number of atomic transactions performed by calling atomic functions. Table~\ref{tab:atomic_transactions} lists the \emph{Atomic Transactions} counts for both the two-dimensional and three-dimensional simulation for a simple sedimenting sphere setup. The required \emph{Atomic Transactions} in the three-dimensional case are almost two times larger than for the two-dimensional case. These additional transactions incur a performance penalty, because they serialize the access to memory and threads have to wait while other threads finish writing to memory.
+The results in Fig.~\ref{fig:bench_cuda_thread_blocks} indicate that the best option for this particular GPU is a two-dimensional thread block. The three-dimensional thread block is always slower and the performance gap grows with the number of fibers. The reason for this performance gap is the increased usage of atomics in the three-dimensional case. The overall usage of atomic functions can be inspected with the NVIDIA profiler \emph{nvprof} and the profiling metric \emph{Atomic Transactions}. This metric simply counts the total number of atomic transactions performed by calling atomic functions. Tab.~\ref{tab:atomic_transactions} lists the \emph{Atomic Transactions} counts for both the two-dimensional and three-dimensional simulation for a simple sedimenting sphere setup. The required \emph{Atomic Transactions} in the three-dimensional case are almost two times larger than for the two-dimensional case. These additional transactions incur a performance penalty, because they serialize the access to memory and threads have to wait while other threads finish writing to memory.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -196,14 +196,14 @@ The results in Figure~\ref{fig:bench_cuda_thread_blocks} indicate that the best 
   \label{tab:atomic_transactions}
 \end{table}
 
-Figure~\ref{fig:bench_cuda_thread_blocks} also shows that the one-dimensional approach is slower than either the two-dimensional or three-dimensional approach. However, it appears to scale linearly whereas the other two scale exponentially. It can already be observed that the performance of the one-dimensional thread block becomes faster than the three-dimensional thread block for close to $2000$ fibers. Unfortunately, the hardware of the workstation does not have enough memory to simulate more fibers, allowing the one-dimensional approach to overtake the two-dimensional approach. Thus at least for our simulation we always use the two-dimensional approach.
+Fig.~\ref{fig:bench_cuda_thread_blocks} also shows that the one-dimensional approach is slower than either the two-dimensional or three-dimensional approach. However, it appears to scale linearly whereas the other two scale exponentially. It can already be observed that the performance of the one-dimensional thread block becomes faster than the three-dimensional thread block for close to $2000$ fibers. Unfortunately, the hardware of the workstation does not have enough memory to simulate more fibers, allowing the one-dimensional approach to overtake the two-dimensional approach. Thus at least for our simulation we always use the two-dimensional approach.
 
 \section{Linear Solvers}
 \label{sec:bench_linear_solvers}
 
-Next we compare the performance for different linear solvers. We explored two different types of solvers. The first type is a direct solver of the linear equations which is both implemented for OpenMP and the CUDA implementation. The second type are iterative solvers. Unfortunately, we can't make use of the iterative solvers main advantage to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system can be a very large part of the overall runtime, depending choice of solver and the fiber configuration as discussed in section~\ref{sec:algorithm_summary}. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
+Next we compare the performance for different linear solvers. We explored two different types of solvers. The first type is a direct solver of the linear equations which is both implemented for OpenMP and the CUDA implementation. The second type are iterative solvers. Unfortunately, we can't make use of the iterative solvers main advantage to efficiently solve sparse matrices as the system for the rigid fiber simulation is a dense matrix. The time required for solving the linear system can be a very large part of the overall runtime, depending choice of solver and the fiber configuration as discussed in Sec.~\ref{sec:algorithm_summary}. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall.
 
-On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al.~\cite{Fraysse2003} which takes extensive advantage of the underlying BLAS functions parallelized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests~\cite{Tornberg2006}. The benchmark results for this thesis are illustrated in Figure~\ref{fig:bench_openmp_solvers}.
+On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al.~\cite{Fraysse2003} which takes extensive advantage of the underlying BLAS functions parallelized by OpenBLAS. The original paper quotes that they choose GMRES because it was faster than a direct solver for their tests~\cite{Tornberg2006}. The benchmark results for this thesis are illustrated in Fig.~\ref{fig:bench_openmp_solvers}.
 
 \begin{figure}[!htbp]
   \centering
@@ -229,9 +229,9 @@ On the CPU side we used the direct solver provided by the OpenBLAS library, whic
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
-We observe exactly the same, GMRES is faster by a wide margin as reported by the original authors~\cite{Tornberg2006}. From an advantage of just $~40×$ for $1000$ fibers this increases to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observed number of iterations remain almost the same regardless of the number of fibers. However, there is one caveat to this clear victory, which is the minimal and average distance between the fibers. As their concentration increases so do the required GMRES iterations. It is likely that for a very complex setup with many more time steps, that at one point fibers come very close together. This might cause GMRES to have problems finding the solution. This effect will be tested later in section~\ref{sec:example_concentration_gmres}.
+We observe exactly the same, GMRES is faster by a wide margin as reported by the original authors~\cite{Tornberg2006}. From an advantage of just $~40×$ for $1000$ fibers this increases to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observed number of iterations remain almost the same regardless of the number of fibers. However, there is one caveat to this clear victory, which is the minimal and average distance between the fibers. As their concentration increases so do the required GMRES iterations. It is likely that for a very complex setup with many more time steps, that at one point fibers come very close together. This might cause GMRES to have problems finding the solution. This effect will be tested later in Sec.~\ref{sec:example_concentration_gmres}.
 
-On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in Figure~\ref{fig:bench_cuda_solvers}.
+On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in Fig.~\ref{fig:bench_cuda_solvers}.
 
 \begin{figure}[!htbp]
   \centering
@@ -262,7 +262,7 @@ The same fact that the iterative solvers are faster than the direct solver holds
 
 \section{Individual Steps}
 
-The next benchmark explores the relative time taken by each step of the algorithm, which were described in section~\ref{sec:algorithm_summary}~and~\ref{sec:kernels}. This gives valuable insight into the time allocation of the overall run time. Thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Figure~\ref{fig:bench_openmp_steps} and for CUDA in Figure~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in equation~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead. This is done to use the fastest algorithm variation on both the CPU and GPU as we showed in section~\ref{subsec:bench_numeric_vs_analytic}.
+The next benchmark explores the relative time taken by each step of the algorithm, which were described in Sec.~\ref{sec:algorithm_summary}~and Sec.~\ref{sec:kernels}. This gives valuable insight into the time allocation of the overall run time. Thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Fig.~\ref{fig:bench_openmp_steps} and for CUDA in Fig.~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in Eqn.~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach instead. This is done to use the fastest algorithm variation on both the CPU and GPU as we showed in Sec.~\ref{subsec:bench_numeric_vs_analytic}.
 
 \begin{figure}[!htbp]
   \centering
@@ -288,7 +288,7 @@ The next benchmark explores the relative time taken by each step of the algorith
   \label{fig:bench_openmp_steps}
 \end{figure}
 
-The results for the OpenMP implementation show that for $2000$ fibers the \emph{Assemble System} step is responsible for $78\%$ and the \emph{Update Velocities} step for $21\%$ of the overall time. The two other steps \emph{Solve System} and \emph{Update Fibers} barely register with just $1\%$. However, as discussed in the previous section~\ref{sec:bench_linear_solvers} this only holds true for sufficiently low concentrations of fibers.
+The results for the OpenMP implementation show that for $2000$ fibers the \emph{Assemble System} step is responsible for $78\%$ and the \emph{Update Velocities} step for $21\%$ of the overall time. The two other steps \emph{Solve System} and \emph{Update Fibers} barely register with just $1\%$. However, as discussed in the previous Sec.~\ref{sec:bench_linear_solvers} this only holds true for sufficiently low concentrations of fibers.
 
 \begin{figure}[!htbp]
   \centering
@@ -328,7 +328,7 @@ The final benchmark compares the CPU and GPU performance. How to make a fair com
 
 Exploring this question in more detail is out of the scope of this thesis. Nevertheless we try to make a best effort to do fair comparison of CPU and GPU performance. In order to come as close as possible given these complexities and constraints, we used both a current CPU and GPU which can be considered a balanced system at the time of writing. Additionally, we implemented the parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore, the final benchmark for each uses the fastest possible algorithm variant as determined by all previously performed benchmarks to compare the best variant on each architecture.
 
-The results for average time required to take a single time step is illustrated in Figure~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. For CUDA, we used the numerical integration and the thread block dimension was chosen to be 2-dimensional.
+The results for average time required to take a single time step is illustrated in Fig.~\ref{fig:overall}. For OpenMP the algorithm uses the analytical integration of the inner integral. For CUDA, we used the numerical integration and the thread block dimension was chosen to be 2-dimensional.
 
 \begin{figure}[!htbp]
   \centering
@@ -357,7 +357,7 @@ The results for average time required to take a single time step is illustrated 
   \label{fig:overall}
 \end{figure}
 
-The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. The speedup factors for the presented simulation variations are listed in Table~\ref{tab:overall_speedup}. CUDA maintains a relative performance of $~40×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
+The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers. The speedup factors for the presented simulation variations are listed in Tab~\ref{tab:overall_speedup}. CUDA maintains a relative performance of $~40×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
 
 \begin{table}[!htbp]
   \begin{center}

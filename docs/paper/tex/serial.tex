@@ -6,7 +6,7 @@ In the last chapter, we presented the theoretical foundation of the physics and 
 We will separate the overall algorithm into four steps and discuss each step individually. Additionally, we will touch upon implementation details used in the original serial version. We close the chapter with a brief reflection of the performance characteristics of the serial implementation to guide the parallel implementation on the GPU.
 
 \section{Assemble System}
-In the previous chapter we obtained the final closed system and the equations~\eqref{eq:velocity_centerline}~and~\eqref{eq:slender_boundary_constraints}. By integrating equation~\eqref{eq:velocity_centerline} from $-1$ to $1$ we can derive two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $m=1,2,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to the original paper by Tornberg and Gustavsson~\cite{Tornberg2006}.
+In the previous chapter we obtained the final closed system and the Eqns.~\eqref{eq:velocity_centerline}~and~\eqref{eq:slender_boundary_constraints}. By integrating Eqn.~\eqref{eq:velocity_centerline} from $-1$ to $1$ we can derive two separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$. Using these two equations and some algebra we can obtain a system of equations for $\mathbf{f}_m$ for all fibers from $m=1,2,\dots,M$, which only include computable quantities. For more details and an in depth discussion please refer to the original paper by Tornberg and Gustavsson~\cite{Tornberg2006}.
 
 In order to be able to solve these equations for $\mathbf{f}_m$ we have to discretize them. For this we expand the force as a sum of $N+1$ Legendre polynomials $P_n(s)$
 \begin{equation}
@@ -18,7 +18,7 @@ where the coefficients $a_{m}^{n}$ are vectors with three components. The number
 \subsection{Closed linear system}
 \label{subsec:closed_system}
 
-Using the force expansion from equation~\ref{eq:force_discretization} in equation~\ref{eq:slender_fibers_velocity} we get a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
+Using the force expansion from Eqn.~\eqref{eq:force_discretization} in Eqn.~\eqref{eq:slender_fibers_velocity} we get a closed linear system of equations for the coefficients $a_{m}^{n}$ for $n=1,\dots,N$ force expansions and $m = 1,\dots,M$ fibers.
 
 For a 3-dimensional simulation, this results in a linear system of size $3MN\times3MN$. The first step of the algorithm is thus to compute and assemble the linear system in memory. Writing the system in the standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure for the matrix $A$ and the right-hand side $b$
 \begin{equation}
@@ -48,7 +48,7 @@ For each $\bar{A}_{ml}$, a $3\times3$ matrix, $\Theta_{lm}^{kn}$, where
   \label{eq:inner_integral}
   \Theta_{lm}^{kn} = \int_{-1}^{1} \left[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right]P_n(s) \, ds \text{,}
 \end{equation}
-has to be evaluated for each force index $k,n = 1,2,\dots,N$. $G$ and $R$ are defined as in equation~\eqref{eq:green_function}~and~\eqref{eq:fiber_distance}, respectively. This can be achieved by using a standard Gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
+has to be evaluated for each force index $k,n = 1,2,\dots,N$. $G$ and $R$ are defined as in Eqns.~\eqref{eq:green_function}~and~\eqref{eq:fiber_distance}, respectively. This can be achieved by using a standard Gaussian quadrature approach for both the inner and outer integral. However, as fibers get very close the number of quadrature points have to increase to accurately compute the fiber interactions. Unfortunately, doing so also increases the unknowns in the system, which in turn decreases the performance. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
 
 Another option is to find an analytical solution for the inner integral and only solve the outer integral numerically. We will not discuss the detailed derivation of the analytical solution, for an in-depth discussion please see~\cite{Tornberg2006}. In theory this approach allows for perfect accuracy for the inner integral, however in practice this is limited by the numerical precision of the simulation. The obtained formulas are recursive and thus sensitive to round off errors. To minimize the accumulation of round off errors, the original serial implementation uses a trick and switches the direction of the recursion, depending on how far apart the fibers are. This improves the practical accuracy and did not have a negative effect on performance.
 
@@ -58,7 +58,7 @@ Choosing between both options requires a careful examination of the accuracy and
 
 After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers. This step is treated as a black box by the simulation, simply plugging in the matrix $\mathbf{A}$ and the vector $\mathbf{b}$ and getting back the solution vector $\mathbf{\bar{a}}$ representing the force coefficients.
 
-The linear system can either be solved using a direct solver or an iterative method like GMRES. Unfortunately the matrix is neither symmetric nor sparse so we can't take advantage of specialized solvers for these cases~\cite{Tornberg2006}. As long as the fibers are sufficiently far apart and the matrix is not ill-conditioned, GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in section~\ref{sec:bench_linear_solvers}.
+The linear system can either be solved using a direct solver or an iterative method like GMRES. Unfortunately the matrix is neither symmetric nor sparse so we can't take advantage of specialized solvers for these cases~\cite{Tornberg2006}. As long as the fibers are sufficiently far apart and the matrix is not ill-conditioned, GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in Sec.~\ref{sec:bench_linear_solvers}.
 
 \section{Update Velocities}
 
@@ -82,8 +82,9 @@ At the end of this step the state of the fibers can optionally be written to an 
 The original paper implemented this algorithm using Fortran. The computation were all performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are at each timestep $t=t^n$ given the fiber configuration in terms of position, $x_m$, and orientation, $t_m$, 
 \begin{description}
   \item[1. Assemble System] \hfill \\
-Computes all interactions between fibers and yields linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
-  \item[2. Solve System] 
+Computes all interactions between fibers and yields the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$
+  \item[2. Solve System]  \hfill \\
+Solves linear system, treated as black box
   \item[3. Update Velocities] \hfill \\
 Computes velocities $\mathbf{\dot{x}}$ and $\mathbf{\dot{t}}$
   \item[4. Update Fibers] \hfill \\
@@ -94,4 +95,4 @@ Empirical results show that the majority of the required computation time is spe
 
 Since we won't be writing our own implementation of linear solvers on the GPU we have only limited influence on the performance of the 2.~\emph{Solve System} step. We instead treat it as a black box and rely on the efficiency of pre-existing libraries. The only control we have is the choice which library and solver to use. For direct solvers the computation time only depends on the number of unknowns and is approximately constant throughout the simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
 
-Consequently, the most important step to optimize is 1.~\emph{Assemble System}. Fortunately it is well suited for parallelization. The fibers can be partitioned naturally across the compute units, where each unit is responsible for a subset of fibers. The focus of the optimization will thus lie on the \emph{Assemble System}. As the required computation for the 3.~\emph{Update Velocities} step is similar it will also indirectly benefit from any optimizations. Additionally, we will also look at how the two different options for solving the integral in equation~\ref{eq:inner_integral} perform in the parallel environment. Therefore, the next goal is to parallelize each algorithm step on the GPU.
+Consequently, the most important step to optimize is 1.~\emph{Assemble System}. Fortunately it is well suited for parallelization. The fibers can be partitioned naturally across the compute units, where each unit is responsible for a subset of fibers. The focus of the optimization will thus lie on the \emph{Assemble System}. As the required computation for the 3.~\emph{Update Velocities} step is similar it will also indirectly benefit from any optimizations. Additionally, we will also look at how the two different options for solving the integral in Eqn.~\ref{eq:inner_integral} perform in the parallel environment. Therefore, the next goal is to parallelize each algorithm step on the GPU.
