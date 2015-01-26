@@ -1,16 +1,18 @@
-\chapter{Experiments}
+\chapter{Numerical experiments}
 \label{cha:experiments}
 
-The previous chapter showed how much faster the CUDA implementation is compared to the same algorithm implemented on the CPU. This significant increase in performance allows for new experiments.
+The previous chapter showed how much faster the GPU implementation is compared to the same algorithm implemented on the CPU. This significant increase in performance allows for new numerical experiments.
 
-We will now perform a number of experiments to explore the numerical precision and validate the results against prior research. We begin by looking at tumbling orbits, a very delicate experiment requiring great precision. This is followed by a quick look at the effect of the fiber concentration on the required GMRES iterations to settle on the solution. Next we reproduce a very interesting physical phenomenon of letting a sphere of fibers sediment and validate our results against similar experiment by others. Furthermore, we will have a brief exploration of the effects of the number of fibers and the concentration of fibers on the sphere simulation. All experiments were run with the purely numerical, 2-dimensional CUDA algorithm  implemented in the thesis. The systems were solved using the direct solver from MAGMA in order to avoid variations in the run time.
+In this chapter we will present results from a number of experiments performed to explore the numerical precision of the implementation and to validate the results against prior research. 
+
+We begin by looking at tumbling orbits, a very delicate experiment requiring good numerical precision. Next we reproduce a very interesting physical phenomenon of letting a spherical cloud of fibers sediment and validate our results against similar experiment by others. Furthermore, we will have a brief exploration of the effects of the number of fibers and the concentration of fibers on the spherical cloud simulation. All experiments are run with the new GPU algorithm  implemented in the thesis. The linear system is solved using the direct solver from MAGMA in order to avoid variations in the run time.
 
 \section{Tumbling orbits}
 \label{sec:example_ring}
 
-The first example was used to verify that the single precision GPU version is able to replicate the result of the original double precision code. For this we looked at a very simple problem where a small number of fibers are set up with perfectly symmetrical positions and orientations. All fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation the fibers begin to rotate from their vertical orientation towards the horizontal position. Afterwards, they continue rotating back into the vertical position. This motion is referred to as tumbling orbits and as long as there are no disturbances or numerical precision issues it repeat forever.
+To verify that the single precision GPU implementation is able to replicate the result using the original double precision code, we perform a very simple experiment where a small number of fibers are set up with perfectly symmetrical positions and orientations. Initially, all fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation, while sedimenting, the fibers begin to rotate from their vertical orientation towards a horizontal position. Afterwards, they continue rotating back into the vertical position. This motion is referred to as a tumbling motion and as long as there are no disturbances or numerical precision issues it repeats forever.
 
-This simple but very interesting problem has also been simulated by Gustavsson and Tornberg~\cite{Gustavsson2009}. Additionally an even more simplified version with only two fibers was studied both numerically and experimentally by Jung et al.~\cite{Jung2006}. This example is thus ideally suited to test and verify the numerical precision of the GPU simulation. A visualization of the GPU simulation of $16$ fibers evenly distributed around a circle with a radius of $0.55$, is shown in Fig.~\ref{fig:ring_simulation}.
+This simple but very interesting problem has also been simulated by Gustavsson and Tornberg~\cite{Gustavsson2009}. Additionally an even more simplified version with only two fibers was studied both numerically and experimentally by Jung et al.~\cite{Jung2006}. This example is thus ideally suited to test and verify the numerical precision of the GPU implementation. A visualization of the result using the GPU code for $16$ fibers evenly distributed around a circle with a radius of $0.55$, is shown in Fig.~\ref{fig:ring_simulation}.
 
 \begin{figure}[!htbp]
   \centering
@@ -38,9 +40,9 @@ This simple but very interesting problem has also been simulated by Gustavsson a
   \label{fig:ring_simulation}
 \end{figure}
 
-In order to analyze the periodic movement of the fibers we now look at the sedimentation velocity caused by gravity. In the initial setup the fibers are aligned vertically and are dropping with the maximum velocity. As they rotate into the horizontal orientation the velocity is decreasing and reaches its minimum once the fibers are perpendicular to the direction of gravity. Afterwards on their way back to vertical orientation the velocity increases again.
+Initially, the fibers are aligned vertically and are sedimenting with the maximum velocity. As they rotate into the horizontal orientation the velocity decreases and reaches its minimum once the fibers are perpendicular to the direction of gravity. Afterwards on their way back to vertical orientation the velocity increases again.
 
-Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber over time for both the single precision GPU code and the original double precision Fortran code. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments.
+Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation velocity of a single fiber over time for both the single precision GPU code and the original double precision Fortran code. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. For this particular setup the maximum velocity is $~3.8$ and the minimum velocity is $~2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments. The difference in velocity between the two implementations is of the order $10^{-4}$. Hence, even for this delicate experiment, where a small disturbance will cause a deviation from the periodic orbit, the single precision accuracy is sufficient.
 
 \begin{figure}[!htbp]
   \centering
@@ -62,10 +64,10 @@ Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation ve
   \label{fig:ring_sedimentation_velocity}
 \end{figure}
 
-\section{Sedimenting sphere}
+\section{Sedimenting of a spherical cloud}
 \label{sec:example_sphere}
 
-The next example showcases a more chaotic system with a large number of interacting fibers. This experiment is studied by several papers, e.g.~\cite{Metzger2007}\cite{Park2010}\cite{Bulow2015}. It is especially interesting because the observed results only occur if enough fibers are simulated. Our GPU simulation is able to efficiently handle up to $2000$ fibers and is thus ideally suited for studying this example. For the experiment $2000$ fibers are initially distributed inside a sphere with a concentration of $0.4$. Both their positions and orientations are randomly generated inside this sphere. An illustration of an example run can be seen in Fig.~\ref{fig:sphere_simulation}.
+The next example is a more chaotic system with a large number of interacting fibers. In the numerical experiment $2000$ fibers are initially distributed in the form of a spherical cloud. Both their positions and orientations are random inside the cloud. Due to gravity the cloud will sediment. This experiment has been studied in several papers, e.g.~\cite{Bulow2015}\cite{Metzger2007}\cite{Park2010}. It is especially interesting because the observed results only occur if enough fibers are simulated. Our GPU simulation is able to efficiently handle up to $2000$ fibers and is thus ideally suited for studying this example.
 
 \begin{figure}[!htbp]
   \centering
@@ -93,16 +95,17 @@ The next example showcases a more chaotic system with a large number of interact
   \label{fig:sphere_simulation}
 \end{figure}
 
-This sphere of packed fibers is then allowed to sediment due to gravity. Beginning from the spherical shape the interacting fibers slowly begin to form a continuously turning torus. Even though the behavior is more chaotic due to the large number of fibers and the random initial setup, this turning torus resembles the result for the tumbling orbits in Sec.~\ref{sec:example_ring}.
+In Fig.~\ref{fig:sphere_simulation} we can see how the interacting fibers, beginning from the spherical shape, slowly start to form a continuously turning torus. Even though the behavior is more chaotic due to the large number of fibers and the random initial setup, this turning torus somewhat resembles the result for the tumbling orbits in Sec.~\ref{sec:example_ring}.
 
-After some time the torus breaks and the fibers are split into multiple smaller clusters. Each cluster continues to sediment separately and slowly forms its own smaller torus again. However, due to tiny variations these toruses can be harder to see.
+After some time the torus breaks and the fibers are split into multiple smaller cloudlets, which continue to sediment separately and slowly form their own smaller torus. However, due to tiny variations these toruses can be harder to see. 
 
-The calculation of the presented example only takes $~7.7$ seconds with the GPU simulation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow new research of this interesting phenomenon. One interesting research question is for example determining what influences the stability of the torus.
+The simulation of the presented example only takes $\~8$ seconds per timestep using the GPU implementation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow for new research of this interesting phenomenon. One interesting question is to determine what influences the stability of the torus that is, when time does the torus break up.
 
 \subsection{Sphere break-up}
-To begin investigating this question we first define the stability of the torus in terms of the break up time. How to determine the exact break up time of the torus is quite challenging. This problem and question was also examined by Park et al.~\cite{Park2010}. They define the break up as the moment when the torus starts to bend prior to actually breaking. Additionally, they describe an algorithm that determines which fibers are part of the torus. Consequently, they compute metrics such as the remaining fibers, the radius and velocity of the sedimenting torus. Unfortunately, they don't define a metric that determines the exact break up time. Thus we came up with our own measure of the break up time based on their work.
+\label{subsec:sphere_break}
+To begin investigating this question we first define the stability of the torus in terms of the break up time. How to determine the exact break up time of the torus is quite challenging. This problem was also examined by Park et al.~\cite{Park2010}. In~\cite{Park2010} the break-up time is defined as the moment when the torus starts to bend prior to actually breaking. Unfortunately, they do not define a metric that determines the exact break up time. Based on the work in ~\cite{Park2010} we have developed a new measure of the break-up time.
 
-We use the same definition for the torus as described by Park et al.~\cite{Park2010}. First we compute the initial horizontal radius $R_0$ of the sphere. Then as the sphere sediments and starts forming the torus a small number of fibers are separate. For each time step the center of mass of all fibers belonging to the torus is calculated. Any fibers with a distance larger than $R_0$ in the direction of gravity are excluded from the active set of fibers belonging to the torus. For the remaining fibers we then calculate the radius $R$ of the torus in each horizontal direction and the mean sedimentation velocity $V_z$. The torus metrics are illustrated for a sample run with $2000$ fibers and an average distance of $0.4$ in Fig.~\ref{fig:torus}. The horizontal radii $R_x$ and $R_y$ of the torus and the percentage of fibers remaining in the torus are shown in Fig.~\ref{fig:torus_radius} and Fig.~\ref{fig:torus_fibers}. The curves show the expected loss of fibers and the increasing torus radius.
+We use the same definition for the torus as described by Park et al.~\cite{Park2010}. First we compute the initial horizontal radius $R_0$ of the sphere. As the cloud sediments and starts forming the torus, there is a small leakage fibers in its vertical tail. To find these fibers, such that they can be excluded from the active set of fibers defining the torus, we exclude all fibers with a distance larger than $R_0$ in the direction of gravity from the center of mass of the torus. For the remaining fibers we can compute the radius $R$ of the torus in each horizontal direction and the mean sedimentation velocity $V_z$. The torus metrics are illustrated for a sample run with $2000$ fibers and an average distance of $0.4$ in Fig.~\ref{fig:torus}. The horizontal radii $R_x$ and $R_y$ of the torus and the percentage of fibers remaining in the torus are shown in Fig.~\ref{fig:torus_radius} and Fig.~\ref{fig:torus_fibers}. The curves show the expected loss of fibers and the increasing torus radius.
 
 \begin{figure}[!htbp]
   \centering
@@ -120,11 +123,9 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	
 	      \addplot[color=set11, very thick] table[x=Timestep,y=RadiusX,col sep=comma] {charts/sphere_2000_0040.csv};
 	      \addplot[color=set12, very thick] table[x=Timestep,y=RadiusY,col sep=comma] {charts/sphere_2000_0040.csv};
-	
-	      \legend{$R_x$,$R_y$}
 	    \end{axis}
 	  \end{tikzpicture}
-    \caption{Torus radius.}\label{fig:torus_radius}
+    \caption{Torus horizontal radius.}\label{fig:torus_radius}
   \end{subfigure}
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
@@ -142,11 +143,9 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	
 	      \addplot[color=set11, very thick] table[x=Timestep,y=NormalizedN,col sep=comma] {charts/sphere_2000_0040.csv};
 	
-	      \legend{$M / M_0$}
-	
 	    \end{axis}
 	  \end{tikzpicture}
-    \caption{Remaining fibers.}\label{fig:torus_fibers}
+    \caption{Percentage of remaining fibers.}\label{fig:torus_fibers}
   \end{subfigure}
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
@@ -164,10 +163,9 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
 	node[pos=444, pin={[pin edge={color=set12, very thick}]min}]{};
 	\addlegendentry{}
 	      \addplot[color=set11, very thick] table[x=Timestep,y=RadiusZStd,col sep=comma] {charts/sphere_2000_0040.csv};
-		\legend{,$R_z^{\text{std}}$};
 	    \end{axis}
 	  \end{tikzpicture}
-    \caption{Torus $\text{Radius}_z$ Deviation.}\label{fig:torus_deviation}
+    \caption{Torus $\text{Radius}_z$ Standard Deviation.}\label{fig:torus_deviation}
   \end{subfigure}
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
@@ -194,14 +192,16 @@ We use the same definition for the torus as described by Park et al.~\cite{Park2
   \label{fig:torus}
 \end{figure}
 
-We observe that the standard deviation of the radius in the direction of gravity in Fig.~\ref{fig:torus_deviation} continuously decreases as time passes. The standard deviation then reaches its minimum a few moments before the break up can be identified visually. We can now define this minimum of the standard deviation of the radius as a metric for the break up time. We verified this metric manually against many simulations and it showed great agreement with the visual break up. Using this metric we are now able to investigate the effect of some simulation parameters on the stability and break up time of the torus.
+In Fig.~\ref{fig:torus_deviation} we present the standard deviation of the radius in the direction of gravity as a function of time. We observe that the standard deviation of the radius in the direction of gravity for all fibers in the torus continuously decreases until it reaches a minimum value after which it starts to increase again. The time when the standard deviation reaches the minimum value can be identified visually to a few moments before the torus breaks up. We verified this metric manually against many simulations and it showed a great agreement with the visual moment of break-up. Using this metric we are now able to investigate the effect of the number and concentration of fibers on the stability and break up time of the torus.
 
 A surprising insight was that the standard deviation of the radius $R_z$ seems to oscillate in Fig.~\ref{fig:torus_deviation}. This oscillation in the direction of gravity means that the torus is periodically expanding and shrinking until it breaks up. The same effect can also be seen in the mean sedimentation velocity $V_z$ of the torus in Fig.~\ref{fig:torus_velocity}. Since the periodical change in velocity is similar to the motion observed in the simple tumbling orbits experiment in Sec.~\ref{sec:example_ring},  this result strongly supports the idea that the turning torus with $2000$ fibers resembles a more chaotic version of the simplified tumbling orbits.
 
 \subsection{Fiber concentration effect on break-up time}
 \label{subsec:effect_concentration}
 
-The first parameter we explored was the concentration of the fibers. Concentration again is defined in terms of the average distance between a fiber and its closest neighbor. For our experiments we fixed the number of fibers at $2000$ and used the exact values for all other parameters only changing the concentration. Fig.~\ref{fig:concentration_breakup} indicates that there is a clear correlation between the fiber concentration and the time until breakup. This matches the results found by Park et al.~\cite{Park2010}.
+The first parameter to explore is the concentration of fibers, which we measure in terms of the average distance between a fiber and its closest neighbor. In the numerical experiments, we fixed the number of fibers at $2000$ and varied the concentration in the spherical cloud by varying its initial radius. The break-up time is estimated using the metric defined in Sec.~\ref{subsec:sphere_break}.
+
+In Fig.~\ref{fig:concentration_breakup} the break-up time is presented as a function of the average distance between the fibers. We can see that there is a clear correlation. When the average distance between the fibers increases, i.e. a decrease in concentration, the time until the torus breaks up increases. When the cloud sediments and starts forming a torus, a large rotating velocity field is created in the fluid. The strength of this field depends on how strong the interaction between the fibers is. When the fibers are far apart the interaction between the fibers is small and the rotating motion will not be as strong, leading to a longer break-up time.
 
 \begin{figure}[!htbp]
   \centering
@@ -227,7 +227,9 @@ The first parameter we explored was the concentration of the fibers. Concentrati
 \subsection{Number of fibers effect on break up time}
 \label{subsec:effect_number}
 
-The second parameter we looked at was the number of fibers. For this experiment only the number of fibers was changed. Every other parameter was fixed. For the concentration we chose the same value of $0.4$ as during our benchmarks in Chapter~\ref{cha:benchmarks}. The resulting chart is shown in Fig.~\ref{fig:number_breakup}. It shows a positive correlation for the number of fibers and the break up.
+The second parameter we studied was the number of fibers. In this set of experiments, the concentration is fixed by keeping the average distance between the fibers fixed to $0.4$. We measure the break up time as we vary the number of fibers from $100$ to $2000$. In Fig.~\ref{fig:number_breakup} the result is displayed. Here we find that there is a positive correlation between the number of fibers and the break-up time, however not as strong as in the case when we varied the concentration in Sec.~\ref{subsec:effect_concentration}. These results match the results found by Park et al.~\cite{Park2010}.
+
+The results presented in Sec.~\ref{} and Sec.~\ref{} show that both fiber concentration and the number of fibers affect the break-up time of the torus. Future research should explore these correlations closer and include other studies such as the dependence of the initial shape of the cloud on the process.
 
 \begin{figure}[!htbp]
   \centering
@@ -238,7 +240,7 @@ The second parameter we looked at was the number of fibers. For this experiment 
       width={0.618033989\textwidth},
       unbounded coords=discard,
       xmin=0,xmax=2000,
-      ymin=0,ymax=500,
+      ymin=0,ymax=1800,
       grid=major,
       ]
       \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=M,y=Break] {charts/number_breakup.csv};
