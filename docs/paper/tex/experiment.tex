@@ -62,40 +62,6 @@ Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the sedimentation ve
   \label{fig:ring_sedimentation_velocity}
 \end{figure}
 
-\section{Fiber concentration effect on GMRES iterations}
-\label{sec:example_concentration_gmres}
-
-As alluded to in the discussion about the performance of direct solvers versus iterative solvers in Sec.~\ref{sec:bench_linear_solvers} we will now investigate how the concentration of fibers affects the GMRES iterations. In this context the concentration of fibers refers to the average distance between each fiber and its closest neighbor. Thus we use the average minimal pair-wise distance between the fibers as a measurement of fiber concentration. Fig.~\ref{fig:concentration_gmres} illustrates the number of iterations GMRS needs to solve the system for a given pair-wise distance. Please note that the x-axis as well as the y-axis are logarithmic to improve clarity.
-
-\begin{figure}[!htbp]
-  \centering
-  \begin{tikzpicture}
-    \begin{axis}[
-      xlabel={Average distance},
-      ylabel={GMRES iterations},
-      width={0.8\textwidth},
-      unbounded coords=discard,
-      xmode=log,
-      ymode=log,
-      grid=major,
-      xmin=0,xmax=100,
-      ymin=0,ymax=400,
-      ]
-
-      \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Average] {charts/concentration_gmres.csv};
-
-    \end{axis}
-  \end{tikzpicture}
-  \caption[Effect of fiber concentration on GMRES iterations.]{Effect of fiber concentration on GMRES iterations. The number of GMRES iterations increases dramatically for close fibers.}
-  \label{fig:concentration_gmres}
-\end{figure}
-
-We can see that for an increasing average pair-wise distance, i.e. a lower fiber concentration, the number of iterations decreases. The average iteration count for the concentration (average distance of $0.4$) we used during our benchmarks in Chapter~\ref{cha:benchmarks} lies between $3$ and $10$. However, as the average pair-wise distance decreases we observe an exponential increase in the number of iterations.
-
-To find the reason for this we have again have to look at the integral in Eqn.~\eqref{eq:inner_integral} which has to be solved for each fiber pair during the \emph{Assemble System} step. The required Stokeslet computations in Eqn.~\eqref{eq:stokeslet_stokeslet} include the distance between the fibers in the denominator. As the distance gets very small the value of the Stokeslet becomes large. These large terms can then cause the assembled matrix to become ill-conditioned and thus increase the number of iterations GMRES requires to settle on a solution.
-
-This result is important to keep in mind when simulating long running complex fiber configuration. Here the probability that any two fibers get close to each other is very high. If this is the case solving the system using GMRES takes longer than expected. In practice it might thus be beneficial to switch to the direct solver, as it has a predictable runtime. This is especially true because the performance difference between direct and iterative solvers on the GPU is relatively small.
-
 \section{Sedimenting sphere}
 \label{sec:example_sphere}
 
