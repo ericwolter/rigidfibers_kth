@@ -27,7 +27,7 @@ All benchmarks are run on the same workstation with specifications listed in Tab
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption{Benchmark Hardware Specification.}
+  \caption{Benchmark hardware specification.}
   \label{tab:workstation}
 \end{table}
 
@@ -35,7 +35,7 @@ The Intel Core i7 4770 processor is an 4-Core CPU based on Intel's Haswell Archi
 
 \subsection{Benchmark scheme}
 
-In order to generate statistically significant and reproducible execution times, all benchmakrs tests for both the CPU and GPU implementation uses exactly the same run-scheme.
+In order to generate statistically significant and reproducible execution times, all benchmarks tests for both the CPU and GPU implementation uses exactly the same run-scheme.
 
 For each benchmark run we start with a configuration of M fibers randomly distributed in space. In order to exclude configurations where fibers overlap and/or intersect, the random process is modified such that there always is a fixed minimum distance between two fibers. Furthermore, on order to ensure a fair comparison between e.g. different linear solvers, the average distance between fibers are kept fixed for all runs independently of the number of fibers. As will be shown in Section~, the number of iterations of the iterative solvers depend on the average distance between the fibers. As the average distance become smaller, the condition number of the matrix increases and more iterations are needed for the iterative solver to converge. Thus by keeping the average distance fixed, we minimize the influence of the number of iterations in the iterative solver on the comparison.
 
@@ -68,27 +68,27 @@ We now look at the performance results for the different optimizations strategie
 \label{subsec:bench_numeric_vs_analytic}
 
 The first benchmark tests the performance of the two different approaches to compute the inner integral in Eqn.~\eqref{eq:inner_integral}. It can be solved either numerically or analytically. Fig.~\ref{fig:openmp_num_vs_anal} illustrates the performance timings for the \emph{Assemble System} step of the parallel OpenMP version. Inline with the observations made by the authors of the original serial implementation,~\cite{Tornberg2006}, the parallel version of the analytic integration is always faster to use than numerical integration.
-
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
+	width=.9\textwidth,
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      ymin=0,ymax=55,
-      xmin=0,xmax=2000,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_analytical.csv};
+      \addplot[color=set12,mark=square*,mark options={fill=white}, very thick] table[x=X,y=ASSEMBLE_SYSTEM] {benchmarks/openmp_direct_analytical.csv};
 
       \legend{Numerical, Analytical}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark computing inner integral on CPU.]{Benchmark comparing numerical and analytical integration of inner integral (Eqn.~\eqref{eq:inner_integral} using OpenMP.}
+  \caption[Benchmark computing inner integral on CPU.]{Benchmark comparing numerical and analytical integration of the inner integral in Eqn.~\eqref{eq:inner_integral} using OpenMP.}
   \label{fig:openmp_num_vs_anal}
 \end{figure}
 
@@ -98,26 +98,27 @@ In contrast to the expected results of the OpenMP implementation, the CUDA imple
   \centering
   \begin{tikzpicture}
     \begin{axis}[
+	width=.9\textwidth,
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      ymin=0,ymax=5.5,
-      xmin=0,xmax=2000,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
+      \addplot[color=set12,mark=square*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_bicgstab_analytical_2D.csv};
 
       \legend{Numerical, Analytical}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark computing inner integral on GPU.]{Benchmark comparing numerical and analytical integration of inner integral (Eqn.~\eqref{eq:inner_integral}) using CUDA.}
+  \caption[Benchmark computing inner integral on GPU.]{Benchmark comparing numerical and analytical integration of the inner integral in Eqn.~\eqref{eq:inner_integral} using CUDA.}
   \label{fig:cuda_num_vs_anal}
 \end{figure}
 
-The reason for this result lies in the scheduling and execution of work on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means that each line of code is executed for each thread in parallel. However, if the code encounters a branch in the execution path, like a simple \emph{if} statement, the threads diverge. First, all threads for which the condition is true are executed while the other threads have to wait. Then all threads for which the condition is false are executed while the others are not used. Finally, after all divergent code paths have been executed the code continuous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code~\cite{CudaBestPracticeGuide}.
+The reason for this result lies in the scheduling and execution of work on the GPU. All code inside a thread block (more precisely a warp) is always executed in lockstep. This means that each line of code is executed for each thread in parallel. However, if the code encounters a branch in the execution path, like a simple \emph{if} statement, the threads diverge. First, all threads for which the condition is true are executed while the other threads have to wait. Then all threads for which the condition is false are executed while the others are not used. Finally, after all divergent code paths have been executed the code continuous in lockstep. This issue is referred to as Branch Divergence and should be avoided as much as possible when writing parallel GPU Code,~\cite{CudaBestPracticeGuide}.
 
 To confirm that Branch Divergence is the reason for the slowdown of the analytic integration on the GPU we look at the metrics of the CUDA profiler \emph{nvprof}. The metric \emph{Warp Execution Efficency} shows the ratio of the average active threads per warp to the maximum number of threads per warp. The metrics for both the numerical and analytical integration of the Spherical fiber setup used in Sec.~\ref{sec:example_sphere} can be seen in Tab.~\ref{tab:branch_divergence}.
 
@@ -132,7 +133,7 @@ To confirm that Branch Divergence is the reason for the slowdown of the analytic
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption[Warp Execution Efficiency of Numerical vs. Analytical Integration.]{CUDA performance metric \emph{Warp Exection Efficiency} comparison for the numerical and analytical integration of the inner integral (Eqn.~\eqref{eq:inner_integral}).}
+  \caption[Warp Execution Efficiency of Numerical vs. Analytical Integration.]{CUDA performance metric \emph{Warp Exection Efficiency} comparison for the numerical and analytical integration of the inner integral in Eqn.~\eqref{eq:inner_integral}.}
   \label{tab:branch_divergence}
 \end{table}
 
@@ -160,16 +161,16 @@ The final optimization strategy studies is the Thread Block Dimension on the GPU
     \begin{axis}[
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      ymin=0,ymax=1.4,
-      xmin=0,xmax=2000,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_1D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
-      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_3D.csv};
+      \addplot[color=set12,mark=square*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_2D.csv};
+      \addplot[color=set13,mark=triangle*,mark options={fill=white}, very thick] table[x=X,y=assemble_system] {benchmarks/cuda_magma_numerical_3D.csv};
 
       \legend{1D, 2D, 3D}
     \end{axis}
@@ -203,9 +204,9 @@ Fig.~\ref{fig:bench_cuda_thread_blocks} also shows that the one-dimensional appr
 Next we compare the performance for different linear solvers. The time required for solving the linear system can be a very large part of the overall runtime, depending choice of solver and the fiber configuration as discussed in Sec.~\ref{sec:algorithm_summary}. It is therefore very important to find the optimal solver for this particular solver to arrive at the best performing algorithm overall. We explore two different types of solvers. The first type is a direct solver which is implemented for CPU and the GPU version of the code. The second type is iterative solvers. 
 
 \subsection{Direct solver vs iterative solver on CPU}
-On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al.~\cite{Fraysse2003} which takes extensive advantage of the underlying BLAS functions parallelized by OpenBLAS. 
+On the CPU side we used the direct solver provided by the OpenBLAS library, which is fully parallelized. For GMRES we used the single precision Fortran implementation from Frayssé et al.,~\cite{Fraysse2003}, which takes extensive advantage of the underlying BLAS functions parallelized by OpenBLAS. 
 
-The original paper quotes that they choose GMRES because it is faster than a direct solver for their tests~\cite{Tornberg2006}. The benchmark results for this thesis are illustrated in Fig.~\ref{fig:bench_openmp_solvers}.
+The original paper quotes that they choose GMRES because it is faster than a direct solver for their tests,~\cite{Tornberg2006}. The benchmark results for this thesis are illustrated in Fig.~\ref{fig:bench_openmp_solvers}.
 
 \begin{figure}[!htbp]
   \centering
@@ -213,48 +214,52 @@ The original paper quotes that they choose GMRES because it is faster than a dir
     \begin{axis}[
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      ymin=0,
-      xmin=0,xmax=2000,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_direct_numerical.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_gmres_numerical.csv};
+      \addplot[color=set12,mark=square*,mark options={fill=white}, very thick] table[x=X,y=SOLVE_SYSTEM] {benchmarks/openmp_gmres_numerical.csv};
 
       \legend{Direct Solver, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark linear solvers on CPU.]{Benchmarking comparing linear solvers on the CPU. Direct linear is provided by OpenBLAS~\cite{OpenBLAS} and iterative GMRES solver by Frayssé et al.~\cite{Fraysse2003}.}
+  \caption[Benchmark linear solvers on CPU.]{Benchmarking comparing linear solvers on the CPU. The direct solver is provided by OpenBLAS,~\cite{OpenBLAS}, and iterative GMRES solver by Frayssé et al.,~\cite{Fraysse2003}.}
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
-\subsection{Fiber concentration effect on GMRES iterations}
-\label{sec:example_concentration_gmres}
+We observe exactly the same, GMRES is faster by a wide margin as reported by the original authors,~\cite{Tornberg2006}. From an advantage of just ${\sim}40×$ for $1000$ fibers this increases to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observed number of iterations remain almost the same regardless of the number of fibers. However, there is one caveat to this clear victory, which is the minimal and average distance between the fibers. As their concentration increases so do the required GMRES iterations. It is likely that for a very complex setup with many more time steps, that at one point fibers come very close together. This might cause GMRES to have problems finding the solution. This effect is investigated closer in Sec.~\ref{subsec:example_concentration_gmres}.
 
-As alluded to in the discussion about the performance of direct solvers versus iterative solvers in Sec.~\ref{sec:bench_linear_solvers} we will now investigate how the concentration of fibers affects the GMRES iterations. In this context the concentration of fibers refers to the average distance between each fiber and its closest neighbor. Thus we use the average minimal pair-wise distance between the fibers as a measurement of fiber concentration. Fig.~\ref{fig:concentration_gmres} illustrates the number of iterations GMRS needs to solve the system for a given pair-wise distance. Please note that the x-axis as well as the y-axis are logarithmic to improve clarity.
+\subsection{Fiber concentration effect on GMRES iterations}
+\label{subsec:example_concentration_gmres}
+
+During benchmarking we observed that the performance of iterative solvers can be highly variable. An important factor in determining the performance of iterative solvers is the number of iterations required to settle on the solution. In this section we will now investigate how the concentration of the fibers affects the number of GMRES iterations. 
+
+In this context the concentration of fibers refers to the average distance between each fiber and its closest neighbor. Thus we use the average minimal pair-wise distance between the fibers as a measurement of fiber concentration. Fig.~\ref{fig:concentration_gmres} illustrates the number of iterations GMRS needs to solve the system for a given pair-wise distance. Please note that the x-axis as well as the y-axis are logarithmic to improve readability.
 
 \begin{figure}[!htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
-      xlabel={Average distance},
+      xlabel={Concentration},
       ylabel={GMRES iterations},
       width={0.8\textwidth},
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
-      xmin=0,xmax=100,
-      ymin=0,ymax=400,
+      xmin=0.01,xmax=100,
+      ymin=0.1,ymax=1000,
       ]
 
-      \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Average] {charts/concentration_gmres.csv};
+      \addplot[color=set11, mark=*,mark options={fill=white}, very thick] table[x=Concentration,y=Average,col sep=comma] {charts/concentration_gmres.csv};
 
     \end{axis}
   \end{tikzpicture}
-  \caption[Effect of fiber concentration on GMRES iterations.]{Effect of fiber concentration on GMRES iterations. The number of GMRES iterations increases dramatically for close fibers.}
+  \caption[Effect of fiber concentration on GMRES iterations.]{Effect of fiber concentration on GMRES iterations. The number of GMRES iterations increases dramatically when the distance between the fibers is small.}
   \label{fig:concentration_gmres}
 \end{figure}
 
@@ -266,9 +271,7 @@ This result is important to keep in mind when simulating long running complex fi
 
 \subsection{Direct solver vs. iterative solver on GPU}
 
-We observe exactly the same, GMRES is faster by a wide margin as reported by the original authors~\cite{Tornberg2006}. From an advantage of just $~40×$ for $1000$ fibers this increases to $300×$ for the maximum number of $2000$. GMRES clearly scales better with the number of fibers than the direct solver. The observed number of iterations remain almost the same regardless of the number of fibers. However, there is one caveat to this clear victory, which is the minimal and average distance between the fibers. As their concentration increases so do the required GMRES iterations. It is likely that for a very complex setup with many more time steps, that at one point fibers come very close together. This might cause GMRES to have problems finding the solution. This effect will be tested later in Sec.~\ref{sec:example_concentration_gmres}.
-
-On the GPU side we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the CUDA solvers are illustrated in Fig.~\ref{fig:bench_cuda_solvers}.
+We will now look at the performance of the direct solver compared to the iterative solvers on the GPU. On the GPU we used the direct solver provided by the MAGMA library. For the iterative solvers both GMRES as well as BiCGStab were compared as they can be easily exchanged and tested using the ViennaCL library. The benchmark results for the GPU solvers are illustrated in Fig.~\ref{fig:bench_cuda_solvers}.
 
 \begin{figure}[!htbp]
   \centering
@@ -276,21 +279,21 @@ On the GPU side we used the direct solver provided by the MAGMA library. For the
     \begin{axis}[
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      ymin=0,
-      xmin=0,xmax=2000,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
       grid=major,
       ]
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_magma_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
-      \addplot[color=set13,mark=*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_gmres_numerical_2D.csv};
+      \addplot[color=set12,mark=square*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_bicgstab_numerical_2D.csv};
+      \addplot[color=set13,mark=triangle*,mark options={fill=white}, very thick] table[x=X,y=solve_system] {benchmarks/cuda_gmres_numerical_2D.csv};
 
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark linear solvers on GPU.]{Benchmarking comparing linear solvers on the GPU. Direct linear is provided by MAGMA~\cite{MagmaDocumentation} and iterative solvers, BiCGStab and GMRES, by ViennaCL~\cite{ViennaCLRupp2010}.}
+  \caption[Benchmark linear solvers on GPU.]{Benchmarking comparing linear solvers on the GPU. The direct solver is provided by MAGMA,~\cite{MagmaDocumentation}, and iterative solvers, BiCGStab and GMRES, by ViennaCL,~\cite{ViennaCLRupp2010}.}
   \label{fig:bench_cuda_solvers}
 \end{figure}
 
@@ -309,7 +312,7 @@ The next benchmark explores the relative time taken by each step of the algorith
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
       stack plots=y,
-      ymin=0,ymax=70,
+      ymin=0,ymax=50,
       xmin=0,xmax=2000,
       ]
       \addplot[color=set19,mark=*,mark options={fill=white}, very thick, stack plots=false] table[x=X,y=TOTAL] {benchmarks/openmp_gmres_analytical.csv};
@@ -350,17 +353,17 @@ The results for the OpenMP implementation (Fig.~\ref{fig:bench_openmp_steps}) sh
   \label{fig:bench_cuda_steps}
 \end{figure}
 
-For the CUDA implementation Fig.~\ref{fig:bench_cuda_steps} shows that the \emph{Assemble System} step remains the largest block with $72\%$ of the time. However, now the \emph{Solve System} step takes $20\%$ of the time and \emph{Update Velocites} drops to just $7\%$.\emph{Update Fibers} is also negligible here with below $1\%$.
+For the CUDA implementation Fig.~\ref{fig:bench_cuda_steps} shows that the \emph{Assemble System} step remains the largest block with $72\%$ of the time. However, now the \emph{Solve System} step takes $20\%$ of the time and \emph{Update Velocites} drops to just $7\%$. \emph{Update Fibers} is also negligible here with below $1\%$.
 
-This difference between the CPU and GPU implementation in the relative time between the steps can be attributed to the comparatively slow GMRES implementation on the GPU. In absolute terms for $2000$ fibers both the CPU and GPU take $~0.25$ seconds for solving the system. But, when transferring the same relative distribution from the CPU to GPU this makes the GPU GMRES implementation $40×$ too slow. The other steps all perform relatively better.
+This difference between the CPU and GPU implementation in the relative time between the steps can be attributed to the comparatively slow GMRES implementation on the GPU. In absolute terms for $2000$ fibers both the CPU and GPU take ${\sim}0.25$ seconds for solving the system. But, when transferring the same relative distribution from the CPU to GPU this makes the GPU GMRES implementation $40×$ too slow. The other steps all perform relatively better.
 
-The reason for this most likely lies in the non-optimized code for the GMRES solver in ViennaCL. The authors openly state that the major goal for their library is easy of use and not pure performance~\cite{ViennaCLRupp2010}. The parallel BLAS functions from OpenBLAS on the other hand have been highly optimized and tested for a long time.
+The reason for this most likely lies in the non-optimized code for the GMRES solver in ViennaCL. The authors openly state that the major goal for their library is easy of use and not pure performance,~\cite{ViennaCLRupp2010}. The parallel BLAS functions from OpenBLAS on the other hand have been highly optimized and tested for a long time.
 
-This point is reinforced if we look at the same timings for the linear solvers. Here the absolute time for \emph{Solve System} step on the GPU is just $\~7$ seconds compared to the $\~76$ seconds on the CPU. Again transferring the relative distribution from the CPU to the GPU yields just a small factor of $\~1.4×$. This illustrates that the highly optimized code of the MAGMA library performs roughly on the same level as the optimized code from OpenBLAS.
+This point is reinforced if we look at the same timings for the linear solvers. Here the absolute time for \emph{Solve System} step on the GPU is just ${\sim}7$ seconds compared to the ${\sim}76$ seconds on the CPU. Again transferring the relative distribution from the CPU to the GPU yields just a small factor of ${\sim}1.4×$. This illustrates that the highly optimized code of the MAGMA library performs roughly on the same level as the optimized code from OpenBLAS.
 
 \section{GPU vs. CPU}
 
-The final benchmark compares the CPU and GPU performance. How to make a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature~\cite{Lee2010}\cite{Gregg2011}. The underlying architectures of the two approaches are completely different and thus hard to compare. There are approaches where the relative performance is extrapolated from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account~\cite{Lee2010}. However, due to intricate hardware details this approach is also not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus~\cite{Kamil2008}.
+The final benchmark compares the CPU and GPU performance. How to make a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature,~\cite{Lee2010}\cite{Gregg2011}. The underlying architectures of the two approaches are completely different and thus hard to compare. There are approaches where the relative performance is extrapolated from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account,~\cite{Lee2010}. However, due to intricate hardware details this approach is also not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus,~\cite{Kamil2008}.
 
 Exploring this question in more detail is out of the scope of this thesis. Nevertheless we try to make a best effort to do fair comparison between the CPU and the GPU performance. In order to come as close as possible given these complexities and constraints, we use a modern CPU and GPU which can be considered a balanced system at the time of writing. Additionally, we implemented a parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore, the final benchmark uses the fastest possible version of the algorithms as determined by the performed benchmarks.
 
@@ -372,8 +375,8 @@ The results for average time required to take a single time step is illustrated 
     \begin{axis}[
       xlabel={Number of fibers},
       ylabel={Execution time (sec)},
-      xmin=0,xmax=2000,
-      ymin=0,ymax=140,
+      enlarge y limits=true,
+      enlarge x limits=true,
       unbounded coords=discard,
       xmode=log,
       ymode=log,
@@ -381,18 +384,18 @@ The results for average time required to take a single time step is illustrated 
       ]
 
       \addplot[color=set11,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_gmres_numerical_2D.csv};
-      \addplot[color=set11_light,mark=*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_magma_numerical_2D.csv};
-      \addplot[color=set12,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_gmres_analytical.csv};
-      \addplot[color=set12_light,mark=*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
+      \addplot[color=set11_light,mark=square*,mark options={fill=white}, very thick] table[x=X,y=total] {benchmarks/cuda_magma_numerical_2D.csv};
+      \addplot[color=set12,mark=triangle*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_gmres_analytical.csv};
+      \addplot[color=set12_light,mark=diamond*,mark options={fill=white}, very thick] table[x=X,y=TOTAL] {benchmarks/openmp_direct_analytical.csv};
 
       \legend{CUDA GMRES, CUDA Direct, OpenMP GMRES, OpenMP Direct}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark overall execution time.]{Benchmark comparing overall execution time for OpenMP and CUDA. Both the CPU and GPU implementation are run using the fastest algorithm variation as determined in Sec~\ref{sec:bench_optimization} and each implementation is tested with a direct and iterative solver. The CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by $~40×$.}
+  \caption[Benchmark overall execution time.]{Benchmark comparing overall execution time for OpenMP and CUDA. Both the CPU and GPU implementation are run using the fastest algorithm as determined in Sec~\ref{sec:bench_optimization} and each implementation is tested with a direct and iterative solver. The CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by ${\sim}40×$.}
   \label{fig:overall}
 \end{figure}
 
-The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers that we are able to test. The speedup factors for the presented simulation variations are listed in Tab~\ref{tab:overall_speedup}. CUDA maintains a relative performance of $~40×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
+The required simulation time on the GPU outperforms the CPU by a wide margin. The GPU version is faster for any number of fibers that we are able to test. The speedup factors for the presented simulation variations are listed in Tab~\ref{tab:overall_speedup}. CUDA maintains a relative performance of ${\sim}40×$. The only advantage the CPU version has is the potentially larger memory as 4GB on the GPU limits the number of fibers to roughly $2000$, so for more fibers OpenMP is the only option.
 
 \begin{table}[!htbp]
   \begin{center}
@@ -407,7 +410,7 @@ The required simulation time on the GPU outperforms the CPU by a wide margin. Th
       \bottomrule
     \end{tabulary}
   \end{center}
-  \caption[Speedup factors for overall execution time.]{The speedup factors for the overall execution time of a simulation with $2000$ fibers for the CPU and GPU implementation. In case of a direct solvers the GPU implementation shows a speedup of $16×$ compared to the CPU implementation. Comparing GMRES the CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by $39×$.}
+  \caption[Speedup factors for overall execution time.]{The speedup factors for the overall execution time of a simulation with $2000$ fibers for the CPU and GPU implementation. In case of a direct solver the GPU implementation shows a speedup of $16×$ compared to the CPU implementation. Comparing the two GMRES versions, the CUDA-based GPU implementation outperforms the OpenMP-based CPU implementation by $39×$.}
   \label{tab:overall_speedup}
 \end{table}
 

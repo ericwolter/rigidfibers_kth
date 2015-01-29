@@ -2,7 +2,7 @@
 \label{cha:theoretical_foundation}
 The introduction discussed different applications of rigid fiber simulations. It especially stressed the importance of being able to simulate a large number of fibers in order to generate the various patterns found in real world experiments.
 
-In this chapter, we will present the theoretical foundation of the physics and the mathematical model the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the model is only presented in a reduced summary, and for more details please refer to Tornberg and Gustavsson~\cite{Tornberg2006}.
+In this chapter, we will present the theoretical foundation of the physics and the mathematical model the simulations are based on. This is required to be able to understand the numerical method used throughout the rest of the thesis. However, the model is only presented in a reduced summary, and for more details please refer to Tornberg and Gustavsson,~\cite{Tornberg2006}.
 
 \section{Stokes flow}
 \label{sec:stokes_flow}
@@ -42,7 +42,7 @@ In our simulations this background velocity is always set to $0$. Through the mo
 \section{Boundary integral formulation}
 \label{sec:boundary_integral_formulation}
 
-The Stokes equations are linear in both velocity and pressure, which allows them to be solved using a number of different methods for linear partial differential equations. The approach used in this thesis is the boundary integral method, e.g. Pozrikidis~\cite{Pozrikidis1992}.
+The Stokes equations are linear in both velocity and pressure, which allows them to be solved using a number of different methods for linear partial differential equations. The approach used in this thesis is the boundary integral method, e.g. Pozrikidis,~\cite{Pozrikidis1992}.
 
 \subsection{Fundamental solutions}
 \label{subsec:fundamental_solutions}
@@ -86,7 +86,7 @@ where $\mathbf{U}^m$ is the translational velocity of the object and $\mathbf{\o
   \label{fig:immersed_rigid}
 \end{figure}
 
-By combining the rigid body motion with the boundary integral formulation (Eqn.~\eqref{eq:stokeslet_velocity_field}) of the Stokes equations we can now relate the objects velocities with the force exerted by all other objects. For this we take advantage of the linearity of the Stokes equation and apply the superposition principle. The superposition principle states that the combined effect from all objects at a single point in the flow is simply the sum of all the individual effects caused by each object. For $M$ fibers this yields the following relationship between the objects velocities and the force distribution , $f$, on the surface of the object,
+By combining the rigid body motion with the boundary integral formulation in Eqn.~\eqref{eq:stokeslet_velocity_field} of the Stokes equations we can now relate the objects velocities with the force exerted by all other objects. For this we take advantage of the linearity of the Stokes equation and apply the superposition principle. The superposition principle states that the combined effect from all objects at a single point in the flow is simply the sum of all the individual effects caused by each object. For $M$ fibers this yields the following relationship between the objects velocities and the force distribution , $f$, on the surface of the object,
 \begin{equation}
   \label{eq:objects_boundary}
 	\mathbf{U}_i^m + (\mathbf{\omega}^m \times (\POS - \POS_c^m))_i = \frac{1}{8 \pi \mu} \sum_{l=1}^{M} \int_{\Gamma^l} S_{ij}(\mathbf{x},\mathbf{y})f_j^l(\mathbf{y}) \, dS_y \quad i,j =1,2,3 \text{.}
@@ -137,24 +137,24 @@ The formulation developed in the previous section is now adapted for a particula
     \includegraphics[width=\textwidth]{img/slender/1_100.png}
     \caption{$\epsilon=1/100$}\label{fig:slenderness_1_100}
   \end{subfigure}
-  \caption[Illustration of the slenderness parameters.]{Illustration of the slenderness parameters, when $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitesimal slender fiber.}
+  \caption[Illustration of the slenderness parameters.]{Illustration of the slenderness parameters. When $\epsilon$ becomes smaller the shape of the body asymptotically approaches that of an infinitesimal slender fiber.}
   \label{fig:slenderness}
 \end{figure}
 
 Our goal is to simulate many slender fibers, but using the 2D boundary integral formulation would be very expensive to solve numerically. As the aspect ratio $1/\epsilon$ of the fiber increases, the requirement of the number of quadrature points also increases in order to accurately resolve the flow field around the fibers. However, for slender bodies a slender body approximation can be used instead. 
 
-The slender body approximation is derived from the boundary integral formulation of the Stokes Eqns.~\eqref{eq:objects_velocity_field}. Using asymptotic analysis the governing surface integrals are reduced to 1D equations along a centerline of the fiber. This is achieved by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity~\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$ This reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
+The slender body approximation is derived from the boundary integral formulation of the Stokes Eqns.~\eqref{eq:objects_velocity_field}. Using asymptotic analysis the governing surface integrals are reduced to 1D equations along a centerline of the fiber. This is achieved by matching the fluid velocity at a virtual boundary of a slender ellipsoid to the fiber centerline velocity, see Götz,~\cite{Gotz2000}. The accuracy of this approximation is in $O(\epsilon).$ This reduction in dimensionality from 2D boundary integral equations to 1D integral equations is crucial for the ability to include a large number of fibers in the simulations.
 
-The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations, the Stokeslet~(Eqn.~\eqref{eq:stokeslet_stokeslet}) and the Doublet~(Eqn.~\eqref{eq:doublet}). The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using a boundary integral method. Details of the model are given by Tornberg and Gustavsson~\cite{Tornberg2006}.
+The slender body approximation yields a coupled system of 1D integral equations over two fundamental solutions of the Stokes equations, the Stokeslet, Eqn.~\eqref{eq:stokeslet_stokeslet} and the Doublet, Eqn.~\eqref{eq:doublet}. The coupled system relates the forces exerted on the fibers to their velocities and captures the non-local interaction of the fiber with itself (as mediated by the fluid), as well as with any other structures with the fluid, such as other fibers or external boundaries. The system of integral equations is solved using a boundary integral method. Details of the model are given by Tornberg and Gustavsson,~\cite{Tornberg2006}.
 
 \begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.5\textwidth]{img/slender.pdf}
-  \caption[Slender fiber approximation.]{Slender fiber approximation. Each fiber is described by the center points $\POS_m, \POS_l$ the orientations given by the unit tangent vectors $\ORIENT_m, \ORIENT_l$ and the center line parameterized by $s$ and $s'$. The points of each center line is thus given by $\POS_m(s) = \POS_m + s\ORIENT_m$.}
+  \caption[Slender fiber approximation.]{Slender fiber approximation. Each fiber is described by the center points $\POS_m, \POS_l$ the orientations given by the unit tangent vectors $\ORIENT_m, \ORIENT_l$ and the center line parameterized by $s$ and $s'$. The points on each center line is thus given by $\POS_m(s) = \POS_m + s\ORIENT_m$.}
   \label{fig:slender_fiber}
 \end{figure}
 
-Assume that we have $M$ fibers immersed in the fluid. As shown in Fig.~\ref{fig:slender_fiber} each fiber is now defined by its centerline and parameterized by the arc-length, $s \in [-L,L]$. For fiber $m$ the coordinates of the centerline are given by $\POS_m(s,t) = \POS_m(t) + s\ORIENT_m(t)$, where $\POS_m$ is the center point and $\ORIENT_m$ the unit tangent vector of the fiber and $m=1,2,\dots,M$.
+Assume that we have $M$ fibers immersed in the fluid. As shown in Fig.~\ref{fig:slender_fiber} each fiber is now defined by its centerline and parameterized by the arc-length, ${s \in [-L,L]}$. For fiber $m$ the coordinates of the centerline are given by \linebreak[4]${\POS_m(s,t) = \POS_m(t) + s\ORIENT_m(t)}$, where $\POS_m$ is the center point and $\ORIENT_m$ the unit tangent vector of the fiber and ${m=1,2,\dots,M}$.
 
 If the fluid exerts a force per unit length, $\mathbf{f}_m$ on fiber $m$, the slender body approximation for the velocity of the centerline of fiber $m$ can be stated in non-dimensional form as
 \begin{equation}
