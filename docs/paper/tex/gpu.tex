@@ -10,10 +10,11 @@ In the beginning Graphics Processing Units were highly specialized pieces of har
 
 The deciding factor for the performance is how well the application can be parallelized in order to take advantage of the massively parallel architecture of GPUs. This massive parallelism has lead to potentially large performance advantages of GPUs over CPUs as illustrated in Fig.~\ref{fig:gpu_performance}. It shows the year over year increase in the theoretical floating point operations per second (FLOP/s). The FLOP/s number is calculated by combining information of the number of compute units, frequency and memory bandwidth for both the CPU and GPU models. This does not necessarily translate to direct real world performance increases but tries to visualize the potential GPUs have.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
+	width=.9\textwidth,
       xlabel={Year},
       ylabel={GFLOP/s},
       date coordinates in=x,
@@ -88,18 +89,18 @@ For this thesis we chose to go with NVIDIA's CUDA framework mainly because of th
 \label{sec:CUDA}
 The abbreviation CUDA stands for Compute Unified Device Architecture and was introduced by NVIDIA in 2006 as a general purpose parallel computing platform. It leverages the highly parallel architecture of modern NVIDIA GPUs to solve many different computational problems, which can lead to potentially large performance improvements compared to traditional CPUs.
 
-The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accelerated library and simply use the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java, Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. Fig.~\ref{fig:cuda_overview} illustrates the different components of the overall CUDA platform.
-
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=.9\textwidth]{img/cuda_overview.jpg}
   \caption[Overview of the CUDA platform.]{Overview of the CUDA platform,~\cite{CudaProgrammingGuide}, describing the available libraries, programming environments and application of general purpose computing using CUDA.}
   \label{fig:cuda_overview}
 \end{figure}
 
+The CUDA platform allows developers to use a variety of different options to program the GPU. The easiest way is to link to any CUDA-accelerated library and simply use the libraries interfaces from any software environment. For more advanced uses extensions to various programming languages exist like C/C++, Fortran and even managed languages like Java, Python and many more. This allows for easy and fast integration into any software environment the developer is comfortable with. Fig.~\ref{fig:cuda_overview} illustrates the different components of the overall CUDA platform.
+
 The basic building blocks of the CUDA Programming Model from a development perspective are kernels. CUDA kernels are the equivalent of normal C functions. However, the major difference is that instead of being executed just once, kernels are executed in parallel by $N$ different threads. These CUDA threads are distributed and run across the available compute units of the GPU. To illustrate how a very basic kernel invocation looks, Listing~\ref{lst:code_vector_addition} shows a code sample for a very simple vector addition.
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -119,7 +120,7 @@ It is important to remember that each kernel invocation is executed independentl
 
 In order to efficiently distribute the different threads across the compute units of the GPU, CUDA defines a thread hierarchy. As discussed previously a GPU consists of many independent compute units. On NVIDIA GPUs these units are referred to as Streaming Multiprocessors (SMs). During execution of the application each SM is tasked with running a distinct set of threads. In CUDA these sets of threads are called thread blocks. Each thread block is distributed to all the available SMs, which allows for automatic scalability depending on the number of SMs available  as illustrated in Fig.~\ref{fig:automatic_scaling}. Thus the developer only has to divide the workload into appropriately sized blocks of threads and invoke the kernel.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{img/automatic_scaling.pdf}
   \caption[Automatic scaling of blocks across an arbitrary number of Streaming Multiprocessors.]{Automatic scaling of thread blocks across an arbitrary number of Streaming Multiprocessors,~\cite{CudaProgrammingGuide}.}
@@ -128,9 +129,9 @@ In order to efficiently distribute the different threads across the compute unit
 
 How to choose the optimal size of a block in order to maximize the performance is not an easy question to answer and it is highly dependent on the particular task and implementation. In practice the size is often chosen by running benchmarks with various sizes to determine the optimal configuration.
 
-In order to make programming easier, CUDA blocks can be addressed using either a one-dimensional, two-dimensional, or three-dimensional thread index. For example in the case of a calculation involving matrices, it is more natural to think about parallelizing each element given by the row and column index instead of a single one-dimensional index. This is illustrated in the code sample in Listing~\ref{lst:code_matrix_addition}
+In order to make programming easier, CUDA blocks can be addressed using either a one-dimensional, two-dimensional, or three-dimensional thread index. For example in the case of a calculation involving matrices, it is more natural to think about parallelizing each element given by the row and column index instead of a single one-dimensional index. This is illustrated in the code sample in Listing~\ref{lst:code_matrix_addition}.
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -144,7 +145,7 @@ In order to make programming easier, CUDA blocks can be addressed using either a
 
 Finally, as the resources of each Streaming Multiprocessor are limited, there is an upper bound of how many threads a block can contain. Currently this maximum number of threads is $1024$. This means that the maximum size of matrices, that can be added with the two-dimensional thread block code sample in Listing~\ref{lst:code_matrix_addition} is $32\times32 = 1024$. To solve this problem CUDA introduces another layer above blocks called a grid. A grid organizes thread blocks again into either one, two, or three dimensions. The number of thread blocks in a grid is unlimited and thus solely dependent on the size of the workload. Fig.~\ref{fig:grid_blocks} shows an example configuration of a 2D grid with 2D blocks.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{img/grid_blocks.pdf}
   \caption[CUDA block addressing using 2D grid with 2D thread blocks.]{CUDA block addressing using 2D grid with 2D thread blocks,~\cite{CudaProgrammingGuide}.}
@@ -163,7 +164,7 @@ The third level contains the largest memory area which is called the global memo
 
 Another option to avoid the slow the performance of the global memory is to make sure that the required data for each individual thread from global memory is small enough. The associated latency when reading data from global memory can be hidden when enough calculation are performed on this data. The GPU is then able to quickly switch to another set of threads and continue the computation while waiting on data from global memory.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.8\textwidth]{img/memory_hierarchy.pdf}
   \caption[CUDA memory hierarchy.]{CUDA memory hierarchy,~\cite{CudaProgrammingGuide}. The hiearchy consists of three layers (private, shared, global). Each layer differs in size, latency and scope.}

@@ -32,7 +32,7 @@ ViennaCL's focus is on solving sparse matrices with the implemented iterative so
 
 The overall parallel algorithm is very similar to the serial version, however, each simulation step is separated into different kernels. Each kernel is invoked in a serial manner, this means that CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as NVIDIA limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in Listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all time steps and the four main algorithm sub steps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — as described in Sec.~\ref{sec:algorithm_summary} are run on the GPU.
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -50,7 +50,7 @@ Each of the parallelized sub steps are now discussed in more detail. The purpose
 
 \paragraph{Assemble System}
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -73,7 +73,7 @@ As this thesis does not aim to implement generic linear solvers, this step is tr
 
 \paragraph{Update Velocities}
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -89,7 +89,7 @@ By solving the linear system of equations we obtain the coefficients in the forc
 
 \paragraph{Update Fibers}
 
-\begin{listing}[!htbp]
+\begin{listing}[htbp]
   \centering
   \inputminted[mathescape,
     linenos,
@@ -141,7 +141,7 @@ For this thesis we looked at the thread block dimension in particular and how ch
 
 The kernel invocations for the one-dimensional and two-dimensional thread block approach are visualized in Fig.~\ref{fig:thread_block} using the matrix structure in Eqn.~\eqref{eq:matrix_structure} as an example. In the one-dimensional case each invocation is responsible for computing contributions to all sub matrices $\bar{A}_{ml}$. Thus in total this results in $M$ kernel invocations, one for each fiber. For the two-dimensional case each invocation is only responsible for the contribution to a single sub matrix. Here the total number of invocations is $M \times M$. The three-dimensional case divides the calculation for the sub matrix further, one additional invocation per force index for a total of $M \times M \times N$ invocations.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{subfigure}[h]{0.33\textwidth}
     \centering

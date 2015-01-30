@@ -14,7 +14,7 @@ To verify that the single precision GPU implementation is able to replicate the 
 
 This simple but very interesting problem has also been simulated by Gustavsson and Tornberg,~\cite{Gustavsson2009}. Additionally an even more simplified version with only two fibers was studied both numerically and experimentally by Jung et al.,~\cite{Jung2006}. This example is thus ideally suited to test and verify the numerical precision of the GPU implementation. A visualization of the result using the GPU code for $16$ fibers evenly distributed around a circle with a radius of $0.55$, is shown in Fig.~\ref{fig:ring_simulation}.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{subfigure}[h]{0.45\textwidth}
     \centering
@@ -44,7 +44,7 @@ Initially, the fibers are aligned vertically and are sedimenting with the maximu
 
 Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the obtained sedimentation velocity of a single fiber over time using both the single precision GPU code and the original double precision Fortran code. As the same force acts on all fibers and they perform the same motion they all have the same sedimentation velocity. Therefore it is sufficient to study the sedimentation velocity of one fiber only. For this particular setup the maximum velocity is ${\sim}3.8$ and the minimum velocity is ${\sim}2.2$. The graphs clearly shows the periodical rotation the fiber perform. This result perfectly captures the expected result obtained from prior simulation and experiments. The difference in velocity between the two implementations is of the order $10^{-4}$. Hence, even for this delicate experiment, where a small disturbance will cause a deviation from the periodic orbit, the single precision accuracy is sufficient.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
@@ -69,24 +69,24 @@ Fig.~\ref{fig:ring_sedimentation_velocity} shows a graph of the obtained sedimen
 
 The next example is a more chaotic system with a large number of interacting fibers. In the numerical experiment $2000$ fibers are initially distributed in the form of a spherical cloud. Both their positions and orientations are random inside the cloud. Due to gravity the cloud will sediment. This experiment has been studied in several papers, e.g.~\cite{Bulow2015}\cite{Metzger2007}\cite{Park2010}. It is especially interesting because the observed results only occur if enough fibers are simulated. Our GPU simulation is able to efficiently handle up to $2000$ fibers and is thus ideally suited for studying this example.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/state_00000.pdf}
     \caption{$t=0$}\label{fig:sphere_simulation_1a}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/state_00250.pdf}
     \caption{$t=300$}\label{fig:sphere_simulation_1b}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/state_00350.pdf}
     \caption{$t=350$}\label{fig:sphere_simulation_1c}
   \end{subfigure}
-  \begin{subfigure}[h]{0.4\textwidth}
+  \begin{subfigure}[h]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{img/state_00380.pdf}
     \caption{$t=380$}\label{fig:sphere_simulation_1d}
@@ -110,14 +110,14 @@ How to determine the exact break up time is quite challenging. This problem was 
 
 First we need to define which of the fibers belong to the torus. We use the same definition as described in~\cite{Park2010}. Let $R_0$ denote the radius of the initial cloud. As the cloud sediments and starts forming a torus, there is a small leakage of fibers in its vertical tail. To find these fibers, such that they can be removed from the active set of fibers defining the torus, we remove all fibers with a vertical distance from the center of mass of the torus larger than $R_0$. In Fig~\ref{fig:torus_fibers} we can see how the number of fibers in the torus decreases with time. Using the remaining fibers, we compute the horizontal radii $R_x$ and $R_y$ of the torus by computing the maximum distance from the center of mass to the center of the fibers. In the same way we compute the vertical radius $R_z$. The torus shape is illustrated in Fig.~\ref{fig:torus_shape} where we display the three different radii, $R_x$, $R_y$ and $R_z$.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.6\textwidth]{img/torus3.png}
   \caption[Torus Shape.]{Torus Shape. The torus is defined by the two horizontal radii $R_x$ and $R_y$ and the vertical radius in the direction of gravity $R_z$.}
   \label{fig:torus_shape}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{subfigure}[h]{.48\textwidth}
 	  \begin{tikzpicture}
@@ -217,7 +217,7 @@ The first parameter to explore is the concentration of fibers, which we define i
 
 In Fig.~\ref{fig:concentration_breakup} the break-up time is presented as a function of the concentration of fibers. We can see that there is a clear correlation. When the concentration decreases, the time until the torus breaks up increases. A possible explanation to this is that when the cloud sediments and starts forming a torus, a large rotating velocity field is created in the fluid. The strength of the velocity field depends on how strong the interaction between the fibers is. When the fibers are far apart the interaction between the fibers is small and the rotating motion will not be as strong, leading to a longer break-up time.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
@@ -245,7 +245,7 @@ The second parameter we studied was the number of fibers initially included in t
 
 The results presented in Sec.~\ref{subsec:effect_concentration} and Sec.~\ref{subsec:effect_number} show that both fiber concentration and the number of fibers affect the break-up time of the torus. Future research should explore these correlations closer and include other studies such as the dependence of the initial shape of the cloud on the process.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{tikzpicture}
     \begin{axis}[
@@ -272,7 +272,7 @@ The final experiment resembles a setup investigated by Bülow et al.,~\cite{Bulo
 
 Fig.~\ref{fig:unmixed_sphere} shows the results from a simulation at different timesteps, where the two density groups are initially separated into the top and bottom half of the spherical cloud. Since the fibers are clearly separated, this particular configuration is referred to as an unmixed cloud. Initially the fibers with the higher density are in the upper half of the cloud and the fibers with the lower density are in the bottom half, see Fig.~\ref{fig:mixing_top_a}. After a short time, we can see in Fig.~\ref{fig:mixing_top_b} that the high density fibers have almost completely dropped through the low density fibers, leaving a large trail of low density fibers behind. After a while, the high and low density fibers are almost totally separated and proceed independently of each other to form the characteristic torus, see Fig.~\ref{fig:mixing_top_c}. As the torus formed by the high density fibers grows in size and becomes less dense its sedimentation velocity will decrease. As depicted in Fig.~\ref{fig:mixing_top_d} the low density group of fibers will eventually catch up with the high density fibers and drop through the larger torus. The tori are not very stable and soon afterward they will break up.
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{subfigure}[h]{0.24\textwidth}
     \centering
@@ -300,7 +300,7 @@ Fig.~\ref{fig:unmixed_sphere} shows the results from a simulation at different t
 
 Next we perform a similar experiment but with the fibers of different densities randomly distributed inside the cloud, see Fig.~\ref{fig:mixing_random_a}. We refer to this setup as a mixed cloud. The beginning of the simulation behaves similar to the unmixed case, but the separation does not happen as fast and far fewer low density fibers are lost in the tail of the cloud, Fig.~\ref{fig:mixing_random_b}. Once again two tori are formed, but in contrast to the unmixed case, both groups of fibers stay closer together, which prevents the fibers of different densities from completely separating. In Fig.~\ref{fig:mixing_random_c} we can see how the high density torus is sucked down by the passing low density torus. During the following timesteps the two tori appear to form an interlocked torus, which continues to sediment, Fig.~\ref{fig:mixing_random_d}. Eventually the interlocked torus breaks up and fibers scatter. 
 
-\begin{figure}[!htbp]
+\begin{figure}[htbp]
   \centering
   \begin{subfigure}[h]{0.24\textwidth}
     \centering

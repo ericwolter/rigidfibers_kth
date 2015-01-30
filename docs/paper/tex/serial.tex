@@ -1,33 +1,32 @@
 \chapter{Numerical algorithm and serial implementation}
 \label{cha:serial_implementation}
 
-In the last chapter, we presented the theoretical foundation of the physics and mathematics involved in simulating rigid fibers. Based on the Stokes Equation, we introduced the framework of boundary integral methods to efficiently model the behavior of rigid fibers. Using this background we will now review the numerical approach used for the simulation.
+In the previous chapter, we presented the theoretical foundation of the physics and mathematics involved in simulating rigid fibers. Based on the Stokes equation, we introduced the framework of boundary integral formulations and the slender body approximation to efficiently model the behavior of rigid fibers. Using this background we will now review the numerical approach used for the simulation.
 
 We will separate the overall algorithm into four steps and discuss each step individually. Additionally, we will touch upon implementation details used in the original serial version. We close the chapter with a brief reflection of the performance characteristics of the serial implementation to guide the parallel implementation on the GPU.
 
 \section{Discretization}
 \label{sec:serial_discretization}
-In the previous chapter we obtained the final closed system given by Eqns~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints}. In order to solve these equations we have to discretize them. For this we start by expanding the force as a sum of $N+1$ Legendre polynomials $P_n(s)$
+In Sec.~\ref{sec:slender_fibers} we derived a closed system of equations describing the motion of slender fibers in a fluid, see Eqns~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints}. In order to solve these equations we have to discretize them. For this we start by expanding the force as a sum of $N+1$ Legendre polynomials, $P_n(s)$, as
 \begin{equation}
   \label{eq:force_discretization}
   \mathbf{f}_m = \frac{1}{2}\mathbf{F}_g + \sum_{n=1}^{N}\mathbf{a}_{m}^{n} P_n(s) \text{,}
 \end{equation}
-where the coefficients $\mathbf{a}_m^n$ are vectors with three components. The number of Legendre polynomials $N$ used for the force expansion is a parameter and is set to $5$ in our simulation.
+where the coefficients $\mathbf{a}_m^n$ are unknown vectors with three components, for each direction in space. The number of Legendre polynomials, $N$, used in the force expansion is a numerical parameter and is set to $5$ in our simulation.
 
-By algebraic manipulation of the integral equations~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints} and the use of the orthogonality properties of the Legendre polynomials, a linear system of equations for $\mathbf{a}_m^n$ for $m=1,2,\dots,M$ and $n=1,2,\dots,N$ which only includes computational quantities, can be obtained. Furthermore, two separate equations for the translational and rotational velocities of the fibers are obtained as 
+By algebraic manipulation of the Eqns.~\eqref{eq:velocity_centerline} and~\eqref{eq:slender_boundary_constraints} and the use of the orthogonality properties of the Legendre polynomials, a linear system of equations for $\mathbf{a}_m^n$ for $m=1,2,\dots,M$ and $n=1,2,\dots,N$ which only includes computational quantities, can be obtained. Furthermore, two separate equations for the translational and rotational velocities of the fibers are obtained. They are given by
 \begin{align}
 	\dot{\POS}_m &= \frac{1}{2d}\left[d(\mathbf{I}+\ORIENT_m\ORIENT_m) + 2(\mathbf{I}-\ORIENT_m\ORIENT_m)\right] \mathbf{F}_m + \frac{1}{2d} \int_{-1}^{1} \mathbf{V}_m(s) \, ds \text{,} \label{eq:delta_translate_velocity} \\
 	\dot{\ORIENT}_m &= \frac{3}{2d}(\mathbf{I}-\ORIENT_m\ORIENT_m) \int_{-1}^{1}s\mathbf{V}_m(s) \, ds \text{.}\label{eq:delta_rotate_velocity}
 \end{align}
 
-Once the linear system of equations has be solved for $\mathbf{a}_m^n$, the forces on the fibers can be computed using Eqn.~\eqref{eq:force_discretization}. Using the forces, the position and orientation of the fiber can be updated by integrating equations~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity} in 
-time. For more details and in-depth discussions please refer to the original paper by Tornberg and Gustavsson,~\cite{Tornberg2006}.
+Once the linear system of equations has been solved for $\mathbf{a}_m^n$, the forces on the fibers can be computed using Eqn.~\eqref{eq:force_discretization}. Using the forces, the position and orientation of the fibers can be updated by integrating equations~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity} in time. For more details and in-depth discussions please refer to the original paper by Tornberg and Gustavsson,~\cite{Tornberg2006}. Below we will describe the numerical algorithm developed to solve the problem.
 
 \section{Assemble System}
 
-The first step of the algorithm is to compute and assemble the linear system of equations in memory. In the \emph{Assemble System} step all interactions between the fibers are computed. This is a very time consuming part of the algorithm since the computational cost is of $O(M^2)$.
+The first step of the algorithm is to compute and assemble the linear system of equations. In the \emph{Assemble System} step all interactions between the fibers are computed. This is a very time consuming part of the algorithm since the computational cost is of $O(M^2)$.
 
-Writing the system in a standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure of the dense $3MN\times3MN$-matrix $\mathbf{A}$ and right-hand side $\mathbf{b}$,
+Writing the system in a standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gives the following structure of the dense $3MN\times3MN$-matrix $\mathbf{A}$ and the right-hand side $\mathbf{b}$,
 \begin{equation}
   \label{eq:matrix_structure}
   \renewcommand\arraystretch{1.5}
@@ -45,7 +44,7 @@ Writing the system in a standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gi
     \bar{b}_{M} \\
   \end{bmatrix} \text{.}
 \end{equation}
-In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ matrix encapsulating the contribution from the force coefficients on fiber $l$ onto the force coefficients for fiber $m$.
+In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ submatrix encapsulating the contribution from the force coefficients on fiber $l$ onto the force coefficients for fiber $m$.
 
 \pagebreak
 \paragraph{Inner integral}
@@ -55,21 +54,23 @@ For each $\bar{A}_{ml}$, a $3\times3$ matrix, $\Theta_{lm}^{kn}$, where
   \label{eq:inner_integral}
   \Theta_{lm}^{kn} = \int_{-1}^{1} \left[\int_{-1}^{1}\mathbf{G}(\mathbf{R}(s,s')) P_k(s') \, ds' \right]P_n(s) \, ds \text{,}
 \end{equation}
-has to be evaluated for each force index $k,n = 1,2,\dots,N$. $\mathbf{G}$ and $\mathbf{R}$ are defined as in Eqns.~\eqref{eq:green_function}~and~\eqref{eq:velocity_contribution}, respectively. One approach is to use a standard Gaussian quadrature for both the inner and outer integral. However, as fibers get very close to each other a large number of quadrature points are needed to accurately compute the fiber interactions. As the number of quadrature points increase the computational time increases as well. For our simulation we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
+has to be evaluated for each force index $k,n = 1,2,\dots,N$. $\mathbf{G}$ and $\mathbf{R}$ are defined as in Eqns.~\eqref{eq:green_function}~and~\eqref{eq:velocity_contribution}, respectively. A similar term has to be evaluated for the right-hand side $\mathbf{b}$. One approach for evaluating the integrals is to use a standard Gaussian quadrature for both the inner and outer integral. 
 
 Another option is to use an analytical solution for the inner integral and only solve the outer integral numerically. We will not discuss the detailed derivation of the analytical solution, for an in-depth discussion please see Tornberg and Gustavsson,~\cite{Tornberg2006}. In theory this approach allows for perfect accuracy for the inner integral, however in practice this is limited by the numerical precision of the simulation. The obtained formulas are recursive and sensitive to round off errors. To minimize the accumulation of round off errors, the original serial implementation uses a trick and switches the direction of the recursion, depending on how far apart the fibers are. This improves the practical accuracy and does not have a negative effect on the performance.
 
-Choosing between both options requires a careful examination of the accuracy and performance trade-off and is dependent on the simulation setup. For the original serial implementation the combined numerical and analytical approach for evaluation proved to be the fastest and was thus chosen as the default. We will later explore how is applies to the new parallel GPU implementation.
+Choosing between both options requires a careful examination of the accuracy and performance trade-off. For the original serial implementation the combined numerical and analytical approach for evaluation proved to be the fastest and was thus chosen as the default. We will later explore how is applies to the new parallel GPU implementation.
+
+Whenever we evaluate the integrals using numerical quadrature, we use the same approach as the original paper. We divide each fiber into 8 subintervals and use a three-point gaussian quadrature on each interval. This results in a total of $3 \times 8 = 24$ quadrature points per fiber, which represents a good trade-off between accuracy and performance.
 
 \section{Solve system}
 
-After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers. This step is treated as a black box by the simulation, simply plugging in the matrix $\mathbf{A}$ and the vector $\mathbf{b}$ and getting back the solution vector $\mathbf{\bar{a}}$ representing the force coefficients.
+After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers.
 
 The linear system can either be solved using a direct solver or an iterative method like GMRES. As long as the fibers are not too close to each other the matrix is well-conditioned and GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in Sec.~\ref{sec:bench_linear_solvers}.
 
 \section{Update velocities}
 
-The force coefficients obtained by solving the linear system can now be used to calculate the right hand side in the separate equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$, Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity}. The required implementation is similar to the computations for the \emph{Assemble System} step.
+The force coefficients obtained by solving the linear system can now be used to calculate the right hand side in the  equations for $\mathbf{\dot{x}}_m$ and $\mathbf{\dot{t}_m}$, Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity}. Here, the required implementation is similar to the implementation of the \emph{Assemble System} step.
 
 \section{Update fibers}
 \label{sec:serial_update_fibers}
@@ -79,30 +80,40 @@ The final step takes care of advancing the fibers forward in time by solving Eqn
   \label{eq:time_discretization}
   \frac{3\mathbf{x}_m^{i+1} - 4\mathbf{x}_m^{i} + \mathbf{x}_m^{i-1}}{2 \Delta t} = (2\mathbf{\dot{x}}_m^{i} - \mathbf{\dot{x}}_m^{i-1}) \text{,}
 \end{equation}
-where the time step is denoted by $\Delta t$ and superscripts denote the numerical approximation of $\mathbf{x}_m(t_i)$. In order to compute the next state this method requires both the previous and the current state. As there is no previous time step for $t_0$, the first step $\mathbf{x}_{m}^{1}$ is computed by a simply first order forward Euler method. The calculation for the orientation vector $\mathbf{t}_m$ is computed using the same discretization by replacing the translational velocity $\mathbf{\dot{x}}_m$ with the rotational velocity $\mathbf{\dot{t}}_m$. Additionally, we must renormalize the orientation vector so that it maintains its unit length.
+where the time step is denoted by $\Delta t$ and superscripts denote the numerical approximation of $\mathbf{x}_m(t_i)$. In order to compute the next state this method requires both the previous and the current state. As there is no previous time step for $t_0$, the first step $\mathbf{x}_{m}^{1}$ is computed by a first order forward Euler method. Solving for the orientation vector, $\mathbf{t}_m$, is done using the same discretization. Additionally, we must renormalize the orientation vector so that it maintains its unit length.
 
-At the end of this step the state of the fibers can optionally be written to an external file for post processing and visualization in other tools. After completing this step, the algorithm starts again from the top with the \emph{Assemble System} step. This cycle repeats until a specified number of time steps have been executed.
+At the end of this step the state of the fibers can optionally be written to an external file for post processing and visualization in other tools. After completing the \emph{Update Fibers} step, the algorithm starts again from the top with the \emph{Assemble System} step. This cycle repeats until a specified number of time steps have been executed.
 
 \section{Algorithm summary}
 \label{sec:algorithm_summary}
 
-The original paper implemented this algorithm using Fortran. All computation were performed in double precision and executed using a single thread on the CPU. In summary the four steps of the algorithm are at each timestep $t=t^n$ given the fiber configuration in terms of position, $\POS_m$, and orientation, $\ORIENT_m$, 
-\begin{description}
-  \item[1. Assemble System] \hfill \\
-Computes all interactions between fibers and yields the linear system ${\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}}$
-  \item[2. Solve System]  \hfill \\
-Solves linear system, treated as black box
-  \item[3. Update Velocities] \hfill \\
-Computes velocities $\mathbf{\dot{x}}$ and $\mathbf{\dot{t}}$
-  \item[4. Update Fibers] \hfill \\
-Yields new fiber configuration at $t=t^{n+1}$
-\end{description}
+The original paper implemented this algorithm using Fortran. All computation were performed in double precision and executed using a single thread on the CPU. In summary the four steps of the numerical algorithms are:
 
-For the number of fibers used in this work ($500–2000$), empirical results show that the majority of the required computation time is spent on the 1.~\emph{Assemble System} and 3.~\emph{Update Velocities} steps. The time required for advancing the simulation state in step 4.~\emph{Update Fibers} is completely negligible. We will see later in Chapter~\ref{cha:benchmarks} that the same holds true for the new parallel implementation.
+~\linebreak[4]At each time step $t^n$, given the fiber positions, $\POS_m^n$,  and
+orientation $\ORIENT_m^n$
+
+\begin{itemize}
+\item[1.] {\textbf{Assemble system}}
+
+This step assembles the matrix, $\mathbf{A}$, and the right hand side, $\mathbf{b}$ of the linear system of equations. For the assembly we have to
+evaluate $\Theta_{lm}^{kn}$ in Eqn.~\eqref{eq:inner_integral} for all fibers in the
+system.
+\item[2.] {\textbf{Solve system}} 
+
+This step solves the linear system of equations for the coefficients in the force expansion, Eqn.~\eqref{eq:force_discretization}.
+\item[3.] {\textbf{Update velocities}}
+
+Using the forces from previous step, this step computes the velocities of the fibers by computing the right hand side of Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity}. 
+\item[4.] {\textbf{Update fiber postions and orientations}}
+
+In this step the fiber positions and orientations are updated by integrating Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity} in time. This step yields the fiber configuration at time step $t^{n+1}$, i.e. $\POS_m^{n+1}$,  and $\ORIENT_m^{n+1}$. 
+\end{itemize}
+
+For the number of fibers used in this work ($500–2000$), empirical results show that the majority of the required computation time is spent on the \emph{Assemble System} step and on the \emph{Update Velocities} step. The time required for advancing the simulation state in the \emph{Update Fibers} step is completely negligible. In Chapter~\ref{cha:benchmarks}, we will see that the same holds true for the new parallel implementation.
 
 \section{Remarks concerning GPU implementation}
 
-There are some remarks to be made before we turn our attention to the GPU implementation of the algorithm. The most important step to optimize is 1.~\emph{Assemble System}, since it is the most time consuming step. Fortunately it is well suited for parallelization. The fibers can be partitioned naturally across the compute units, where each unit is responsible for a subset of fibers. As the required computations for the 3.~\emph{Update Velocities}~step are similar to the computations made in the 1.~\emph{Assemble System}~step, it will also benefit from the optimizations. Additionally, we will look at how the two different options for solving the integral in Eqn.~\ref{eq:inner_integral}, either combined analytical and numerically or purely numerical, perform in the parallel environment.
+There are some remarks to be made before we turn our attention to the GPU implementation of the algorithm. The most important step to optimize is the \emph{Assemble System} step, since it is the most time consuming step. Fortunately it is well suited for parallelization. The fibers can be partitioned naturally across the compute units, where each unit is responsible for a subset of fibers. As the required computations for the \emph{Update Velocities} step are similar to the computations made in the \emph{Assemble System} step, it will also benefit from the optimizations. Additionally, we will look at how the two different options for solving the integral in Eqn.~\eqref{eq:inner_integral}, either combined analytical and numerically or purely numerical, perform in the parallel environment.
 
-Since we will not be writing our own implementation of linear solvers on the GPU we have only limited influence on the performance of the 2.~\emph{Solve System}~step. As we instead treat it as a black box we have to rely on the efficiency of pre-existing libraries. The only thing we can control is the choice of which library and solver to use. For direct solvers the computational time only depends on the number of unknowns and is approximately constant throughout a simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
+Since we will not be writing our own implementation of linear solvers on the GPU we have only limited influence on the performance of the \emph{Solve System} step. As we instead treat it as a black box we have to rely on the efficiency of pre-existing libraries. The only thing we can control is the choice of which library and solver to use. For direct solvers the computational time only depends on the number of unknowns and is approximately constant throughout a simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
 

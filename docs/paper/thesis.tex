@@ -29,6 +29,7 @@
 % Bibliographies
 \usepackage[
   backend=biber,
+  maxbibnames=99,
   style=numeric
 ]{biblatex} % modern bibliographies
 \addbibresource{thesis.bib}
@@ -157,11 +158,6 @@ Furthermore, we have performed a number of simulations of known experiments for 
 \clearpage
 
 \begin{foreignabstract}{swedish}
-Huvudsyftet med denna masteruppsats är att accelerera en seriell implementation av en numerisk algoritm för simulering av tunnfiberdynamik med hjälp av grafikprocessorer (GPU:er). Vårt fokus ligger på sedimentering av stela fibrer som en konsekvens av gravitationens påverkan i ett frirums-Stokes-flöde. Att kunna simulera ett stort antal fibrer med en relativt kort beräkningstid på en högpresterande parallellplatform öppnar för nya spännande forskningsmöjligheter. 
-
-Den föregående seriella implementationen var skriven för parallellexekvering. Algoritmen är implementerad i enkelprecision med hjälp av Compute Unified Device Architecture (CUDA) på NVIDIA-GPU:er. Vi utvecklar dessutom en OpenMP-version av parallellimplementationen för flerkärnsprocessorer. Genom att använda båda implementationerna utför vi ett antal prestandatester för att hitta den snabbaste varianten av algoritmen. Vi observerar en ökning från $20×$ till $40×$ på NVIDIA GTX 970 jämfört med en Intel Core i7 4770. GPU-implementationen kan simulera upp till $2000$ fibrer på en skrivbordsdator, och det tar endast i ordningen $8$ sekunder att avancera ett tidssteg. 
-
-Vi har dessutom utfört ett antal simuleringar av redan kända experiment för sedimentering av fibrer för att bekräfta att algoritmen är korrekt, samt för att utvärdera resultatens numeriska precision. Resultaten överensstämmer utomordentligt väl med tidigare resultat från experiment i området. 
 \end{foreignabstract}
 \clearpage
 
@@ -181,6 +177,7 @@ First and foremost, I especially want to thank my supervisor Katarina Gustavsson
 \clearpage
 
 \addcontentsline{toc}{chapter}{List of Listings}
+\renewcommand{\listoflistingscaption}{List of Listings}
 \listoflistings
 \clearpage
 
