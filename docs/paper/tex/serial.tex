@@ -44,7 +44,7 @@ Writing the system in a standard form $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ gi
     \bar{b}_{M} \\
   \end{bmatrix} \text{.}
 \end{equation}
-In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ submatrix encapsulating the contribution from the force coefficients on fiber $l$ onto the force coefficients for fiber $m$.
+In this notation $\bar{A}_{ml}$ describes the $3N\times3N$ submatrix encapsulating the contribution from the force coefficients on fiber $l$ onto the force coefficients for fiber $m$.\looseness=-1
 
 \pagebreak
 \paragraph{Inner integral}
@@ -64,7 +64,7 @@ Whenever we evaluate the integrals using numerical quadrature, we use the same a
 
 \section{Solve system}
 
-After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step to solve it. This can be done using standard linear equation solvers.
+After having assembled the linear system $\mathbf{A}\mathbf{\bar{a}}=\mathbf{b}$ the next step is to solve it. This can be done using standard linear equation solvers.
 
 The linear system can either be solved using a direct solver or an iterative method like GMRES. As long as the fibers are not too close to each other the matrix is well-conditioned and GMRES is able to solve the system in less than $10$ iterations. This is the reason why the original serial implementation uses GMRES by default. How the different solvers perform on the GPU will be compared in Sec.~\ref{sec:bench_linear_solvers}.
 
@@ -87,7 +87,7 @@ At the end of this step the state of the fibers can optionally be written to an 
 \section{Algorithm summary}
 \label{sec:algorithm_summary}
 
-The original paper implemented this algorithm using Fortran. All computation were performed in double precision and executed using a single thread on the CPU. In summary the four steps of the numerical algorithms are:
+The original paper implemented this algorithm using Fortran. All computations were performed in double precision and executed using a single thread on the CPU. In summary the four steps of the numerical algorithms are:
 
 ~\linebreak[4]At each time step $t^n$, given the fiber positions, $\POS_m^n$,  and
 orientation $\ORIENT_m^n$
@@ -103,7 +103,7 @@ system.
 This step solves the linear system of equations for the coefficients in the force expansion, Eqn.~\eqref{eq:force_discretization}.
 \item[3.] {\textbf{Update velocities}}
 
-Using the forces from previous step, this step computes the velocities of the fibers by computing the right hand side of Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity}. 
+Using the forces from the previous step, this step computes the velocities of the fibers by computing the right hand side of Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity}. 
 \item[4.] {\textbf{Update fiber postions and orientations}}
 
 In this step the fiber positions and orientations are updated by integrating Eqns.~\eqref{eq:delta_translate_velocity} and~\eqref{eq:delta_rotate_velocity} in time. This step yields the fiber configuration at time step $t^{n+1}$, i.e. $\POS_m^{n+1}$,  and $\ORIENT_m^{n+1}$. 
@@ -115,5 +115,5 @@ For the number of fibers used in this work ($500–2000$), empirical results sho
 
 There are some remarks to be made before we turn our attention to the GPU implementation of the algorithm. The most important step to optimize is the \emph{Assemble System} step, since it is the most time consuming step. Fortunately it is well suited for parallelization. The fibers can be partitioned naturally across the compute units, where each unit is responsible for a subset of fibers. As the required computations for the \emph{Update Velocities} step are similar to the computations made in the \emph{Assemble System} step, it will also benefit from the optimizations. Additionally, we will look at how the two different options for solving the integral in Eqn.~\eqref{eq:inner_integral}, either combined analytical and numerically or purely numerical, perform in the parallel environment.
 
-Since we will not be writing our own implementation of linear solvers on the GPU we have only limited influence on the performance of the \emph{Solve System} step. As we instead treat it as a black box we have to rely on the efficiency of pre-existing libraries. The only thing we can control is the choice of which library and solver to use. For direct solvers the computational time only depends on the number of unknowns and is approximately constant throughout a simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
+Since we will not write our own implementation of linear solvers on the GPU we have only limited influence on the performance of the \emph{Solve System} step. As we instead treat it as a black box we have to rely on the efficiency of pre-existing libraries. The only thing we can control is the choice of which library and solver to use. For direct solvers the computational time only depends on the number of unknowns and is approximately constant throughout a simulation. The performance of iterative solvers on the other hand is highly depend on the condition number of the matrix and thus unpredictable. In line with the original paper we will both test a direct solver and iterative solvers to get a better understanding of their respective performance behavior.
 

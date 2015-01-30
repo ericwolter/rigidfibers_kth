@@ -38,7 +38,7 @@ The Intel Core i7 4770 processor is an 4-Core CPU based on Intel's Haswell Archi
 
 In order to generate statistically significant and reproducible execution times, all benchmarks tests for both the CPU and GPU implementation uses exactly the same run-scheme.
 
-For each benchmark run we start with a configuration of M fibers randomly distributed in space. In order to exclude configurations where fibers overlap and/or intersect, the random process is modified such that there always is a fixed minimum distance between two fibers. Furthermore, in order to ensure a fair comparison between e.g. different linear solvers, the average distance between fibers are kept fixed for all runs independently of the number of fibers. As will be shown in Sec.~\ref{subsec:example_concentration_gmres}, the number of iterations of the iterative solvers depend on the average distance between the fibers. As the average distance become smaller, the condition number of the matrix increases and more iterations are needed for the iterative solver to converge. Thus by keeping the average distance between the fibers fixed, we minimize the influence of the number of iterations in the iterative solver on the execution time.
+For each benchmark run we start with a configuration of $M$ fibers randomly distributed in space. In order to exclude configurations where fibers overlap and/or intersect, the random process is modified so that there always is a fixed minimum distance between two fibers. Furthermore, in order to ensure a fair comparison between e.g. different linear solvers, the average distance between fibers are kept fixed for all runs independently of the number of fibers. As will be shown in Sec.~\ref{subsec:example_concentration_gmres}, the number of iterations of the iterative solvers depend on the average distance between the fibers. As the average distance become smaller, the condition number of the matrix increases and more iterations are needed for the iterative solver to converge. Thus by keeping the average distance between the fibers fixed, we minimize the influence of the number of iterations in the iterative solver on the execution time.
 
 Using the semi-random fiber configuration, the simulation is run for 10 time steps. To avoid remaining outliers in the configuration potentially causing variations in the timings the first time step is excluded. The first time step is thus used as a simple warmup step for the simulation. So, the final average time for each run is measured using the final $9$ time steps.
 
@@ -53,6 +53,7 @@ To measure how the execution time depends on the number of fibers in the simulat
     frame=lines,
     framesep=2mm]{c}{lst/benchmark_scheme.lst}
   \caption{Pseudocode for benchmark scheme.}
+  \vspace{-1.25em}
   \label{lst:pseudo_benchmark}
 \end{listing}
 
@@ -226,7 +227,7 @@ If we compare the execution time when using GMRES to using a direct solver, we o
       \legend{Direct Solver, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark linear solvers on CPU.]{Benchmarking comparing linear solvers on the CPU. The direct solver is provided by OpenBLAS,~\cite{OpenBLAS}, and iterative GMRES solver by Frayssé et al.,~\cite{Fraysse2003}.}
+  \caption[Benchmark linear solvers on CPU.]{Benchmark comparing linear solvers on the CPU. The direct solver is provided by OpenBLAS,~\cite{OpenBLAS}, and iterative GMRES solver by Frayssé et al.,~\cite{Fraysse2003}.}
   \label{fig:bench_openmp_solvers}
 \end{figure}
 
@@ -267,7 +268,6 @@ In Fig.~\ref{fig:concentration_gmres} the result is presented. We see that for a
 The result presented above is also important to keep in mind when performing long running fiber simulations. Here, the probability that any two fibers get close to each other is very high. If this is the case, solving the system by GMRES will take longer than expected. In practice it might be more beneficial to switch to the direct solver as it has a predictable runtime. This is especially true using the GPU implementation as the difference in execution time between direct and iterative solver is relatively small. This will be discussed further in the next section.
 
 \subsection{Direct solver vs. iterative solver on GPU}
-
 We will now look at the performance of the direct solver compared to the iterative solvers on the GPU. We use a direct solver provided by the MAGMA library and the iterative solvers, BiCGStab and GMRES, from the ViennaCL library. The benchmark results are illustrated in Fig.~\ref{fig:bench_cuda_solvers}.
 
 \begin{figure}[htbp]
@@ -290,7 +290,7 @@ We will now look at the performance of the direct solver compared to the iterati
       \legend{Direct Solver, BiCGStab, GMRES}
     \end{axis}
   \end{tikzpicture}
-  \caption[Benchmark linear solvers on GPU.]{Benchmarking comparing linear solvers on the GPU. The direct solver is provided by MAGMA,~\cite{MagmaDocumentation}, and iterative solvers, BiCGStab and GMRES, by ViennaCL,~\cite{ViennaCLRupp2010}.}
+  \caption[Benchmark linear solvers on GPU.]{Benchmark comparing linear solvers on the GPU. The direct solver is provided by MAGMA,~\cite{MagmaDocumentation}, and iterative solvers, BiCGStab and GMRES, by ViennaCL,~\cite{ViennaCLRupp2010}.}
   \label{fig:bench_cuda_solvers}
 \end{figure}
 
@@ -299,7 +299,7 @@ The fact that iterative solvers are faster than a direct solver holds true also 
 Regardless of these clear results, it is always important to keep in mind, that this particular performance ratio only holds true for the specific fiber concentration which was benchmarked. For other concentrations the iterative solvers might need more iterations to find the solution and might even perform worse than the linear solver.
 
 \section{Individual steps of the algorithm}
-
+\vspace{-2.5em}
 The next benchmark explores the relative time taken by each step of the algorithm described in Sec.~\ref{sec:algorithm_summary}~and Sec.~\ref{sec:kernels}. This yields valuable insight into the time allocation of the overall execution time, thereby helping to figure out which steps are the best ones to optimize. The results for the OpenMP implementation can be seen in Fig.~\ref{fig:bench_openmp_steps} and for the CUDA implementation in Fig.~\ref{fig:bench_cuda_steps}. On the CPU the \emph{Assemble System} and \emph{Update Velocities} steps solve the inner integral in Eqn.~\eqref{eq:inner_integral} analytically. On the GPU we use a purely numerical approach. The reason for choosing different approaches for evaluating the inner integral is to use the fastest version of the algorithm on both the CPU and GPU, see Sec.~\ref{subsec:bench_numeric_vs_analytic}.
 
 \begin{figure}[htbp]
@@ -366,7 +366,7 @@ This point is reinforced if we look at the same timings for the linear solvers. 
 
 The final benchmark compares the CPU and GPU performance. How to make a fair comparison of the simulation performance between the CPU and GPU is a hotly debated topic in the research literature,~\cite{Gregg2011}\cite{Lee2010}. The underlying architectures of the two approaches are completely different and thus hard to compare. There are approaches where the relative performance is extrapolated from the underlying FLOPs by taking processor count, frequency and memory bandwidth into account,~\cite{Lee2010}. However, due to intricate hardware details this approach is not applicable to all scenarios. Thus in the super computing community metrics like performance-per-dollar or even performance-per-watt have become the main focus,~\cite{Kamil2008}.
 
-Exploring this question in more detail is out of the scope of this thesis. Nevertheless we try to make a best effort to do fair comparison between the CPU and the GPU performance. In order to come as close as possible given these complexities and constraints, we use a modern CPU and GPU which can be considered a balanced system at the time of writing. Additionally, we implemented a parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few difference between the two implementations as possible. Furthermore, the final benchmark uses the fastest possible version of the algorithms as determined by the performed benchmarks.
+Exploring this question in more detail is out of the scope of this thesis. Nevertheless we try to make a best effort to do fair comparison between the CPU and the GPU performance. In order to come as close as possible given these complexities and constraints, we use a modern CPU and GPU which can be considered a balanced system at the time of writing. Additionally, we implemented a parallel OpenMP version. It is directly based on the parallel CUDA version with the sole purpose to have as few differences between the two implementations as possible. Furthermore, the final benchmark uses the fastest possible version of the algorithms as determined by the performed benchmarks.
 
 \begin{figure}[htbp]
   \centering
@@ -415,4 +415,4 @@ The required simulation time on the GPU outperforms the CPU by a wide margin. Th
   \label{tab:overall_speedup}
 \end{table}
 
-We acknowledge that these numbers and performance increases are not necessarily fair. A different CPU and GPU combination from the one used in this thesis might perform differently. However, the relative performance should stay roughly the same. In the end, the only thing that really matters for the researcher working with rigid fibers is the time it takes to simulate large systems on the available workstation. There is no need to wait for computing time at a large computing cluster. Instead simulation can be run simply on a desktop computer allowing to rapidly iterate on the tests. The observed performance increase of $40×$ is comparable to a difference between a whole day of waiting for the simulation results and a quick $30$ minutes result. The saved time also translates directly into the ability to simulate many more fibers than before. Using the original serial implementation the largest simulation possible in a reasonable time frame where around $500$ to $800$ fibers. Now one single time step with $2000$ fibers takes at most $8$ seconds on the GPU. Therefore the implementation on the GPU and the optimizations of the simulation code is of great value to the research of rigid fiber simulations.
+We acknowledge that these numbers and performance increases are not necessarily fair. A different CPU and GPU combination from the one used in this thesis might perform differently. However, the relative performance should stay roughly the same. In the end, the only thing that really matters for the researcher working with rigid fibers is the time it takes to simulate large systems on the available workstation. There is no need to wait for computing time at a large computing cluster. Instead simulations can be run on a desktop computer allowing to rapidly iterate on the tests. The observed performance increase of $40×$ is comparable to a difference between a whole day of waiting for the simulation results and a quick $30$ minutes result. The saved time also translates directly into the ability to simulate many more fibers than before. Using the original serial implementation the largest simulation possible in a reasonable time frame where around $500$ to $800$ fibers. Now one single time step with $2000$ fibers takes at most $8$ seconds on the GPU. Therefore the implementation on the GPU and the optimizations of the simulation code is of great value to the research of rigid fiber simulations.

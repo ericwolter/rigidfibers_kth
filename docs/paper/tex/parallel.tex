@@ -13,7 +13,7 @@ The development is done exclusively on a Linux workstation running Ubuntu as thi
 In order to facilitate easier usage of the application both during development and later real-world usage a Python wrapper script is also available. The script completely automates the building process and dynamically customizes the application code to support three different modes of operation. The first is a simple \emph{run} mode which takes the supplied parameters and executes the simulation. The second mode is \emph{validate}, which allows for a fully automated way to test and validate different algorithm versions against a known correct simulation run. The \emph{validate} mode automatically computes the error and makes debugging of changes easier. The last mode is \emph{benchmark} which executes a particular simulation multiple times and collects and aggregates the timings for each simulation step as well as the total time.
 
 \section{Linear solvers}
-In addition to the CUDA platform, the application also requires support libraries for different linear solvers. During a simulation, a linear system of equations in the form of Eqn.~\eqref{eq:matrix_structure} has to be solved in each timestep. This can be one of the most time consuming parts of the algorithm. Hence, the overall simulation time relies heavily on the ability to solve large and dense systems as fast as possible. Therefore, it is very important to weight all the available options carefully when choosing a particular linear solver algorithm or library.
+In addition to the CUDA platform, the application also requires support libraries for different linear solvers. During a simulation, a linear system of equations in the form of Eqn.~\eqref{eq:matrix_structure} has to be solved in each timestep. This can be one of the most time consuming parts of the algorithm. Hence, the overall simulation time relies heavily on the ability to solve large and dense systems as fast as possible. Therefore it is very important to weight all the available options carefully when choosing a particular linear solver algorithm or library.
 
 In this work we have compared the performance of a direct solver to certain iterative solvers for solving the system. For the direct solver, the MAGMA library,~\cite{MagmaDocumentation}, is used and for the iterative we use the ViennaCL library,~\cite{ViennaCLDocumentation}. Both libraries will be introduced below.
 
@@ -30,7 +30,7 @@ ViennaCL's focus is on solving sparse matrices with the implemented iterative so
 \section{Kernels}
 \label{sec:kernels}
 
-The overall parallel algorithm is very similar to the serial version, however, each simulation step is separated into different kernels. Each kernel is invoked in a serial manner, this means that CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as NVIDIA limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in Listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally a simple loop executes all time steps and the four main algorithm sub steps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — as described in Sec.~\ref{sec:algorithm_summary} are run on the GPU.
+The overall parallel algorithm is very similar to the serial version, however, each simulation step is separated into different kernels. Each kernel is invoked in a serial manner, this means that CUDA guarantees that all data modified in a kernel is available before the next kernel is executed. These kernels are then distributed across the GPU. All calculations are done using single precision floating point numbers, as NVIDIA limits high performance double precision computation to their server class GPUs. The CUDA pseudocode for the algorithm is illustrated in Listing~\ref{lst:pseudo_parallel_algorithm}. It begins by parsing the simulation parameters and the initial fiber configuration. After that, the required memory is allocated on the GPU. Finally, a simple loop executes all time steps and the four main algorithm sub steps — 1. \emph{Assemble System}, 2. \emph{Solve System}, 3. \emph{Update Velocities} and 4. \emph{Update Fibers} — as described in Sec.~\ref{sec:algorithm_summary} are run on the GPU.
 
 \begin{listing}[htbp]
   \centering
@@ -46,7 +46,7 @@ The overall parallel algorithm is very similar to the serial version, however, e
 
 The application requires two general configuration files as an input. The first file is referred to as the parameters file which contains the different configuration variables and constants used throughout the algorithm. These include, for example the number and size of the time steps as well as the number of force expansion terms and quadrature points. Additionally, this file is also used to configure the iterative solvers like specifying the number of restarts for GMRES or the solution tolerance for BiCGStab and GMRES.
 
-Each of the parallelized sub steps are now discussed in more detail. The purpose of each kernel as well as the required input and outputs are described below.
+Each of the parallelized sub steps are now discussed in more detail. The purpose of each kernel as well as the required input and output are described below.
 
 \paragraph{Assemble System}
 
@@ -109,7 +109,7 @@ The final simulation step takes care of advancing the position and orientation o
 
 During the development of the parallel GPU implementation great care was taken to continuously optimize the code both on an algorithmic level as well as on an implementation level. Numerous small code-level optimizations have been performed based on the original serial code like precomputing as much data as possible, avoiding variable allocations or unnecessary copy operations in performance critical sections of the code.
 
-Additionally, more advanced optimization of the code were made like rearranging calculations inside loops to avoid executing redundant calculations and consolidating multiple loops into one. Finally, techniques such as loop unrolling and faster math functions, like the reciprocal of the square root, where also tested and included.
+Additionally, more advanced optimizations of the code were made like rearranging calculations inside loops to avoid executing redundant calculations and consolidating multiple loops into one. Finally, techniques such as loop unrolling and faster math functions, like the reciprocal of the square root, where also tested and included.
 
 Throughout the optimization phase a benchmark suite was run after each step. This ensures that optimizations were only included if they had a measurable impact on the overall performance of the simulation. Moreover, with this approach potential performance regressions could be identified early and be avoided.
 
@@ -153,7 +153,7 @@ The kernel invocations for the one-dimensional and two-dimensional thread block 
     \includegraphics[width=\textwidth]{img/thread_block2D.pdf}
     \caption{2D}\label{fig:thread_block_2D}
   \end{subfigure}
-  \caption[Illustration of 1D and 2D thread block dimensions for the system matrix.]{Illustration of 1D and 2D thread block dimensions for the system matrix. In the 1D case each thread is responsible for the all interactions. For the 2D case each thread is only responsible for the interaction between a pair of fibers.}
+  \caption[Illustration of 1D and 2D thread block dimensions for the system matrix.]{Illustration of 1D and 2D thread block dimensions for the system matrix. In the 1D case each thread is responsible for all interactions. For the 2D case each thread is only responsible for the interaction between a pair of fibers.}
   \label{fig:thread_block}
 \end{figure}
 

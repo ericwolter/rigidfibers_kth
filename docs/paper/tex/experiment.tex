@@ -12,7 +12,7 @@ We begin by looking at tumbling orbits, a very delicate experiment requiring goo
 
 To verify that the single precision GPU implementation is able to replicate the result obtained with the original double precision code, we perform a very simple experiment where a small number of fibers are set up with perfectly symmetrical positions and orientations. Initially, all fibers are evenly distributed on a circle and aligned vertically with gravity. During the simulation, while sedimenting, the fibers begin to rotate from their vertical orientation towards a horizontal position. Afterwards, they continue rotating back into the vertical position. This motion is referred to as a tumbling motion and as long as there are no disturbances or numerical precision issues it repeats forever.
 
-This simple but very interesting problem has also been simulated by Gustavsson and Tornberg,~\cite{Gustavsson2009}. Additionally an even more simplified version with only two fibers was studied both numerically and experimentally by Jung et al.,~\cite{Jung2006}. This example is thus ideally suited to test and verify the numerical precision of the GPU implementation. A visualization of the result using the GPU code for $16$ fibers evenly distributed around a circle with a radius of $0.55$, is shown in Fig.~\ref{fig:ring_simulation}.
+This simple but very interesting problem has also been simulated by Gustavsson and Tornberg,~\cite{Gustavsson2009}. Additionally, an even more simplified version with only two fibers was studied both numerically and experimentally by Jung et al.,~\cite{Jung2006}. This example is thus ideally suited to test and verify the numerical precision of the GPU implementation. A visualization of the result using the GPU code for $16$ fibers evenly distributed around a circle with a radius of $0.55$, is shown in Fig.~\ref{fig:ring_simulation}.
 
 \begin{figure}[htbp]
   \centering
@@ -99,20 +99,20 @@ In Fig.~\ref{fig:sphere_simulation} we can see how the interacting fibers, begin
 
 After some time the torus breaks and the fibers are split into multiple smaller cloudlets, which continue to sediment separately and slowly form their own smaller torus. However, due to tiny variations these tori can be harder to see. 
 
-The simulation of the presented example only takes ${\sim}8$ seconds per timestep using the GPU implementation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow for new research of this interesting phenomenon. One interesting question is to determine what influences the stability of the torus that is, when time does the torus break up.
+The simulation of the presented example only takes ${\sim}8$ seconds per timestep using the GPU implementation. Consequently it is possible to perform the $500$ time steps of the simulation in a little bit over $1$ hour. Simulating this many fibers in such a short time will allow for new research of this interesting phenomenon. One interesting question is to determine what influences the stability of the torus, that is, when time does the torus break up.
 
 \subsection{Spherical cloud break-up}
 \label{subsec:sphere_break}
 
-One interesting question is how to determine what influences the stability of the torus that is, when in time does the torus break-up.
+One interesting question is how to determine what influences the stability of the torus, that is, when in time does the torus break-up.
 
-How to determine the exact break up time is quite challenging. This problem was also examined by Park et al.,~\cite{Park2010}. In~\cite{Park2010} the authors define the break-up time as the instant when the torus starts to bend prior to actually breaking. However, they do not present a precise definition of the bending in terms of measurable quantities. In order to systematically detect the time when the torus breaks we have developed a measure of the break-up using the standard deviation of the vertical radius of the torus.  We will use the same setup as above to exemplify how we define this measure.
+How to determine the exact break-up time is quite challenging. This problem was also examined by Park et al.,~\cite{Park2010}. In~\cite{Park2010} the authors define the break-up time as the instant when the torus starts to bend prior to actually breaking. However, they do not present a precise definition of the bending in terms of measurable quantities. In order to systematically detect the time when the torus breaks we have developed a measure of the break-up using the standard deviation of the vertical radius of the torus.  We will use the same setup as above to exemplify how we define this measure.
 
 First we need to define which of the fibers belong to the torus. We use the same definition as described in~\cite{Park2010}. Let $R_0$ denote the radius of the initial cloud. As the cloud sediments and starts forming a torus, there is a small leakage of fibers in its vertical tail. To find these fibers, such that they can be removed from the active set of fibers defining the torus, we remove all fibers with a vertical distance from the center of mass of the torus larger than $R_0$. In Fig~\ref{fig:torus_fibers} we can see how the number of fibers in the torus decreases with time. Using the remaining fibers, we compute the horizontal radii $R_x$ and $R_y$ of the torus by computing the maximum distance from the center of mass to the center of the fibers. In the same way we compute the vertical radius $R_z$. The torus shape is illustrated in Fig.~\ref{fig:torus_shape} where we display the three different radii, $R_x$, $R_y$ and $R_z$.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.6\textwidth]{img/torus3.png}
+  \includegraphics[width=0.525\textwidth]{img/torus3.png}
   \caption[Torus Shape.]{Torus Shape. The torus is defined by the two horizontal radii $R_x$ and $R_y$ and the vertical radius in the direction of gravity $R_z$.}
   \label{fig:torus_shape}
 \end{figure}
@@ -204,11 +204,11 @@ First we need to define which of the fibers belong to the torus. We use the same
   \label{fig:torus}
 \end{figure}
 
-In Fig.~\ref{fig:torus_radius} the radii in the horizontal direction is presented as a function of time. We can see how the radii increase at a steady rate until break-up. At the time of break-up there is a more sudden increase. If we instead look at the time evolution of the standard deviation of the radius in the vertical direction, $R_z^{\text{std}}$, we observe that it continuously decreases until it reaches a minimum value after which it starts to increase again, see Fig.~\ref{fig:torus_deviation}. The time at which the minimum value is reached can be identified with the break-up of the torus. We have verified this finding manually against many simulations and it showed a great agreement with the visually detected time for break-up. Using the minimum value of $R_z^{\text{std}}$ as a detector for the break-up time is preferable compared to using e.g. the sudden increase in the horizontal radii since it is easier to automatically detect a minimum value than a sudden increase.
+In Fig.~\ref{fig:torus_radius} the radii in the horizontal direction is presented as a function of time. We can see how the radii increase at a steady rate until the break-up. At the time of break-up there is a more sudden increase. If we instead look at the time evolution of the standard deviation of the radius in the vertical direction, $R_z^{\text{std}}$, we observe that it continuously decreases until it reaches a minimum value after which it starts to increase again, see Fig.~\ref{fig:torus_deviation}. The time at which the minimum value is reached can be identified with the break-up of the torus. We have verified this finding manually against many simulations and it showed a great agreement with the visually detected time of the break-up. Using the minimum value of $R_z^{\text{std}}$ as a detector for the break-up time is preferable compared to using e.g. the sudden increase in the horizontal radii since it is easier to automatically detect a minimum value than a sudden increase.
 
 A surprising result is that the standard deviation of $R_z$ oscillates with time. This implies that the torus is periodically expanding and shrinking until it breaks. The same periodic behavior can also be seen in the sedimentation velocity, $V_z$, of the torus, see Fig.~\ref{fig:torus_velocity}. Here, we define the sedimentation velocity as the average value of the vertical velocity of all fibers in the torus. The periodic change in the velocity is similar to the motion observed in the simple tumbling orbits experiment presented in Sec.~\ref{sec:example_ring}. Hence, it seems like the turning torus with $2000$ fibers is a more chaotic version of the tumbling orbits.
 
-The results presented in Fig.~\ref{fig:torus} are comparable to results presented in Park et al.~\cite{Park2010}. Using our definition of break-up time we will now investigate the effect of the number of as well as the concentration of fibers on the stability of the torus.
+The results illustrated in Fig.~\ref{fig:torus} are comparable to the results presented in Park et al.~\cite{Park2010}. Using our definition of break-up time we will now investigate the effect of the number of as well as the concentration of fibers on the stability of the torus.
 
 \subsection{Fiber concentration effect on break-up time}
 \label{subsec:effect_concentration}
@@ -234,14 +234,14 @@ In Fig.~\ref{fig:concentration_breakup} the break-up time is presented as a func
 
     \end{axis}
   \end{tikzpicture}
-  \caption[Effect of fiber concentration on torus break up time.]{Effect of fiber concentration on torus break up time.}
+  \caption[Effect of fiber concentration on torus break-up time.]{Effect of fiber concentration on torus break-up time.}
   \label{fig:concentration_breakup}
 \end{figure}
 
 \subsection{Number of fibers effect on break-up time}
 \label{subsec:effect_number}
 
-The second parameter we studied was the number of fibers initially included in the cloud. In this set of experiments, the concentration is fixed by keeping the average distance between the fibers fixed to $0.4$. We measure the break up time as we vary the number of fibers from $100$ to $2000$. In Fig.~\ref{fig:number_breakup} the result is displayed. Here we find that there is a positive correlation between the number of fibers and the break-up time, however not as strong as in the case when we varied the concentration. These results also match the results found by Park et al.,~\cite{Park2010}.
+The second parameter we studied was the number of fibers initially included in the cloud. In this set of experiments, the concentration is fixed by keeping the average distance between the fibers fixed to $0.4$. We measure the break-up time as we vary the number of fibers from $100$ to $2000$. In Fig.~\ref{fig:number_breakup} the result is displayed. Here we find that there is a positive correlation between the number of fibers and the break-up time, however not as strong as in the case when we varied the concentration. These results also match the results found by Park et al.,~\cite{Park2010}.
 
 The results presented in Sec.~\ref{subsec:effect_concentration} and Sec.~\ref{subsec:effect_number} show that both fiber concentration and the number of fibers affect the break-up time of the torus. Future research should explore these correlations closer and include other studies such as the dependence of the initial shape of the cloud on the process.
 
@@ -261,7 +261,7 @@ The results presented in Sec.~\ref{subsec:effect_concentration} and Sec.~\ref{su
 
     \end{axis}
   \end{tikzpicture}
-  \caption[Effect of number of fibers on torus break up time.]{Effect of number of fibers on torus break up time. Here the concentration of fibers is constant.}
+  \caption[Effect of number of fibers on torus break-up time.]{Effect of number of fibers on torus break-up time. Here the concentration of fibers is constant.}
   \label{fig:number_breakup}
 \end{figure}
 
@@ -270,7 +270,7 @@ The results presented in Sec.~\ref{subsec:effect_concentration} and Sec.~\ref{su
 
 The final experiment resembles a setup investigated by Bülow et al.,~\cite{Bulow2015}, where the authors studied the settling behavior of a spherical cloud with particles of different size. Here, we will study the sedimentation of a spherical cloud with fibers of different densities. We divide the total number of fibers into two different density groups and arrange them inside a spherical cloud, which sediments due to gravity. To separate the two groups visually, they are colored in red and blue. The blue group has the lower density and the red group the higher density. The ratio between the densities is set to $\text{blue} / \text{red}= 0.75 / 1.0$.
 
-Fig.~\ref{fig:unmixed_sphere} shows the results from a simulation at different timesteps, where the two density groups are initially separated into the top and bottom half of the spherical cloud. Since the fibers are clearly separated, this particular configuration is referred to as an unmixed cloud. Initially the fibers with the higher density are in the upper half of the cloud and the fibers with the lower density are in the bottom half, see Fig.~\ref{fig:mixing_top_a}. After a short time, we can see in Fig.~\ref{fig:mixing_top_b} that the high density fibers have almost completely dropped through the low density fibers, leaving a large trail of low density fibers behind. After a while, the high and low density fibers are almost totally separated and proceed independently of each other to form the characteristic torus, see Fig.~\ref{fig:mixing_top_c}. As the torus formed by the high density fibers grows in size and becomes less dense its sedimentation velocity will decrease. As depicted in Fig.~\ref{fig:mixing_top_d} the low density group of fibers will eventually catch up with the high density fibers and drop through the larger torus. The tori are not very stable and soon afterward they will break up.
+Fig.~\ref{fig:unmixed_sphere} shows the results from a simulation at different timesteps, where the two density groups are initially separated into the top and bottom half of the spherical cloud. Since the fibers are clearly separated, this particular configuration is referred to as an unmixed cloud. Initially the fibers with the higher density are in the upper half of the cloud and the fibers with the lower density are in the bottom half, see Fig.~\ref{fig:mixing_top_a}. After a short time, we can see in Fig.~\ref{fig:mixing_top_b} that the high density fibers have almost completely dropped through the low density fibers, leaving a large trail of low density fibers behind. After a while, the high and low density fibers are almost totally separated and proceed independently of each other to form the characteristic torus, see Fig.~\ref{fig:mixing_top_c}. As the torus formed by the high density fibers grows in size and becomes less dense its sedimentation velocity will decrease. As depicted in Fig.~\ref{fig:mixing_top_d} the low density group of fibers will eventually catch up with the high density fibers and drop through the larger torus. The tori are not very stable and soon afterwards they will break up.
 
 \begin{figure}[htbp]
   \centering
@@ -326,4 +326,4 @@ Next we perform a similar experiment but with the fibers of different densities 
   \label{fig:mixed_sphere}
 \end{figure}
 
-The results displayed for the mixed and unmixed cloud with rigid fibers do agree on a qualitative level with the results presented in Bülow et al.,~\cite{Bulow2015}. However, both simulation methods and setups are very different which makes a quantitive comparison very challenging. Furthermore our experiment are only in an initial stage and many more experiments have to be carried out to get a deeper understanding of the behavior of rigid fibers of different densities in a spherical cloud. Exploring the impact of initial fiber configuration, the density ratio and the fiber concentration are all exciting future research opportunities.
+The results displayed for the mixed and unmixed cloud with rigid fibers do agree on a qualitative level with the results presented in Bülow et al.,~\cite{Bulow2015}. However, both simulation methods and setups are very different which makes a quantitive comparison very challenging. Furthermore, our experiment are only in an initial stage and many more experiments have to be carried out to get a deeper understanding of the behavior of rigid fibers of different densities in a spherical cloud. Exploring the impact of initial fiber configuration, the density ratio and the fiber concentration are all exciting future research opportunities.

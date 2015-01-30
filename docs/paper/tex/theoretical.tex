@@ -12,7 +12,7 @@ We are interested in modeling the behavior of objects immersed in an incompressi
   \label{eq:naviar_stokes_equations}
   \begin{aligned}
     \rho\left(\frac{\delta \mathbf{u}}{\delta t} + (\mathbf{u} \cdot \nabla)\mathbf{u}\right) &= -\nabla p + \mu\nabla^2\mathbf{u} + \mathbf{f} \\
-    \nabla \cdot \mathbf{u} &= 0 \text{.}
+    \nabla \cdot \mathbf{u} &= 0 \text{,}
   \end{aligned}
 \end{equation}
 where $\mathbf{u}(\mathbf{x})$ denotes the velocity field, $p(\mathbf{x})$ the pressure field and $\mathbf{f}(\mathbf{x})$ the force acting on the fluid at the location $\mathbf{x} = (x,y,z) \in \mathbb{R}^3$. The constant $\mu$ is the viscosity of the fluid and $\rho$ is the fluid density. Solving these equations is quite challenging due to their time dependence and non-linearity. However, in this work we are only concerned with slowly moving objects and the Reynolds number, $Re = \frac{\rho U L}{\mu}$, is assumed to be very small. Given the constraint that $Re \ll 1$, the inertial and acceleration terms in the Navier-Stokes Eqns.~\eqref{eq:naviar_stokes_equations} can be neglected and we arrive at the linear and time independent Stokes equations,
@@ -72,7 +72,7 @@ Later, we will need higher order fundamental solutions to the Stokes Eqns.~\eqre
 \subsection{Formulation for objects immersed in a fluid}
 \label{subsec:formulation_objects_in_fluid}
 
-Using the fundamental solution in Eqn.~\eqref{eq:stokeslet_velocity_field} we can now model the motion of immersed objects in a fluid. Assume that we have a total of $M$ immersed rigid objects in the fluid. Each object $m$, for $m = 1,2,\dots,M$, is centered at $\POS_c^m$ with an associated orthonormal basis $\ORIENT^m$ and surface $\Gamma^m$. Given a rigid body motion and the no-slip boundary condition in Eqn.~\eqref{eq:boundary_condition_surface} we can model the velocity field $\mathbf{u}(\POS)$ at each surface point $\POS \in \Gamma^m$ of the object as
+Using the fundamental solution in Eqn.~\eqref{eq:stokeslet_velocity_field} we can now model the motion of immersed objects in a fluid. Assume that we have a total of $M$ immersed rigid objects in the fluid. Each object $m$, for $m = 1,2,\dots,M$, is centered at $\POS_c^m$ with an associated orthonormal basis $\ORIENT^m$ and surface $\Gamma^m$. Given a rigid body motion and the no-slip boundary condition in Eqn.~\eqref{eq:boundary_condition_surface} we can model the velocity field $\mathbf{u}(\POS)$ at each surface point $\POS \in \Gamma^m$ of the object as,
 \begin{equation}
   \label{eq:rigid_body_motion}
 	\mathbf{u}(\mathbf{x}) = \mathbf{U}^m + \mathbf{\omega}^m \times (\POS - \POS_c^m) \text{,}
@@ -81,8 +81,8 @@ where $\mathbf{U}^m$ is the translational velocity and $\mathbf{\omega}^m$ is th
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=.8\textwidth]{img/immersed_rigid.png}
-  \caption[Two immersed objects in stokes flow.]{Two immersed objects in stokes flow, using a rigid body motion. Each fiber is characterized by the positions $\POS^1, \POS^2$ and the orientations $\ORIENT^1,\ORIENT^2$. The velocity of each point the surfaces $\Gamma^1, \Gamma^2$ is given by the rigid body motion described in Eqn~\eqref{eq:rigid_body_motion}.}
+  \includegraphics[width=.6\textwidth]{img/immersed_rigid.png}
+  \caption[Two immersed objects in Stokes flow.]{Two immersed objects in Stokes flow, using a rigid body motion. Each fiber is characterized by the positions $\POS^1, \POS^2$ and the orientations $\ORIENT^1,\ORIENT^2$. The velocity of each point the surfaces $\Gamma^1, \Gamma^2$ is given by the rigid body motion described in Eqn~\eqref{eq:rigid_body_motion}.}
   \label{fig:immersed_rigid}
 \end{figure}
 
@@ -143,7 +143,7 @@ The slender body approximation yields a coupled system of 1D integral equations 
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/slender.pdf}
+  \includegraphics[width=0.45\textwidth]{img/slender.pdf}
   \caption[Slender fiber approximation.]{Slender fiber approximation. Each fiber is described by the center points $\POS_m, \POS_l$ the orientations given by the unit tangent vectors $\ORIENT_m, \ORIENT_l$ and the center line parameterized by $s$ and $s'$. The points on each center line is thus given by $\POS_m(s) = \POS_m + s\ORIENT_m$.}
   \label{fig:slender_fiber}
 \end{figure}
