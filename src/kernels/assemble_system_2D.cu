@@ -12,6 +12,7 @@ assemble_system_2D(
         #endif //VALIDATE
     const float4 *positions,
     const float4 *orientations,
+    const float4 *external_forces,
     float *a_matrix,
     float *b_vector
     )
@@ -31,10 +32,10 @@ assemble_system_2D(
   const float4 position_i = positions[i];
   const float4 orientation_i = orientations[i];
 
-  float4 external_force;
-  external_force.x = 0.5f * 0.0f;
-  external_force.y = 0.5f * 0.0f;
-  external_force.z = 0.5f * -1.0f;
+  float4 external_force = external_forces[i];
+  external_force.x = 0.5f * external_force.x;
+  external_force.y = 0.5f * external_force.y;
+  external_force.z = 0.5f * external_force.z;
 
   int x_row_index;
   int y_row_index;

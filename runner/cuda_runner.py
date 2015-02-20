@@ -27,7 +27,7 @@ def read_parameters(args):
             # more timesteps than that
             "NUMBER_OF_TIMESTEPS": 2 if args.validate else config.getint("RUN","NUMBER_OF_TIMESTEPS"),
             "STATE_SAVE_INTERVAL": config.getint("RUN","STATE_SAVE_INTERVAL"),
-            "VELOCITY_SAVE_INTERVAL": config.getint("RUN","STATE_SAVE_INTERVAL"),
+            "VELOCITY_SAVE_INTERVAL": config.getint("RUN","VELOCITY_SAVE_INTERVAL"),
             "TIMESTEP": config.getfloat("SIMULATION","TIMESTEP"),
             "SLENDERNESS": config.getfloat("SIMULATION","SLENDERNESS"),
             "NUMBER_OF_TERMS_IN_FORCE_EXPANSION": config.getint("SIMULATION","NUMBER_OF_TERMS_IN_FORCE_EXPANSION"),

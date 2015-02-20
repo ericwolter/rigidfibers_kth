@@ -103,6 +103,7 @@ __global__ void update_velocities_2D(
     const float4 *positions,
     const float4 *orientations,
     const float *coefficients,
+    const float4 *external_forces,
     float4 *translational_velocities,
     float4 *rotational_velocities
 )
@@ -120,11 +121,7 @@ __global__ void update_velocities_2D(
     const float4 position_i = positions[i];
     const float4 orientation_i = orientations[i];
 
-    // @TODO Constant external force
-    float4 external_force;
-    external_force.x = 0.0f;
-    external_force.y = 0.0f;
-    external_force.z = -1.0f;
+    float4 external_force = external_forces[i];
 
     const float4 position_j = positions[j];
     const float4 orientation_j = orientations[j];

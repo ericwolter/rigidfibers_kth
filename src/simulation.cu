@@ -68,6 +68,26 @@ void Simulation::initializeGPUMemory()
     checkCuda(cudaMemset(gpu_validation_, -1, TOTAL_NUMBER_OF_ROWS * TOTAL_NUMBER_OF_ROWS * 6 * sizeof(int)));
 #endif //VALIDATE
 
+    checkCuda(cudaMalloc(&gpu_external_force_, NUMBER_OF_FIBERS * sizeof(float4)));
+    float4 *host_external_force = new float4[NUMBER_OF_FIBERS];
+    for (size_t m = 0; m < NUMBER_OF_FIBERS; ++m)
+    {
+      if (m < NUMBER_OF_FIBERS / 2) {
+        host_external_force[m].x = 0;
+        host_external_force[m].y = 0;
+        host_external_force[m].z = -1;
+        host_external_force[m].w = 0;
+      } else {
+        host_external_force[m].x = 0;
+        host_external_force[m].y = 0;
+        host_external_force[m].z = -0.75;
+        host_external_force[m].w = 0;
+      }
+    }
+    std::cout << "[CPU] --> [GPU] : Writing external force..." << std::endl;
+    checkCuda(cudaMemcpy(gpu_external_force_, host_external_force, NUMBER_OF_FIBERS * sizeof(float4), cudaMemcpyHostToDevice));
+    delete[] host_external_force;
+
     checkCuda(cudaMalloc(&gpu_previous_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
     checkCuda(cudaMalloc(&gpu_current_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
     checkCuda(cudaMalloc(&gpu_next_positions_, NUMBER_OF_FIBERS * sizeof(float4)));
@@ -342,6 +362,7 @@ void Simulation::assembleSystem()
 #endif //VALIDATE
       gpu_current_positions_,
       gpu_current_orientations_,
+      gpu_external_force_,
       gpu_a_matrix_,
       gpu_b_vector_
     );
@@ -457,6 +478,7 @@ void Simulation::updateVelocities()
         gpu_current_positions_,
         gpu_current_orientations_,
         gpu_b_vector_,
+        gpu_external_force_,
         gpu_current_translational_velocities_,
         gpu_current_rotational_velocities_
     );

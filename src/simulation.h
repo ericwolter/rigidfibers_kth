@@ -52,6 +52,8 @@ private:
     Configuration configuration_;
     size_t global_work_size_;
 
+    float4 *gpu_external_force_;
+
     float4 *gpu_previous_positions_;
     float4 *gpu_current_positions_;
     float4 *gpu_next_positions_;

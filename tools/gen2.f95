@@ -16,6 +16,7 @@ PROGRAM gen
   INTEGER::i,j
   INTEGER::count_pairs
   REAL*4::radius
+  REAL*4::r
 
   REAL*4,DIMENSION(3)::p_i,p_j,o_i,o_j
   LOGICAL::inserted,rejected
@@ -87,6 +88,19 @@ PROGRAM gen
         radius = radius + min_distance
       END IF
     END DO
+  END DO
+
+  ! Fisher–Yates shuffle
+  DO i=N, 2, -1
+    CALL RANDOM_NUMBER(r)
+    j = 1 + INT(r * ((i - 1) + 1))
+    p_i = positions(i,:)
+    positions(i,:) = positions(j,:)
+    positions(j,:) = p_i
+
+    o_i = orientations(i,:)
+    orientations(i,:) = orientations(j,:)
+    orientations(j,:) = o_i
   END DO
 
   PRINT *, "---  after   ---"

@@ -64,6 +64,8 @@ int main(int argc, char *argv[])
     std::cout << "  Slenderness                        : " << SLENDERNESS << std::endl;
     std::cout << "  Number of terms in force expansion : " << NUMBER_OF_TERMS_IN_FORCE_EXPANSION << std::endl;
     std::cout << "  Number of quadrature intervals     : " << NUMBER_OF_QUADRATURE_INTERVALS << std::endl;
+    std::cout << "  State save interval                : " << STATE_SAVE_INTERVAL << std::endl;
+    std::cout << "  Velocity save interval             : " << VELOCITY_SAVE_INTERVAL << std::endl;
 #ifdef VALIDATE
     std::cout << "  Validating enabled                 : Yes" << std::endl;
 #else
