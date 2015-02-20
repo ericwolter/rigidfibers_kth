@@ -1,12 +1,15 @@
-\begin{table}[!htbp]
-  \caption*{Parameters for tumbling orbits experiment.}
+\chapter{Simulation Parameters}
+\label{app:parameters}
+
+\begin{table}[ht]
+  \caption*{Parameters for GMRES iterations experiment in Sec~\ref{subsec:example_concentration_gmres}.}
   \begin{center}
     \begin{tabulary}{\textwidth}{LR}
       \toprule
       Parameter & Value \\
       \midrule
-      Number of fibers & $16$ \\
-      Concentration & $0.2146$ \\
+      Number of fibers & $2000$ \\
+      Average distance & $0.02–40.96$ \\
       Timestep & $0.1$ \\
       Slenderness & $0.01$ \\
       Number of terms in force expansion & $5$ \\
@@ -17,15 +20,15 @@
   \end{center}
 \end{table}
 
-\begin{table}[!htbp]
-  \caption*{Parameters for sedimenting sphere experiment.}
+\begin{table}[ht]
+  \caption*{Parameters for tumbling orbits experiment in Sec~\ref{sec:example_ring}.}
   \begin{center}
     \begin{tabulary}{\textwidth}{LR}
       \toprule
       Parameter & Value \\
       \midrule
-      Number of fibers & $2000$ \\
-      Concentration & $0.2$ \\
+      Number of fibers & $16$ \\
+      Average distance & $0.2146$ \\
       Timestep & $0.1$ \\
       Slenderness & $0.01$ \\
       Number of terms in force expansion & $5$ \\
@@ -34,4 +37,83 @@
       \bottomrule
     \end{tabulary}
   \end{center}
+\end{table}
+
+\begin{table}[ht]
+  \caption*{Parameters for sedimenting sphere experiment in Sec~\ref{sec:example_sphere}.}
+  \begin{center}
+    \begin{tabulary}{\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Number of fibers & $2000$ \\
+      Average distance & $0.2$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+\end{table}
+
+\begin{table}[ht]
+  \caption*{Parameters for fiber concentration effect on break-up in Sec~\ref{subsec:effect_concentration}.}
+  \begin{center}
+    \begin{tabulary}{\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Number of fibers & $2000$ \\
+      Average distance & $0.08–2.56$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+\end{table}
+
+\begin{table}[ht]
+  \caption*{Parameters for number of fibers effect on break-up in Sec~\ref{subsec:effect_number}.}
+  \begin{center}
+    \begin{tabulary}{\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Number of fibers & $100–2000$ \\
+      Average Distance & $0.4$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+\end{table}
+
+\begin{table}[ht]
+  \caption*{Parameters for un/mixed spherical cloud in Sec~\ref{sec:mixed_density_sphere}.}
+  \begin{center}
+    \begin{tabulary}{\textwidth}{LR}
+      \toprule
+      Parameter & Value \\
+      \midrule
+      Number of fibers & $2000$ \\
+      Average Distance & $0.4$ \\
+      Timestep & $0.1$ \\
+      Slenderness & $0.01$ \\
+      Number of terms in force expansion & $5$ \\
+      Number of quadrature intervals & $8$ \\
+      Number of quadrature points per interval & $3$ \\
+      \bottomrule
+    \end{tabulary}
+  \end{center}
+% hack to get the figure to the top of the page
+% see:http://stackoverflow.com/questions/2009420/how-to-put-a-figure-on-the-top-of-a-page-on-its-own-in-latex
+  \vspace*{6in}
 \end{table}

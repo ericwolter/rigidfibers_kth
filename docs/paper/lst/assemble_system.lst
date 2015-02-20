@@ -1,0 +1,31 @@
+__global__ void AssembleSystem1D(
+  in float *positions,
+  in float *orientations,
+  out float *a_matrix,
+  out float *b_vector)
+{
+  const int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (i >= NUMBER_OF_FIBERS) return;
+
+  for (int j = 0; j < NUMBER_OF_FIBERS ++j)
+  {
+    for (int force_index_j = 0;
+         force_index_j < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
+         ++force_index_j)
+    {
+      computeInnerIntegral(...);
+
+      for (int force_index_i = 0;
+           force_index_i < NUMBER_OF_TERMS_IN_FORCE_EXPANSION;
+           ++force_index_i)
+      {
+        // Only 1D thread block
+        // Each thread updates unique memory locations, thus
+        // no need for atomics
+        setMatrix(...)
+        setVector(...)
+      }
+    }
+  }
+}

@@ -5,6 +5,7 @@
 % arara: lualatex: { shell : yes , action: batchmode}
 
 \documentclass[a4paper,11pt]{kth-mag}
+
 \DeclareMathSizes{10.95}{12}{9}{7}
 %\DisemulatePackage{setspace}
 %\usepackage[onehalfspacing]{setspace}
@@ -23,11 +24,13 @@
 
 % Caption and split floats
 \usepackage{caption}    % customizable captions
-\usepackage{subcaption} % nice subfigures and subtables
+\usepackage[labelformat=simple]{subcaption} % nice subfigures and subtables
+\renewcommand\thesubfigure{~(\alph{subfigure})}
 
 % Bibliographies
 \usepackage[
   backend=biber,
+  maxbibnames=99,
   style=numeric
 ]{biblatex} % modern bibliographies
 \addbibresource{thesis.bib}
@@ -62,6 +65,7 @@
 \usepackage{pgfplotstable}
 \usepgfplotslibrary{fillbetween}
 \usetikzlibrary{pgfplots.fillbetween}
+\usetikzlibrary{plotmarks}
 \pgfplotsset{
   compat=1.11, % avoid running in backwards compatibility mode
   width=\textwidth,
@@ -69,15 +73,16 @@
   every axis label = {font=\sffamily},
   legend style = {font=\sffamily},
   label style = {font=\sffamily},
-  separate axis lines,
-  y axis line style={draw opacity=0},
+%  separate axis lines,
+  y axis line style={gray},
   x axis line style={gray},
-  axis x line*=bottom,
-  axis y line*=left,
+%  axis x line*=bottom,
+%  axis y line*=left,
   major tick length=0pt,
   grid=both,
   y grid style={dashed},
   legend pos=north west,
+  tick label style={/pgf/number format/assume math mode=true},
 }
 \definecolor{set11}{RGB}{228,  26,  28}
 \definecolor{set12}{RGB}{ 55, 126, 184}
@@ -123,7 +128,10 @@
 \newcommand{\ORIENT}{\mathbf{t}}
 \newcommand{\DIFFPOINT}{\mathbf{x} - \mathbf{y}}
 
-\linespread{1.3}
+%\linespread{1.3}
+%\linespread{1.236}
+\linespread{1.213}
+\hyphenation{re-arran-ging}
 
 \usepackage{modifications}
 
@@ -152,11 +160,13 @@ Furthermore, we have performed a number of simulations of known experiments for 
 \clearpage
 
 \begin{foreignabstract}{swedish}
-
 \end{foreignabstract}
 \clearpage
 
 \section*{Acknowledgements}
+This Master's thesis project was carried out at the Numerical Analysis Group of the Department of Mathematics at the Royal Institute of Technology in Sweden.
+
+First and foremost, I especially want to thank my supervisor Katarina Gustavsson for giving me the opportunity to come to Sweden and contribute to the field of particle suspensions. Her guidance and support was invaluable to the success of this thesis. Additionally, I am grateful to Michael Schliephake for his insightful comments and discussion on GPU programming. Finally, I want to thank Micheal Hanke for being my examiner and his continued support.
 \clearpage
 
 \tableofcontents*
@@ -169,6 +179,7 @@ Furthermore, we have performed a number of simulations of known experiments for 
 \clearpage
 
 \addcontentsline{toc}{chapter}{List of Listings}
+\renewcommand{\listoflistingscaption}{List of Listings}
 \listoflistings
 \clearpage
 
@@ -194,8 +205,8 @@ Furthermore, we have performed a number of simulations of known experiments for 
 \printbibliography
 \clearpage
 
-\appendix
-\addappheadtotoc
+\begin{appendices}
 \input{tex/appendix}
+\end{appendices}
 
 \end{document}
